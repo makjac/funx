@@ -1,0 +1,295 @@
+/// Base Func class for wrapping async functions with execution control.
+library;
+
+import 'dart:async';
+
+import 'package:funx/src/core/types.dart';
+import 'package:funx/src/timing/debounce.dart';
+import 'package:funx/src/timing/delay.dart';
+import 'package:funx/src/timing/throttle.dart';
+import 'package:funx/src/timing/timeout.dart';
+
+/// A wrapper for async functions that provides execution control mechanisms.
+///
+/// [Func] wraps a function and allows applying various execution control
+/// patterns like debouncing, throttling, retry logic, etc.
+///
+/// Example:
+/// ```dart
+/// final fetchUser = Func<User>(() async {
+///   return await api.getUser();
+/// });
+///
+/// // Apply execution controls
+/// final controlled = fetchUser
+///   .debounce(Duration(milliseconds: 300))
+///   .timeout(Duration(seconds: 5));
+///
+/// // Execute
+/// final user = await controlled();
+/// ```
+class Func<R> {
+  /// Creates a [Func] wrapping the provided async function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final myFunc = Func<String>(() async {
+  ///   return await someAsyncOperation();
+  /// });
+  /// ```
+  Func(this._function);
+
+  final AsyncFunction<R> _function;
+
+  /// Executes the wrapped function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final result = await myFunc();
+  /// ```
+  Future<R> call() => _function();
+
+  /// Applies debouncing to this function.
+  ///
+  /// Debouncing delays execution until after the specified [duration] has
+  /// passed since the last invocation.
+  ///
+  /// Example:
+  /// ```dart
+  /// final search = Func(() async => await api.search(query))
+  ///   .debounce(Duration(milliseconds: 300));
+  /// ```
+  Func<R> debounce(
+    Duration duration, {
+    DebounceMode mode = DebounceMode.trailing,
+  }) {
+    return DebounceExtension(this, duration, mode);
+  }
+
+  /// Applies throttling to this function.
+  ///
+  /// Throttling limits execution to at most once per [duration].
+  ///
+  /// Example:
+  /// ```dart
+  /// final onClick = Func(() async => await handleClick())
+  ///   .throttle(Duration(milliseconds: 1000));
+  /// ```
+  Func<R> throttle(
+    Duration duration, {
+    ThrottleMode mode = ThrottleMode.leading,
+  }) {
+    return ThrottleExtension(this, duration, mode);
+  }
+
+  /// Adds a delay before and/or after execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final process = Func(() async => await doWork())
+  ///   .delay(Duration(milliseconds: 500), mode: DelayMode.before);
+  /// ```
+  Func<R> delay(
+    Duration duration, {
+    DelayMode mode = DelayMode.before,
+  }) {
+    return DelayExtension(this, duration, mode);
+  }
+
+  /// Adds a timeout to this function.
+  ///
+  /// If the function doesn't complete within [duration], it will throw
+  /// a [TimeoutException].
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetch = Func(() async => await api.fetch())
+  ///   .timeout(Duration(seconds: 5));
+  /// ```
+  Func<R> timeout(
+    Duration duration, {
+    FutureOr<R> Function()? onTimeout,
+  }) {
+    return TimeoutExtension(this, duration, onTimeout);
+  }
+}
+
+/// A wrapper for async functions with one parameter.
+///
+/// Example:
+/// ```dart
+/// final fetchUser = Func1<String, User>((userId) async {
+///   return await api.getUser(userId);
+/// });
+/// ```
+class Func1<T, R> {
+  /// Creates a [Func1] wrapping the provided async function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final myFunc = Func1<int, String>((num) async {
+  ///   return 'Number: $num';
+  /// });
+  /// ```
+  Func1(this._function);
+
+  final AsyncFunction1<T, R> _function;
+
+  /// Executes the wrapped function with the provided argument.
+  ///
+  /// Example:
+  /// ```dart
+  /// final result = await myFunc(42);
+  /// ```
+  Future<R> call(T arg) => _function(arg);
+
+  /// Applies debouncing to this function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final search = Func1<String, List<Result>>((query) async {
+  ///   return await api.search(query);
+  /// }).debounce(Duration(milliseconds: 300));
+  /// ```
+  Func1<T, R> debounce(
+    Duration duration, {
+    DebounceMode mode = DebounceMode.trailing,
+  }) {
+    return DebounceExtension1(this, duration, mode);
+  }
+
+  /// Applies throttling to this function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final update = Func1<int, void>((value) async {
+  ///   await api.update(value);
+  /// }).throttle(Duration(milliseconds: 1000));
+  /// ```
+  Func1<T, R> throttle(
+    Duration duration, {
+    ThrottleMode mode = ThrottleMode.leading,
+  }) {
+    return ThrottleExtension1(this, duration, mode);
+  }
+
+  /// Adds a delay before and/or after execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final save = Func1<String, void>((data) async {
+  ///   await storage.save(data);
+  /// }).delay(Duration(milliseconds: 500));
+  /// ```
+  Func1<T, R> delay(
+    Duration duration, {
+    DelayMode mode = DelayMode.before,
+  }) {
+    return DelayExtension1(this, duration, mode);
+  }
+
+  /// Adds a timeout to this function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetch = Func1<String, Data>((id) async {
+  ///   return await api.fetch(id);
+  /// }).timeout(Duration(seconds: 5));
+  /// ```
+  Func1<T, R> timeout(
+    Duration duration, {
+    FutureOr<R> Function()? onTimeout,
+  }) {
+    return TimeoutExtension1(this, duration, onTimeout);
+  }
+}
+
+/// A wrapper for async functions with two parameters.
+///
+/// Example:
+/// ```dart
+/// final fetchPosts = Func2<String, int, List<Post>>((userId, limit) async {
+///   return await api.getPosts(userId, limit);
+/// });
+/// ```
+class Func2<T1, T2, R> {
+  /// Creates a [Func2] wrapping the provided async function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final myFunc = Func2<int, int, int>((a, b) async {
+  ///   return a + b;
+  /// });
+  /// ```
+  Func2(this._function);
+
+  final AsyncFunction2<T1, T2, R> _function;
+
+  /// Executes the wrapped function with the provided arguments.
+  ///
+  /// Example:
+  /// ```dart
+  /// final result = await myFunc(10, 20);
+  /// ```
+  Future<R> call(T1 arg1, T2 arg2) => _function(arg1, arg2);
+
+  /// Applies debouncing to this function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final search = Func2<String, int, List<Result>>((query, limit) async {
+  ///   return await api.search(query, limit);
+  /// }).debounce(Duration(milliseconds: 300));
+  /// ```
+  Func2<T1, T2, R> debounce(
+    Duration duration, {
+    DebounceMode mode = DebounceMode.trailing,
+  }) {
+    return DebounceExtension2(this, duration, mode);
+  }
+
+  /// Applies throttling to this function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final update = Func2<String, int, void>((id, value) async {
+  ///   await api.update(id, value);
+  /// }).throttle(Duration(milliseconds: 1000));
+  /// ```
+  Func2<T1, T2, R> throttle(
+    Duration duration, {
+    ThrottleMode mode = ThrottleMode.leading,
+  }) {
+    return ThrottleExtension2(this, duration, mode);
+  }
+
+  /// Adds a delay before and/or after execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final save = Func2<String, String, void>((key, value) async {
+  ///   await storage.save(key, value);
+  /// }).delay(Duration(milliseconds: 500));
+  /// ```
+  Func2<T1, T2, R> delay(
+    Duration duration, {
+    DelayMode mode = DelayMode.before,
+  }) {
+    return DelayExtension2(this, duration, mode);
+  }
+
+  /// Adds a timeout to this function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetch = Func2<String, int, Data>((id, version) async {
+  ///   return await api.fetch(id, version);
+  /// }).timeout(Duration(seconds: 5));
+  /// ```
+  Func2<T1, T2, R> timeout(
+    Duration duration, {
+    FutureOr<R> Function()? onTimeout,
+  }) {
+    return TimeoutExtension2(this, duration, onTimeout);
+  }
+}
