@@ -1,0 +1,32 @@
+/// Funx - A zero-dependency function execution control library for Dart.
+///
+/// Funx provides a comprehensive set of execution control mechanisms for async
+/// and sync functions, including timing controls, concurrency management,
+/// reliability patterns, and performance optimizations.
+///
+/// Example:
+/// ```dart
+/// import 'package:funx/funx.dart';
+///
+/// // Create a debounced search function
+/// final search = Func<List<Result>>(() async {
+///   return await api.search(query);
+/// }).debounce(Duration(milliseconds: 300));
+///
+/// // Use it
+/// final results = await search();
+/// ```
+library;
+
+// Core
+export 'src/core/func.dart';
+export 'src/core/func_sync.dart';
+export 'src/core/types.dart';
+
+// Timing
+export 'src/timing/debounce.dart';
+export 'src/timing/defer.dart';
+export 'src/timing/delay.dart';
+export 'src/timing/idle_callback.dart';
+export 'src/timing/throttle.dart';
+export 'src/timing/timeout.dart';
