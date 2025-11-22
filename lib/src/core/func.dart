@@ -13,6 +13,7 @@ import 'package:funx/src/concurrency/queue.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
+import 'package:funx/src/performance/lazy.dart';
 import 'package:funx/src/performance/once.dart';
 import 'package:funx/src/reliability/backoff.dart';
 import 'package:funx/src/reliability/circuit_breaker.dart';
@@ -343,6 +344,17 @@ class Func<R> {
   Func<R> once() {
     return OnceExtension(this);
   }
+
+  /// Defers execution until the function is first called.
+  ///
+  /// Example:
+  /// ```dart
+  /// final connection = Func(() async => await connect())
+  ///   .lazy();
+  /// ```
+  Func<R> lazy() {
+    return LazyExtension(this);
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -601,6 +613,17 @@ class Func1<T, R> {
   Func1<T, R> once() {
     return OnceExtension1(this);
   }
+
+  /// Defers execution until the function is first called.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loadResource = Func1((String path) async => await load(path))
+  ///   .lazy();
+  /// ```
+  Func1<T, R> lazy() {
+    return LazyExtension1(this);
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -858,5 +881,17 @@ class Func2<T1, T2, R> {
   /// ```
   Func2<T1, T2, R> once() {
     return OnceExtension2(this);
+  }
+
+  /// Defers execution until the function is first called.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loadResource = Func2(
+  /// (String path, String locale) async => await load(path, locale))
+  ///   .lazy();
+  /// ```
+  Func2<T1, T2, R> lazy() {
+    return LazyExtension2(this);
   }
 }
