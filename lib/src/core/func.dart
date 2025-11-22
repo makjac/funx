@@ -17,6 +17,7 @@ import 'package:funx/src/performance/deduplicate.dart';
 import 'package:funx/src/performance/lazy.dart';
 import 'package:funx/src/performance/memoize.dart';
 import 'package:funx/src/performance/once.dart';
+import 'package:funx/src/performance/rate_limit.dart';
 import 'package:funx/src/performance/share.dart';
 import 'package:funx/src/reliability/backoff.dart';
 import 'package:funx/src/reliability/circuit_breaker.dart';
@@ -404,6 +405,30 @@ class Func<R> {
   Func<R> share() {
     return ShareExtension(this);
   }
+
+  /// Limits execution rate using various strategies.
+  ///
+  /// Example:
+  /// ```dart
+  /// final apiCall = Func(() async => await api.call())
+  ///   .rateLimit(
+  ///     maxCalls: 10,
+  ///     window: Duration(seconds: 1),
+  ///     strategy: RateLimitStrategy.tokenBucket,
+  ///   );
+  /// ```
+  Func<R> rateLimit({
+    required int maxCalls,
+    required Duration window,
+    RateLimitStrategy strategy = RateLimitStrategy.tokenBucket,
+  }) {
+    return RateLimitExtension(
+      this,
+      maxCalls: maxCalls,
+      window: window,
+      strategy: strategy,
+    );
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -718,6 +743,30 @@ class Func1<T, R> {
   /// ```
   Func1<T, R> share() {
     return ShareExtension1(this);
+  }
+
+  /// Limits execution rate using various strategies.
+  ///
+  /// Example:
+  /// ```dart
+  /// final apiCall = Func1((String id) async => await api.call(id))
+  ///   .rateLimit(
+  ///     maxCalls: 10,
+  ///     window: Duration(seconds: 1),
+  ///     strategy: RateLimitStrategy.tokenBucket,
+  ///   );
+  /// ```
+  Func1<T, R> rateLimit({
+    required int maxCalls,
+    required Duration window,
+    RateLimitStrategy strategy = RateLimitStrategy.tokenBucket,
+  }) {
+    return RateLimitExtension1(
+      this,
+      maxCalls: maxCalls,
+      window: window,
+      strategy: strategy,
+    );
   }
 }
 
@@ -1038,5 +1087,30 @@ class Func2<T1, T2, R> {
   /// ```
   Func2<T1, T2, R> share() {
     return ShareExtension2(this);
+  }
+
+  /// Limits execution rate using various strategies.
+  ///
+  /// Example:
+  /// ```dart
+  /// final apiCall = Func2(
+  /// (String id, int count) async => await api.call(id, count))
+  ///   .rateLimit(
+  ///     maxCalls: 10,
+  ///     window: Duration(seconds: 1),
+  ///     strategy: RateLimitStrategy.tokenBucket,
+  ///   );
+  /// ```
+  Func2<T1, T2, R> rateLimit({
+    required int maxCalls,
+    required Duration window,
+    RateLimitStrategy strategy = RateLimitStrategy.tokenBucket,
+  }) {
+    return RateLimitExtension2(
+      this,
+      maxCalls: maxCalls,
+      window: window,
+      strategy: strategy,
+    );
   }
 }
