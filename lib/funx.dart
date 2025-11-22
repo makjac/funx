@@ -17,6 +17,7 @@
 /// final results = await search();
 /// ```
 library;
+export 'src/concurrency/lock.dart';
 
 // Core
 export 'src/core/func.dart';
