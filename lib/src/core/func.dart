@@ -7,6 +7,7 @@ import 'package:funx/src/concurrency/barrier.dart';
 import 'package:funx/src/concurrency/bulkhead.dart';
 import 'package:funx/src/concurrency/countdown_latch.dart';
 import 'package:funx/src/concurrency/lock.dart';
+import 'package:funx/src/concurrency/monitor.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
@@ -236,6 +237,18 @@ class Func<R> {
   Func<R> countdownLatch(CountdownLatch latch) {
     return CountdownLatchExtension(this, latch);
   }
+
+  /// Executes within a monitor.
+  ///
+  /// Example:
+  /// ```dart
+  /// final monitor = Monitor();
+  /// final task = Func(() async => await criticalSection())
+  ///   .monitor(monitor);
+  /// ```
+  Func<R> monitor(Monitor monitor) {
+    return MonitorExtension(this, monitor);
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -398,6 +411,11 @@ class Func1<T, R> {
   Func1<T, R> countdownLatch(CountdownLatch latch) {
     return CountdownLatchExtension1(this, latch);
   }
+
+  /// Executes within a monitor.
+  Func1<T, R> monitor(Monitor monitor) {
+    return MonitorExtension1(this, monitor);
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -559,5 +577,10 @@ class Func2<T1, T2, R> {
   /// Counts down a latch after execution.
   Func2<T1, T2, R> countdownLatch(CountdownLatch latch) {
     return CountdownLatchExtension2(this, latch);
+  }
+
+  /// Executes within a monitor.
+  Func2<T1, T2, R> monitor(Monitor monitor) {
+    return MonitorExtension2(this, monitor);
   }
 }
