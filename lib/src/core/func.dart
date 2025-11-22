@@ -12,6 +12,11 @@ import 'package:funx/src/concurrency/queue.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
+import 'package:funx/src/reliability/backoff.dart';
+import 'package:funx/src/reliability/circuit_breaker.dart';
+import 'package:funx/src/reliability/fallback.dart';
+import 'package:funx/src/reliability/recover.dart';
+import 'package:funx/src/reliability/retry.dart';
 import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
 import 'package:funx/src/timing/throttle.dart';
@@ -250,6 +255,79 @@ class Func<R> {
   Func<R> monitor(Monitor monitor) {
     return MonitorExtension(this, monitor);
   }
+
+  /// Applies retry logic with configurable backoff.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetch = Func(() async => await api.getData())
+  ///   .retry(
+  ///     maxAttempts: 3,
+  ///     backoff: ExponentialBackoff(initialDelay: Duration(milliseconds: 100))
+  ///   );
+  /// ```
+  Func<R> retry({
+    int maxAttempts = 3,
+    BackoffStrategy? backoff,
+    bool Function(Object error)? retryIf,
+    void Function(int attempt, Object error)? onRetry,
+  }) {
+    return RetryExtension(
+      this,
+      maxAttempts: maxAttempts,
+      backoff: backoff,
+      retryIf: retryIf,
+      onRetry: onRetry,
+    );
+  }
+
+  /// Applies circuit breaker pattern.
+  ///
+  /// Example:
+  /// ```dart
+  /// final breaker = CircuitBreaker(failureThreshold: 5);
+  /// final fetch = Func(() async => await api.getData())
+  ///   .circuitBreaker(breaker);
+  /// ```
+  Func<R> circuitBreaker(CircuitBreaker breaker) {
+    return CircuitBreakerExtension(this, breaker);
+  }
+
+  /// Provides a fallback value or function on error.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetch = Func(() async => await api.getData())
+  ///   .fallback(fallbackValue: 'default');
+  /// ```
+  Func<R> fallback({
+    R? fallbackValue,
+    Func<R>? fallbackFunction,
+    bool Function(Object error)? fallbackIf,
+    void Function(Object error)? onFallback,
+  }) {
+    return FallbackExtension(
+      this,
+      fallbackValue: fallbackValue,
+      fallbackFunction: fallbackFunction,
+      fallbackIf: fallbackIf,
+      onFallback: onFallback,
+    );
+  }
+
+  /// Applies error recovery strategy.
+  ///
+  /// Example:
+  /// ```dart
+  /// final strategy = RecoveryStrategy(
+  ///   onError: (error) async => await reconnect(),
+  /// );
+  /// final fetch = Func(() async => await api.getData())
+  ///   .recover(strategy);
+  /// ```
+  Func<R> recover(RecoveryStrategy strategy) {
+    return RecoverExtension(this, strategy);
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -445,6 +523,56 @@ class Func1<T, R> {
       maxQueueSize,
     );
   }
+
+  /// Applies retry logic with configurable backoff.
+  ///
+  /// See [Func.retry] for details.
+  Func1<T, R> retry({
+    int maxAttempts = 3,
+    BackoffStrategy? backoff,
+    bool Function(Object error)? retryIf,
+    void Function(int attempt, Object error)? onRetry,
+  }) {
+    return RetryExtension1(
+      this,
+      maxAttempts: maxAttempts,
+      backoff: backoff,
+      retryIf: retryIf,
+      onRetry: onRetry,
+    );
+  }
+
+  /// Applies circuit breaker pattern.
+  ///
+  /// See [Func.circuitBreaker] for details.
+  Func1<T, R> circuitBreaker(CircuitBreaker breaker) {
+    return CircuitBreakerExtension1(this, breaker);
+  }
+
+  /// Provides a fallback value or function on error.
+  ///
+  /// See [Func.fallback] for details.
+  Func1<T, R> fallback({
+    R? fallbackValue,
+    Func1<T, R>? fallbackFunction,
+    bool Function(Object error)? fallbackIf,
+    void Function(Object error)? onFallback,
+  }) {
+    return FallbackExtension1(
+      this,
+      fallbackValue: fallbackValue,
+      fallbackFunction: fallbackFunction,
+      fallbackIf: fallbackIf,
+      onFallback: onFallback,
+    );
+  }
+
+  /// Applies error recovery strategy.
+  ///
+  /// See [Func.recover] for details.
+  Func1<T, R> recover(RecoveryStrategy strategy) {
+    return RecoverExtension1(this, strategy);
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -637,5 +765,55 @@ class Func2<T1, T2, R> {
       onQueueChange,
       maxQueueSize,
     );
+  }
+
+  /// Applies retry logic with configurable backoff.
+  ///
+  /// See [Func.retry] for details.
+  Func2<T1, T2, R> retry({
+    int maxAttempts = 3,
+    BackoffStrategy? backoff,
+    bool Function(Object error)? retryIf,
+    void Function(int attempt, Object error)? onRetry,
+  }) {
+    return RetryExtension2(
+      this,
+      maxAttempts: maxAttempts,
+      backoff: backoff,
+      retryIf: retryIf,
+      onRetry: onRetry,
+    );
+  }
+
+  /// Applies circuit breaker pattern.
+  ///
+  /// See [Func.circuitBreaker] for details.
+  Func2<T1, T2, R> circuitBreaker(CircuitBreaker breaker) {
+    return CircuitBreakerExtension2(this, breaker);
+  }
+
+  /// Provides a fallback value or function on error.
+  ///
+  /// See [Func.fallback] for details.
+  Func2<T1, T2, R> fallback({
+    R? fallbackValue,
+    Func2<T1, T2, R>? fallbackFunction,
+    bool Function(Object error)? fallbackIf,
+    void Function(Object error)? onFallback,
+  }) {
+    return FallbackExtension2(
+      this,
+      fallbackValue: fallbackValue,
+      fallbackFunction: fallbackFunction,
+      fallbackIf: fallbackIf,
+      onFallback: onFallback,
+    );
+  }
+
+  /// Applies error recovery strategy.
+  ///
+  /// See [Func.recover] for details.
+  Func2<T1, T2, R> recover(RecoveryStrategy strategy) {
+    return RecoverExtension2(this, strategy);
   }
 }
