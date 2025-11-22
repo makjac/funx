@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:funx/src/concurrency/lock.dart';
+import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/core/types.dart';
 import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
@@ -133,6 +134,36 @@ class Func<R> {
       throwOnTimeout: throwOnTimeout,
     );
   }
+
+  /// Applies read lock using the provided RWLock.
+  ///
+  /// Example:
+  /// ```dart
+  /// final rwLock = RWLock();
+  /// final fetch = Func(() async => await db.read())
+  ///   .readLock(rwLock);
+  /// ```
+  Func<R> readLock(
+    RWLock rwLock, {
+    Duration? timeout,
+  }) {
+    return ReadLockExtension(this, rwLock, timeout);
+  }
+
+  /// Applies write lock using the provided RWLock.
+  ///
+  /// Example:
+  /// ```dart
+  /// final rwLock = RWLock();
+  /// final save = Func(() async => await db.write())
+  ///   .writeLock(rwLock);
+  /// ```
+  Func<R> writeLock(
+    RWLock rwLock, {
+    Duration? timeout,
+  }) {
+    return WriteLockExtension(this, rwLock, timeout);
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -237,6 +268,22 @@ class Func1<T, R> {
       throwOnTimeout: throwOnTimeout,
     );
   }
+
+  /// Applies read lock using the provided RWLock.
+  Func1<T, R> readLock(
+    RWLock rwLock, {
+    Duration? timeout,
+  }) {
+    return ReadLockExtension1(this, rwLock, timeout);
+  }
+
+  /// Applies write lock using the provided RWLock.
+  Func1<T, R> writeLock(
+    RWLock rwLock, {
+    Duration? timeout,
+  }) {
+    return WriteLockExtension1(this, rwLock, timeout);
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -340,5 +387,21 @@ class Func2<T1, T2, R> {
       onBlocked,
       throwOnTimeout: throwOnTimeout,
     );
+  }
+
+  /// Applies read lock using the provided RWLock.
+  Func2<T1, T2, R> readLock(
+    RWLock rwLock, {
+    Duration? timeout,
+  }) {
+    return ReadLockExtension2(this, rwLock, timeout);
+  }
+
+  /// Applies write lock using the provided RWLock.
+  Func2<T1, T2, R> writeLock(
+    RWLock rwLock, {
+    Duration? timeout,
+  }) {
+    return WriteLockExtension2(this, rwLock, timeout);
   }
 }
