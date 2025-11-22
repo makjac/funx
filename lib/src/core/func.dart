@@ -13,6 +13,7 @@ import 'package:funx/src/concurrency/queue.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
+import 'package:funx/src/performance/batch.dart';
 import 'package:funx/src/performance/deduplicate.dart';
 import 'package:funx/src/performance/lazy.dart';
 import 'package:funx/src/performance/memoize.dart';
@@ -767,6 +768,30 @@ class Func1<T, R> {
     return ShareExtension1(this);
   }
 
+  /// Batches multiple calls for efficient processing.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUsers = Func1((String id) async => await api.getUser(id))
+  ///   .batch(
+  ///     executor: Func1((ids) async => await api.getUsers(ids)),
+  ///     maxSize: 10,
+  ///     maxWait: Duration(seconds: 1),
+  ///   );
+  /// ```
+  Func1<T, R> batch({
+    required Func1<List<T>, void> executor,
+    int maxSize = 10,
+    Duration maxWait = const Duration(seconds: 1),
+  }) {
+    return BatchExtension(
+      this,
+      executor: executor,
+      maxSize: maxSize,
+      maxWait: maxWait,
+    );
+  }
+
   /// Limits execution rate using various strategies.
   ///
   /// Example:
@@ -1130,6 +1155,30 @@ class Func2<T1, T2, R> {
   /// ```
   Func2<T1, T2, R> share() {
     return ShareExtension2(this);
+  }
+
+  /// Batches multiple calls for efficient processing.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchData = Func2(
+  /// (String key, int ver) async => await api.get(key, ver))
+  ///   .batch(
+  ///     executor: Func1((pairs) async => await api.getBatch(pairs)),
+  ///     maxSize: 10,\n  ///     maxWait: Duration(seconds: 1),
+  ///   );
+  /// ```
+  Func2<T1, T2, R> batch({
+    required Func1<List<(T1, T2)>, void> executor,
+    int maxSize = 10,
+    Duration maxWait = const Duration(seconds: 1),
+  }) {
+    return BatchExtension2(
+      this,
+      executor: executor,
+      maxSize: maxSize,
+      maxWait: maxWait,
+    );
   }
 
   /// Limits execution rate using various strategies.
