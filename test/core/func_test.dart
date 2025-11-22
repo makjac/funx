@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:funx/src/core/func.dart' as funx;
+import 'package:funx/src/reliability/circuit_breaker.dart';
+import 'package:funx/src/reliability/recover.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -248,6 +250,93 @@ void main() {
       }).timeout(const Duration(milliseconds: 50));
 
       expect(() => func(10, 20), throwsA(isA<Exception>()));
+    });
+  });
+
+  group('Func.retry', () {
+    test('can retry on failure', () async {
+      var attempts = 0;
+      final func = funx.Func<String>(() async {
+        attempts++;
+        if (attempts < 3) throw Exception('Failed');
+        return 'success';
+      }).retry(maxAttempts: 3);
+
+      final result = await func();
+      expect(result, equals('success'));
+      expect(attempts, equals(3));
+    });
+  });
+
+  group('Func.circuitBreaker', () {
+    test('can use circuit breaker', () async {
+      final breaker = CircuitBreaker(failureThreshold: 2);
+      final func = funx.Func<String>(
+        () async => 'success',
+      ).circuitBreaker(breaker);
+
+      final result = await func();
+      expect(result, equals('success'));
+      expect(breaker.state, equals(CircuitBreakerState.closed));
+    });
+  });
+
+  group('Func.fallback', () {
+    test('can use fallback value', () async {
+      final func = funx.Func<String>(
+        () async => throw Exception('error'),
+      ).fallback(fallbackValue: 'fallback');
+
+      final result = await func();
+      expect(result, equals('fallback'));
+    });
+  });
+
+  group('Func.recover', () {
+    test('can recover from errors', () async {
+      var recoveryCalled = false;
+      final strategy = RecoveryStrategy(
+        onError: (error) async {
+          recoveryCalled = true;
+        },
+      );
+
+      final func = funx.Func<String>(
+        () async => throw Exception('error'),
+      ).recover(strategy);
+
+      await expectLater(func(), throwsA(isA<Exception>()));
+      expect(recoveryCalled, isTrue);
+    });
+  });
+
+  group('Func1.retry', () {
+    test('can retry on failure', () async {
+      var attempts = 0;
+      final func = funx.Func1<int, String>((value) async {
+        attempts++;
+        if (attempts < 2) throw Exception('Failed');
+        return 'value: $value';
+      }).retry(maxAttempts: 3);
+
+      final result = await func(42);
+      expect(result, equals('value: 42'));
+      expect(attempts, equals(2));
+    });
+  });
+
+  group('Func2.retry', () {
+    test('can retry on failure', () async {
+      var attempts = 0;
+      final func = funx.Func2<int, String, String>((n, str) async {
+        attempts++;
+        if (attempts < 2) throw Exception('Failed');
+        return '$str: $n';
+      }).retry(maxAttempts: 3);
+
+      final result = await func(42, 'answer');
+      expect(result, equals('answer: 42'));
+      expect(attempts, equals(2));
     });
   });
 }
