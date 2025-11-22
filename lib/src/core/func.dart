@@ -14,6 +14,7 @@ import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
 import 'package:funx/src/performance/batch.dart';
+import 'package:funx/src/performance/compress.dart';
 import 'package:funx/src/performance/deduplicate.dart';
 import 'package:funx/src/performance/lazy.dart';
 import 'package:funx/src/performance/memoize.dart';
@@ -834,6 +835,59 @@ class Func1<T, R> {
       this,
       trigger: trigger,
       keepFresh: keepFresh,
+    );
+  }
+
+  /// Compresses string output using gzip or zlib compression.
+  ///
+  /// Only available when R is String. Use compressBytes for List\<int>.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchLargeText = Func1(
+  /// (String id) async => await api.getLargeText(id))
+  ///   .compress(
+  ///     threshold: 1024,
+  ///     algorithm: CompressionAlgorithm.gzip,
+  ///     level: CompressionLevel.balanced,
+  ///   );
+  /// ```
+  CompressExtension1<R> compress({
+    int threshold = 1024,
+    CompressionAlgorithm algorithm = CompressionAlgorithm.gzip,
+    CompressionLevel level = CompressionLevel.balanced,
+  }) {
+    return CompressExtension1(
+      this as Func1<String, R>,
+      threshold: threshold,
+      algorithm: algorithm,
+      level: level,
+    );
+  }
+
+  /// Compresses byte output using gzip or zlib compression.
+  ///
+  /// Only available when R is List\<int>.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchData = Func1((String id) async => await api.getData(id))
+  ///   .compressBytes(
+  ///     threshold: 1024,
+  ///     algorithm: CompressionAlgorithm.gzip,
+  ///     level: CompressionLevel.balanced,
+  ///   );
+  /// ```
+  CompressBytesExtension1<R> compressBytes({
+    int threshold = 1024,
+    CompressionAlgorithm algorithm = CompressionAlgorithm.gzip,
+    CompressionLevel level = CompressionLevel.balanced,
+  }) {
+    return CompressBytesExtension1(
+      this as Func1<Uint8List, R>,
+      threshold: threshold,
+      algorithm: algorithm,
+      level: level,
     );
   }
 }
