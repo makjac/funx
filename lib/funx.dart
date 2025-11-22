@@ -35,6 +35,7 @@ export 'src/core/types.dart';
 
 // Reliability
 export 'src/reliability/circuit_breaker.dart';
+export 'src/reliability/fallback.dart';
 export 'src/reliability/retry.dart';
 
 // Timing

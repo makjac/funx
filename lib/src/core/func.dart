@@ -13,6 +13,7 @@ import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
 import 'package:funx/src/reliability/circuit_breaker.dart';
+import 'package:funx/src/reliability/fallback.dart';
 import 'package:funx/src/reliability/retry.dart';
 import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
@@ -289,6 +290,28 @@ class Func<R> {
   Func<R> circuitBreaker(CircuitBreaker breaker) {
     return CircuitBreakerExtension(this, breaker);
   }
+
+  /// Provides a fallback value or function on error.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetch = Func(() async => await api.getData())
+  ///   .fallback(fallbackValue: 'default');
+  /// ```
+  Func<R> fallback({
+    R? fallbackValue,
+    Func<R>? fallbackFunction,
+    bool Function(Object error)? fallbackIf,
+    void Function(Object error)? onFallback,
+  }) {
+    return FallbackExtension(
+      this,
+      fallbackValue: fallbackValue,
+      fallbackFunction: fallbackFunction,
+      fallbackIf: fallbackIf,
+      onFallback: onFallback,
+    );
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -509,6 +532,24 @@ class Func1<T, R> {
   Func1<T, R> circuitBreaker(CircuitBreaker breaker) {
     return CircuitBreakerExtension1(this, breaker);
   }
+
+  /// Provides a fallback value or function on error.
+  ///
+  /// See [Func.fallback] for details.
+  Func1<T, R> fallback({
+    R? fallbackValue,
+    Func1<T, R>? fallbackFunction,
+    bool Function(Object error)? fallbackIf,
+    void Function(Object error)? onFallback,
+  }) {
+    return FallbackExtension1(
+      this,
+      fallbackValue: fallbackValue,
+      fallbackFunction: fallbackFunction,
+      fallbackIf: fallbackIf,
+      onFallback: onFallback,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -726,5 +767,23 @@ class Func2<T1, T2, R> {
   /// See [Func.circuitBreaker] for details.
   Func2<T1, T2, R> circuitBreaker(CircuitBreaker breaker) {
     return CircuitBreakerExtension2(this, breaker);
+  }
+
+  /// Provides a fallback value or function on error.
+  ///
+  /// See [Func.fallback] for details.
+  Func2<T1, T2, R> fallback({
+    R? fallbackValue,
+    Func2<T1, T2, R>? fallbackFunction,
+    bool Function(Object error)? fallbackIf,
+    void Function(Object error)? onFallback,
+  }) {
+    return FallbackExtension2(
+      this,
+      fallbackValue: fallbackValue,
+      fallbackFunction: fallbackFunction,
+      fallbackIf: fallbackIf,
+      onFallback: onFallback,
+    );
   }
 }
