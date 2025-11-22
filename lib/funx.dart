@@ -34,6 +34,7 @@ export 'src/core/func_sync.dart';
 export 'src/core/types.dart';
 
 // Performance
+export 'src/performance/deduplicate.dart';
 export 'src/performance/lazy.dart';
 export 'src/performance/memoize.dart';
 export 'src/performance/once.dart';

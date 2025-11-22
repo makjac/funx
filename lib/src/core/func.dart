@@ -13,6 +13,7 @@ import 'package:funx/src/concurrency/queue.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
+import 'package:funx/src/performance/deduplicate.dart';
 import 'package:funx/src/performance/lazy.dart';
 import 'package:funx/src/performance/memoize.dart';
 import 'package:funx/src/performance/once.dart';
@@ -380,6 +381,17 @@ class Func<R> {
       evictionPolicy: evictionPolicy,
     );
   }
+
+  /// Prevents duplicate executions within a time window.
+  ///
+  /// Example:
+  /// ```dart
+  /// final submit = Func(() async => await submitForm())
+  ///   .deduplicate(window: Duration(seconds: 2));
+  /// ```
+  Func<R> deduplicate({required Duration window}) {
+    return DeduplicateExtension(this, window: window);
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -672,6 +684,17 @@ class Func1<T, R> {
       maxSize: maxSize,
       evictionPolicy: evictionPolicy,
     );
+  }
+
+  /// Prevents duplicate executions per argument within a time window.
+  ///
+  /// Example:
+  /// ```dart
+  /// final submit = Func1((String id) async => await submitForm(id))
+  ///   .deduplicate(window: Duration(seconds: 2));
+  /// ```
+  Func1<T, R> deduplicate({required Duration window}) {
+    return DeduplicateExtension1(this, window: window);
   }
 }
 
@@ -968,5 +991,17 @@ class Func2<T1, T2, R> {
       maxSize: maxSize,
       evictionPolicy: evictionPolicy,
     );
+  }
+
+  /// Prevents duplicate executions per argument pair within a time window.
+  ///
+  /// Example:
+  /// ```dart
+  /// final submit = Func2(
+  ///   (String id, int count) async => await submitForm(id, count))
+  ///   .deduplicate(window: Duration(seconds: 2));
+  /// ```
+  Func2<T1, T2, R> deduplicate({required Duration window}) {
+    return DeduplicateExtension2(this, window: window);
   }
 }
