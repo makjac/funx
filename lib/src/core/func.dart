@@ -2,6 +2,7 @@
 library;
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:funx/src/concurrency/barrier.dart';
 import 'package:funx/src/concurrency/bulkhead.dart';
@@ -12,6 +13,7 @@ import 'package:funx/src/concurrency/queue.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
+import 'package:funx/src/performance/once.dart';
 import 'package:funx/src/reliability/backoff.dart';
 import 'package:funx/src/reliability/circuit_breaker.dart';
 import 'package:funx/src/reliability/fallback.dart';
@@ -328,6 +330,19 @@ class Func<R> {
   Func<R> recover(RecoveryStrategy strategy) {
     return RecoverExtension(this, strategy);
   }
+
+  // Performance methods
+
+  /// Ensures the function executes only once and caches the result.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loadConfig = Func(() async => await loadConfiguration())
+  ///   .once();
+  /// ```
+  Func<R> once() {
+    return OnceExtension(this);
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -573,6 +588,19 @@ class Func1<T, R> {
   Func1<T, R> recover(RecoveryStrategy strategy) {
     return RecoverExtension1(this, strategy);
   }
+
+  // Performance methods
+
+  /// Ensures the function executes only once per argument and caches the result
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func1((String id) async => await api.getUser(id))
+  ///   .once();
+  /// ```
+  Func1<T, R> once() {
+    return OnceExtension1(this);
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -815,5 +843,20 @@ class Func2<T1, T2, R> {
   /// See [Func.recover] for details.
   Func2<T1, T2, R> recover(RecoveryStrategy strategy) {
     return RecoverExtension2(this, strategy);
+  }
+
+  // Performance methods
+
+  /// Ensures the function executes only once per argument pair and caches the
+  /// result.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchData = Func2(
+  /// (String key, int version) async => await api.get(key, version))
+  ///   .once();
+  /// ```
+  Func2<T1, T2, R> once() {
+    return OnceExtension2(this);
   }
 }

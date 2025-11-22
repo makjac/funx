@@ -33,6 +33,9 @@ export 'src/core/func.dart';
 export 'src/core/func_sync.dart';
 export 'src/core/types.dart';
 
+// Performance
+export 'src/performance/once.dart';
+
 // Reliability
 export 'src/reliability/backoff.dart';
 export 'src/reliability/circuit_breaker.dart';
