@@ -1,3 +1,42 @@
+## 0.3.0
+
+- **Retry**: Automatic retry with configurable backoff strategies
+  - `RetryExtension`, `RetryExtension1`, `RetryExtension2` for `Func`, `Func1`, `Func2`
+  - Configurable maximum attempts
+  - Multiple backoff strategies:
+    - `ConstantBackoff`: Fixed delay between retries
+    - `LinearBackoff`: Linearly increasing delays
+    - `ExponentialBackoff`: Exponentially increasing delays (default)
+    - `FibonacciBackoff`: Fibonacci sequence-based delays
+    - `DecorrelatedJitterBackoff`: Randomized exponential backoff
+    - `CustomBackoff`: User-defined backoff logic
+  - Optional retry predicate (`retryIf`)
+  - Retry callbacks (`onRetry`)
+
+- **CircuitBreaker**: Prevent cascading failures with circuit breaker pattern
+  - `CircuitBreaker` class with three states (CLOSED, OPEN, HALF_OPEN)
+  - `CircuitBreakerExtension`, `CircuitBreakerExtension1`, `CircuitBreakerExtension2`
+  - Configurable failure threshold
+  - Configurable success threshold for recovery
+  - Automatic state transitions
+  - State change callbacks
+  - Reset functionality
+
+- **Fallback**: Provide fallback values or functions on error
+  - `FallbackExtension`, `FallbackExtension1`, `FallbackExtension2`
+  - Fallback value or fallback function support
+  - Optional fallback predicate (`fallbackIf`)
+  - Fallback callbacks (`onFallback`)
+  - Chainable fallback cascades
+
+- **Recover**: Execute recovery actions on errors
+  - `RecoveryStrategy` class for defining recovery behavior
+  - `RecoverExtension`, `RecoverExtension1`, `RecoverExtension2`
+  - Configurable recovery actions
+  - Optional recovery predicate (`shouldRecover`)
+  - Configurable error rethrow behavior
+  - Support for cleanup, reconnection, and state reset patterns
+
 ## 0.2.0
 
 ### Core Concurrency Primitives
