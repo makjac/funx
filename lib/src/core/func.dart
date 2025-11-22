@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:funx/src/concurrency/barrier.dart';
 import 'package:funx/src/concurrency/bulkhead.dart';
 import 'package:funx/src/concurrency/lock.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
@@ -210,6 +211,18 @@ class Func<R> {
       onIsolationFailure,
     );
   }
+
+  /// Synchronizes at a barrier.
+  ///
+  /// Example:
+  /// ```dart
+  /// final barrier = Barrier(parties: 3);
+  /// final worker = Func(() async => await doWork())
+  ///   .barrier(barrier);
+  /// ```
+  Func<R> barrier(Barrier barrier) {
+    return BarrierExtension(this, barrier);
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -362,6 +375,11 @@ class Func1<T, R> {
       onIsolationFailure,
     );
   }
+
+  /// Synchronizes at a barrier.
+  Func1<T, R> barrier(Barrier barrier) {
+    return BarrierExtension1(this, barrier);
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -513,5 +531,10 @@ class Func2<T1, T2, R> {
       timeout,
       onIsolationFailure,
     );
+  }
+
+  /// Synchronizes at a barrier.
+  Func2<T1, T2, R> barrier(Barrier barrier) {
+    return BarrierExtension2(this, barrier);
   }
 }
