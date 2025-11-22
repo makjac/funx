@@ -14,6 +14,7 @@ import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
 import 'package:funx/src/performance/batch.dart';
+import 'package:funx/src/performance/cache_aside.dart';
 import 'package:funx/src/performance/compress.dart';
 import 'package:funx/src/performance/deduplicate.dart';
 import 'package:funx/src/performance/lazy.dart';
@@ -890,6 +891,27 @@ class Func1<T, R> {
       level: level,
     );
   }
+
+  /// Implements cache-aside pattern with automatic cache management.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func1((String id) async => await api.getUser(id))
+  ///   .cacheAside(
+  ///     ttl: Duration(minutes: 5),
+  ///     refreshStrategy: RefreshStrategy.backgroundRefresh,
+  ///   );
+  /// ```
+  Func1<T, R> cacheAside({
+    Duration? ttl,
+    RefreshStrategy refreshStrategy = RefreshStrategy.none,
+  }) {
+    return CacheAsideExtension1(
+      this,
+      ttl: ttl,
+      refreshStrategy: refreshStrategy,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -1279,6 +1301,28 @@ class Func2<T1, T2, R> {
       this,
       trigger: trigger,
       keepFresh: keepFresh,
+    );
+  }
+
+  /// Implements cache-aside pattern with automatic cache management.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func2(
+  /// (String id, String role) async => await api.getUser(id, role))
+  ///   .cacheAside(
+  ///     ttl: Duration(minutes: 5),
+  ///     refreshStrategy: RefreshStrategy.backgroundRefresh,
+  ///   );
+  /// ```
+  Func2<T1, T2, R> cacheAside({
+    Duration? ttl,
+    RefreshStrategy refreshStrategy = RefreshStrategy.none,
+  }) {
+    return CacheAsideExtension2(
+      this,
+      ttl: ttl,
+      refreshStrategy: refreshStrategy,
     );
   }
 }

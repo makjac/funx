@@ -35,6 +35,7 @@ export 'src/core/types.dart';
 
 // Performance
 export 'src/performance/batch.dart';
+export 'src/performance/cache_aside.dart';
 export 'src/performance/compress.dart';
 export 'src/performance/deduplicate.dart';
 export 'src/performance/lazy.dart';
