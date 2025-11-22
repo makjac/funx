@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:funx/src/concurrency/lock.dart';
 import 'package:funx/src/core/types.dart';
 import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
@@ -112,6 +113,26 @@ class Func<R> {
   }) {
     return TimeoutExtension(this, duration, onTimeout);
   }
+
+  /// Applies mutual exclusion lock to this function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final initDb = Func(() async => await database.initialize())
+  ///   .lock(timeout: Duration(seconds: 5));
+  /// ```
+  Func<R> lock({
+    Duration? timeout,
+    BlockedCallback? onBlocked,
+    bool throwOnTimeout = true,
+  }) {
+    return LockExtension(
+      this,
+      timeout,
+      onBlocked,
+      throwOnTimeout: throwOnTimeout,
+    );
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -202,6 +223,20 @@ class Func1<T, R> {
   }) {
     return TimeoutExtension1(this, duration, onTimeout);
   }
+
+  /// Applies mutual exclusion lock to this function.
+  Func1<T, R> lock({
+    Duration? timeout,
+    BlockedCallback? onBlocked,
+    bool throwOnTimeout = true,
+  }) {
+    return LockExtension1(
+      this,
+      timeout,
+      onBlocked,
+      throwOnTimeout: throwOnTimeout,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -291,5 +326,19 @@ class Func2<T1, T2, R> {
     FutureOr<R> Function()? onTimeout,
   }) {
     return TimeoutExtension2(this, duration, onTimeout);
+  }
+
+  /// Applies mutual exclusion lock to this function.
+  Func2<T1, T2, R> lock({
+    Duration? timeout,
+    BlockedCallback? onBlocked,
+    bool throwOnTimeout = true,
+  }) {
+    return LockExtension2(
+      this,
+      timeout,
+      onBlocked,
+      throwOnTimeout: throwOnTimeout,
+    );
   }
 }
