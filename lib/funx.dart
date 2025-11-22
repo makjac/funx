@@ -35,6 +35,7 @@ export 'src/core/types.dart';
 
 // Performance
 export 'src/performance/lazy.dart';
+export 'src/performance/memoize.dart';
 export 'src/performance/once.dart';
 
 // Reliability

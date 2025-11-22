@@ -14,6 +14,7 @@ import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
 import 'package:funx/src/performance/lazy.dart';
+import 'package:funx/src/performance/memoize.dart';
 import 'package:funx/src/performance/once.dart';
 import 'package:funx/src/reliability/backoff.dart';
 import 'package:funx/src/reliability/circuit_breaker.dart';
@@ -355,6 +356,30 @@ class Func<R> {
   Func<R> lazy() {
     return LazyExtension(this);
   }
+
+  /// Caches function results with optional TTL and eviction policy.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchData = Func(() async => await api.getData())
+  ///   .memoize(
+  ///     ttl: Duration(minutes: 5),
+  ///     maxSize: 100,
+  ///     evictionPolicy: EvictionPolicy.lru,
+  ///   );
+  /// ```
+  Func<R> memoize({
+    Duration? ttl,
+    int maxSize = 100,
+    EvictionPolicy evictionPolicy = EvictionPolicy.lru,
+  }) {
+    return MemoizeExtension(
+      this,
+      ttl: ttl,
+      maxSize: maxSize,
+      evictionPolicy: evictionPolicy,
+    );
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -623,6 +648,30 @@ class Func1<T, R> {
   /// ```
   Func1<T, R> lazy() {
     return LazyExtension1(this);
+  }
+
+  /// Caches function results per argument with optional TTL and eviction policy
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchData = Func1((String key) async => await api.getData(key))
+  ///   .memoize(
+  ///     ttl: Duration(minutes: 5),
+  ///     maxSize: 100,
+  ///     evictionPolicy: EvictionPolicy.lru,
+  ///   );
+  /// ```
+  Func1<T, R> memoize({
+    Duration? ttl,
+    int maxSize = 100,
+    EvictionPolicy evictionPolicy = EvictionPolicy.lru,
+  }) {
+    return MemoizeExtension1(
+      this,
+      ttl: ttl,
+      maxSize: maxSize,
+      evictionPolicy: evictionPolicy,
+    );
   }
 }
 
@@ -893,5 +942,31 @@ class Func2<T1, T2, R> {
   /// ```
   Func2<T1, T2, R> lazy() {
     return LazyExtension2(this);
+  }
+
+  /// Caches function results per argument pair with optional TTL and eviction
+  /// policy.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchData = Func2(
+  ///   (String key, int id) async => await api.getData(key, id))
+  ///     .memoize(
+  ///       ttl: Duration(minutes: 5),
+  ///       maxSize: 100,
+  ///       evictionPolicy: EvictionPolicy.lru,
+  ///     );
+  /// ```
+  Func2<T1, T2, R> memoize({
+    Duration? ttl,
+    int maxSize = 100,
+    EvictionPolicy evictionPolicy = EvictionPolicy.lru,
+  }) {
+    return MemoizeExtension2(
+      this,
+      ttl: ttl,
+      maxSize: maxSize,
+      evictionPolicy: evictionPolicy,
+    );
   }
 }
