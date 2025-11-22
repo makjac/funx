@@ -17,6 +17,7 @@ import 'package:funx/src/performance/deduplicate.dart';
 import 'package:funx/src/performance/lazy.dart';
 import 'package:funx/src/performance/memoize.dart';
 import 'package:funx/src/performance/once.dart';
+import 'package:funx/src/performance/share.dart';
 import 'package:funx/src/reliability/backoff.dart';
 import 'package:funx/src/reliability/circuit_breaker.dart';
 import 'package:funx/src/reliability/fallback.dart';
@@ -392,6 +393,17 @@ class Func<R> {
   Func<R> deduplicate({required Duration window}) {
     return DeduplicateExtension(this, window: window);
   }
+
+  /// Shares a single execution among concurrent callers.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func(() async => await api.getUser())
+  ///   .share();
+  /// ```
+  Func<R> share() {
+    return ShareExtension(this);
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -695,6 +707,17 @@ class Func1<T, R> {
   /// ```
   Func1<T, R> deduplicate({required Duration window}) {
     return DeduplicateExtension1(this, window: window);
+  }
+
+  /// Shares a single execution among concurrent callers per argument.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func1((String id) async => await api.getUser(id))
+  ///   .share();
+  /// ```
+  Func1<T, R> share() {
+    return ShareExtension1(this);
   }
 }
 
@@ -1003,5 +1026,17 @@ class Func2<T1, T2, R> {
   /// ```
   Func2<T1, T2, R> deduplicate({required Duration window}) {
     return DeduplicateExtension2(this, window: window);
+  }
+
+  /// Shares a single execution among concurrent callers per argument pair.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func2(
+  /// (String id, String role) async => await api.getUser(id, role))
+  ///   .share();
+  /// ```
+  Func2<T1, T2, R> share() {
+    return ShareExtension2(this);
   }
 }

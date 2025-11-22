@@ -38,6 +38,7 @@ export 'src/performance/deduplicate.dart';
 export 'src/performance/lazy.dart';
 export 'src/performance/memoize.dart';
 export 'src/performance/once.dart';
+export 'src/performance/share.dart';
 
 // Reliability
 export 'src/reliability/backoff.dart';
