@@ -3,6 +3,14 @@ library;
 
 import 'dart:async';
 
+import 'package:funx/src/concurrency/barrier.dart';
+import 'package:funx/src/concurrency/bulkhead.dart';
+import 'package:funx/src/concurrency/countdown_latch.dart';
+import 'package:funx/src/concurrency/lock.dart';
+import 'package:funx/src/concurrency/monitor.dart';
+import 'package:funx/src/concurrency/queue.dart';
+import 'package:funx/src/concurrency/rw_lock.dart';
+import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
 import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
@@ -112,6 +120,136 @@ class Func<R> {
   }) {
     return TimeoutExtension(this, duration, onTimeout);
   }
+
+  /// Applies mutual exclusion lock to this function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final initDb = Func(() async => await database.initialize())
+  ///   .lock(timeout: Duration(seconds: 5));
+  /// ```
+  Func<R> lock({
+    Duration? timeout,
+    BlockedCallback? onBlocked,
+    bool throwOnTimeout = true,
+  }) {
+    return LockExtension(
+      this,
+      timeout,
+      onBlocked,
+      throwOnTimeout: throwOnTimeout,
+    );
+  }
+
+  /// Applies read lock using the provided RWLock.
+  ///
+  /// Example:
+  /// ```dart
+  /// final rwLock = RWLock();
+  /// final fetch = Func(() async => await db.read())
+  ///   .readLock(rwLock);
+  /// ```
+  Func<R> readLock(
+    RWLock rwLock, {
+    Duration? timeout,
+  }) {
+    return ReadLockExtension(this, rwLock, timeout);
+  }
+
+  /// Applies write lock using the provided RWLock.
+  ///
+  /// Example:
+  /// ```dart
+  /// final rwLock = RWLock();
+  /// final save = Func(() async => await db.write())
+  ///   .writeLock(rwLock);
+  /// ```
+  Func<R> writeLock(
+    RWLock rwLock, {
+    Duration? timeout,
+  }) {
+    return WriteLockExtension(this, rwLock, timeout);
+  }
+
+  /// Applies semaphore to limit concurrent executions.
+  ///
+  /// Example:
+  /// ```dart
+  /// final download = Func(() async => await http.get(url))
+  ///   .semaphore(maxConcurrent: 3);
+  /// ```
+  Func<R> semaphore({
+    required int maxConcurrent,
+    QueueMode queueMode = QueueMode.fifo,
+    WaitPositionCallback? onWaiting,
+    Duration? timeout,
+  }) {
+    return SemaphoreExtension(
+      this,
+      maxConcurrent,
+      queueMode,
+      onWaiting,
+      timeout,
+    );
+  }
+
+  /// Applies bulkhead isolation.
+  ///
+  /// Example:
+  /// ```dart
+  /// final task = Func(() async => await heavyOperation())
+  ///   .bulkhead(poolSize: 4);
+  /// ```
+  Func<R> bulkhead({
+    required int poolSize,
+    int queueSize = 100,
+    Duration? timeout,
+    ErrorCallback? onIsolationFailure,
+  }) {
+    return BulkheadExtension(
+      this,
+      poolSize,
+      queueSize,
+      timeout,
+      onIsolationFailure,
+    );
+  }
+
+  /// Synchronizes at a barrier.
+  ///
+  /// Example:
+  /// ```dart
+  /// final barrier = Barrier(parties: 3);
+  /// final worker = Func(() async => await doWork())
+  ///   .barrier(barrier);
+  /// ```
+  Func<R> barrier(Barrier barrier) {
+    return BarrierExtension(this, barrier);
+  }
+
+  /// Counts down a latch after execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final latch = CountdownLatch(count: 3);
+  /// final task = Func(() async => await doWork())
+  ///   .countdownLatch(latch);
+  /// ```
+  Func<R> countdownLatch(CountdownLatch latch) {
+    return CountdownLatchExtension(this, latch);
+  }
+
+  /// Executes within a monitor.
+  ///
+  /// Example:
+  /// ```dart
+  /// final monitor = Monitor();
+  /// final task = Func(() async => await criticalSection())
+  ///   .monitor(monitor);
+  /// ```
+  Func<R> monitor(Monitor monitor) {
+    return MonitorExtension(this, monitor);
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -202,6 +340,111 @@ class Func1<T, R> {
   }) {
     return TimeoutExtension1(this, duration, onTimeout);
   }
+
+  /// Applies mutual exclusion lock to this function.
+  Func1<T, R> lock({
+    Duration? timeout,
+    BlockedCallback? onBlocked,
+    bool throwOnTimeout = true,
+  }) {
+    return LockExtension1(
+      this,
+      timeout,
+      onBlocked,
+      throwOnTimeout: throwOnTimeout,
+    );
+  }
+
+  /// Applies read lock using the provided RWLock.
+  Func1<T, R> readLock(
+    RWLock rwLock, {
+    Duration? timeout,
+  }) {
+    return ReadLockExtension1(this, rwLock, timeout);
+  }
+
+  /// Applies write lock using the provided RWLock.
+  Func1<T, R> writeLock(
+    RWLock rwLock, {
+    Duration? timeout,
+  }) {
+    return WriteLockExtension1(this, rwLock, timeout);
+  }
+
+  /// Applies semaphore to limit concurrent executions.
+  Func1<T, R> semaphore({
+    required int maxConcurrent,
+    QueueMode queueMode = QueueMode.fifo,
+    WaitPositionCallback? onWaiting,
+    Duration? timeout,
+  }) {
+    return SemaphoreExtension1(
+      this,
+      maxConcurrent,
+      queueMode,
+      onWaiting,
+      timeout,
+    );
+  }
+
+  /// Applies bulkhead isolation.
+  Func1<T, R> bulkhead({
+    required int poolSize,
+    int queueSize = 100,
+    Duration? timeout,
+    ErrorCallback? onIsolationFailure,
+  }) {
+    return BulkheadExtension1(
+      this,
+      poolSize,
+      queueSize,
+      timeout,
+      onIsolationFailure,
+    );
+  }
+
+  /// Synchronizes at a barrier.
+  Func1<T, R> barrier(Barrier barrier) {
+    return BarrierExtension1(this, barrier);
+  }
+
+  /// Counts down a latch after execution.
+  Func1<T, R> countdownLatch(CountdownLatch latch) {
+    return CountdownLatchExtension1(this, latch);
+  }
+
+  /// Executes within a monitor.
+  Func1<T, R> monitor(Monitor monitor) {
+    return MonitorExtension1(this, monitor);
+  }
+
+  /// Queues executions with configurable concurrency.
+  ///
+  /// Example:
+  /// ```dart
+  /// final task = Func1<String, void>((data) async {
+  ///   await process(data);
+  /// }).queue(
+  ///   concurrency: 1,
+  ///   mode: QueueMode.fifo,
+  /// );
+  /// ```
+  Func1<T, R> queue({
+    required int concurrency,
+    QueueMode mode = QueueMode.fifo,
+    PriorityFunction<T>? priorityFn,
+    QueueChangeCallback? onQueueChange,
+    int? maxQueueSize,
+  }) {
+    return QueueExtension1(
+      this,
+      mode,
+      concurrency,
+      priorityFn,
+      onQueueChange,
+      maxQueueSize,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -291,5 +534,108 @@ class Func2<T1, T2, R> {
     FutureOr<R> Function()? onTimeout,
   }) {
     return TimeoutExtension2(this, duration, onTimeout);
+  }
+
+  /// Applies mutual exclusion lock to this function.
+  Func2<T1, T2, R> lock({
+    Duration? timeout,
+    BlockedCallback? onBlocked,
+    bool throwOnTimeout = true,
+  }) {
+    return LockExtension2(
+      this,
+      timeout,
+      onBlocked,
+      throwOnTimeout: throwOnTimeout,
+    );
+  }
+
+  /// Applies read lock using the provided RWLock.
+  Func2<T1, T2, R> readLock(
+    RWLock rwLock, {
+    Duration? timeout,
+  }) {
+    return ReadLockExtension2(this, rwLock, timeout);
+  }
+
+  /// Applies write lock using the provided RWLock.
+  Func2<T1, T2, R> writeLock(
+    RWLock rwLock, {
+    Duration? timeout,
+  }) {
+    return WriteLockExtension2(this, rwLock, timeout);
+  }
+
+  /// Applies semaphore to limit concurrent executions.
+  Func2<T1, T2, R> semaphore({
+    required int maxConcurrent,
+    QueueMode queueMode = QueueMode.fifo,
+    WaitPositionCallback? onWaiting,
+    Duration? timeout,
+  }) {
+    return SemaphoreExtension2(
+      this,
+      maxConcurrent,
+      queueMode,
+      onWaiting,
+      timeout,
+    );
+  }
+
+  /// Applies bulkhead isolation.
+  Func2<T1, T2, R> bulkhead({
+    required int poolSize,
+    int queueSize = 100,
+    Duration? timeout,
+    ErrorCallback? onIsolationFailure,
+  }) {
+    return BulkheadExtension2(
+      this,
+      poolSize,
+      queueSize,
+      timeout,
+      onIsolationFailure,
+    );
+  }
+
+  /// Synchronizes at a barrier.
+  Func2<T1, T2, R> barrier(Barrier barrier) {
+    return BarrierExtension2(this, barrier);
+  }
+
+  /// Counts down a latch after execution.
+  Func2<T1, T2, R> countdownLatch(CountdownLatch latch) {
+    return CountdownLatchExtension2(this, latch);
+  }
+
+  /// Executes within a monitor.
+  Func2<T1, T2, R> monitor(Monitor monitor) {
+    return MonitorExtension2(this, monitor);
+  }
+
+  /// Queues executions with configurable concurrency.
+  ///
+  /// Example:
+  /// ```dart
+  /// final task = Func2<String, int, void>((data, priority) async {
+  ///   await process(data, priority);
+  /// }).queue(
+  ///   concurrency: 2,
+  ///   mode: QueueMode.fifo,
+  /// );
+  /// ```
+  Func2<T1, T2, R> queue({
+    required int concurrency,
+    QueueMode mode = QueueMode.fifo,
+    QueueChangeCallback? onQueueChange,
+    int? maxQueueSize,
+  }) {
+    return QueueExtension2(
+      this,
+      mode,
+      concurrency,
+      onQueueChange,
+      maxQueueSize,
+    );
   }
 }

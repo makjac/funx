@@ -4,6 +4,8 @@
 /// different mechanisms in the package.
 library;
 
+import 'dart:async';
+
 /// A function that takes no arguments and returns a Future.
 ///
 /// Example:
@@ -157,3 +159,95 @@ enum DelayMode {
   /// Delay both before and after execution.
   both,
 }
+
+/// Queue ordering modes for concurrency mechanisms.
+///
+/// Example:
+/// ```dart
+/// final process = Func((Task task) async => await task.execute())
+///   .queue(mode: QueueMode.fifo);
+/// ```
+enum QueueMode {
+  /// First-in, first-out ordering.
+  fifo,
+
+  /// Last-in, first-out ordering.
+  lifo,
+
+  /// Priority-based ordering.
+  priority,
+}
+
+/// A callback function that is called when waiting for a lock or semaphore.
+///
+/// Example:
+/// ```dart
+/// final fn = Func(() async => await operation())
+///   .lock(onBlocked: () => print('Waiting for lock'));
+/// ```
+typedef BlockedCallback = void Function();
+
+/// A callback function called when queue size changes.
+///
+/// Example:
+/// ```dart
+/// final fn = Func((Task task) async => await task.execute())
+///   .queue(onQueueChange: (size) => print('Queue size: $size'));
+/// ```
+typedef QueueChangeCallback = void Function(int queueSize);
+
+/// A callback function called with current position in queue.
+///
+/// Example:
+/// ```dart
+/// final fn = Func(() async => await operation())
+///   .semaphore(
+///     maxConcurrent: 3,
+///     onWaiting: (pos) => print('Position: $pos'),
+///   );
+/// ```
+typedef WaitPositionCallback = void Function(int position);
+
+/// A function that returns priority value for queue ordering.
+///
+/// Example:
+/// ```dart
+/// final fn = Func((Task task) async => await task.execute())
+///   .queue(
+///     mode: QueueMode.priority,
+///     priorityFn: (task) => task.priority,
+///   );
+/// ```
+typedef PriorityFunction<T> = int Function(T item);
+
+/// A callback function executed when all parties reach a barrier.
+///
+/// Example:
+/// ```dart
+/// final barrier = Barrier(
+///   parties: 3,
+///   barrierAction: () async => print('All parties arrived!'),
+/// );
+/// ```
+typedef BarrierAction = FutureOr<void> Function();
+
+/// A callback function called when a timeout occurs.
+///
+/// Example:
+/// ```dart
+/// final barrier = Barrier(
+///   parties: 3,
+///   timeout: Duration(seconds: 10),
+///   onTimeout: () => print('Barrier timed out!'),
+/// );
+/// ```
+typedef TimeoutCallback = void Function();
+
+/// A predicate function for monitor condition variables.
+///
+/// Example:
+/// ```dart
+/// final monitor = Monitor();
+/// await monitor.waitWhile(() => buffer.isEmpty);
+/// ```
+typedef ConditionPredicate = bool Function();
