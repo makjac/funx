@@ -12,6 +12,7 @@ import 'package:funx/src/concurrency/queue.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
+import 'package:funx/src/reliability/circuit_breaker.dart';
 import 'package:funx/src/reliability/retry.dart';
 import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
@@ -276,6 +277,18 @@ class Func<R> {
       onRetry: onRetry,
     );
   }
+
+  /// Applies circuit breaker pattern.
+  ///
+  /// Example:
+  /// ```dart
+  /// final breaker = CircuitBreaker(failureThreshold: 5);
+  /// final fetch = Func(() async => await api.getData())
+  ///   .circuitBreaker(breaker);
+  /// ```
+  Func<R> circuitBreaker(CircuitBreaker breaker) {
+    return CircuitBreakerExtension(this, breaker);
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -489,6 +502,13 @@ class Func1<T, R> {
       onRetry: onRetry,
     );
   }
+
+  /// Applies circuit breaker pattern.
+  ///
+  /// See [Func.circuitBreaker] for details.
+  Func1<T, R> circuitBreaker(CircuitBreaker breaker) {
+    return CircuitBreakerExtension1(this, breaker);
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -699,5 +719,12 @@ class Func2<T1, T2, R> {
       retryIf: retryIf,
       onRetry: onRetry,
     );
+  }
+
+  /// Applies circuit breaker pattern.
+  ///
+  /// See [Func.circuitBreaker] for details.
+  Func2<T1, T2, R> circuitBreaker(CircuitBreaker breaker) {
+    return CircuitBreakerExtension2(this, breaker);
   }
 }
