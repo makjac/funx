@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:funx/src/concurrency/barrier.dart';
 import 'package:funx/src/concurrency/bulkhead.dart';
+import 'package:funx/src/concurrency/countdown_latch.dart';
 import 'package:funx/src/concurrency/lock.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
@@ -223,6 +224,18 @@ class Func<R> {
   Func<R> barrier(Barrier barrier) {
     return BarrierExtension(this, barrier);
   }
+
+  /// Counts down a latch after execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final latch = CountdownLatch(count: 3);
+  /// final task = Func(() async => await doWork())
+  ///   .countdownLatch(latch);
+  /// ```
+  Func<R> countdownLatch(CountdownLatch latch) {
+    return CountdownLatchExtension(this, latch);
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -380,6 +393,11 @@ class Func1<T, R> {
   Func1<T, R> barrier(Barrier barrier) {
     return BarrierExtension1(this, barrier);
   }
+
+  /// Counts down a latch after execution.
+  Func1<T, R> countdownLatch(CountdownLatch latch) {
+    return CountdownLatchExtension1(this, latch);
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -536,5 +554,10 @@ class Func2<T1, T2, R> {
   /// Synchronizes at a barrier.
   Func2<T1, T2, R> barrier(Barrier barrier) {
     return BarrierExtension2(this, barrier);
+  }
+
+  /// Counts down a latch after execution.
+  Func2<T1, T2, R> countdownLatch(CountdownLatch latch) {
+    return CountdownLatchExtension2(this, latch);
   }
 }
