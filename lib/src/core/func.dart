@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:funx/src/concurrency/bulkhead.dart';
 import 'package:funx/src/concurrency/lock.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
@@ -187,6 +188,28 @@ class Func<R> {
       timeout,
     );
   }
+
+  /// Applies bulkhead isolation.
+  ///
+  /// Example:
+  /// ```dart
+  /// final task = Func(() async => await heavyOperation())
+  ///   .bulkhead(poolSize: 4);
+  /// ```
+  Func<R> bulkhead({
+    required int poolSize,
+    int queueSize = 100,
+    Duration? timeout,
+    ErrorCallback? onIsolationFailure,
+  }) {
+    return BulkheadExtension(
+      this,
+      poolSize,
+      queueSize,
+      timeout,
+      onIsolationFailure,
+    );
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -323,6 +346,22 @@ class Func1<T, R> {
       timeout,
     );
   }
+
+  /// Applies bulkhead isolation.
+  Func1<T, R> bulkhead({
+    required int poolSize,
+    int queueSize = 100,
+    Duration? timeout,
+    ErrorCallback? onIsolationFailure,
+  }) {
+    return BulkheadExtension1(
+      this,
+      poolSize,
+      queueSize,
+      timeout,
+      onIsolationFailure,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -457,6 +496,22 @@ class Func2<T1, T2, R> {
       queueMode,
       onWaiting,
       timeout,
+    );
+  }
+
+  /// Applies bulkhead isolation.
+  Func2<T1, T2, R> bulkhead({
+    required int poolSize,
+    int queueSize = 100,
+    Duration? timeout,
+    ErrorCallback? onIsolationFailure,
+  }) {
+    return BulkheadExtension2(
+      this,
+      poolSize,
+      queueSize,
+      timeout,
+      onIsolationFailure,
     );
   }
 }
