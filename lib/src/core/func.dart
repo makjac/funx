@@ -19,6 +19,7 @@ import 'package:funx/src/performance/memoize.dart';
 import 'package:funx/src/performance/once.dart';
 import 'package:funx/src/performance/rate_limit.dart';
 import 'package:funx/src/performance/share.dart';
+import 'package:funx/src/performance/warm_up.dart';
 import 'package:funx/src/reliability/backoff.dart';
 import 'package:funx/src/reliability/circuit_breaker.dart';
 import 'package:funx/src/reliability/fallback.dart';
@@ -429,6 +430,27 @@ class Func<R> {
       strategy: strategy,
     );
   }
+
+  /// Eagerly loads and keeps the result fresh.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loadCache = Func(() async => await loadFromDb())
+  ///   .warmUp(
+  ///     trigger: WarmUpTrigger.onInit,
+  ///     keepFresh: Duration(minutes: 5),
+  ///   );
+  /// ```
+  Func<R> warmUp({
+    WarmUpTrigger trigger = WarmUpTrigger.onInit,
+    Duration? keepFresh,
+  }) {
+    return WarmUpExtension(
+      this,
+      trigger: trigger,
+      keepFresh: keepFresh,
+    );
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -766,6 +788,27 @@ class Func1<T, R> {
       maxCalls: maxCalls,
       window: window,
       strategy: strategy,
+    );
+  }
+
+  /// Eagerly loads and keeps the result fresh.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loadCache = Func1((String key) async => await loadFromDb(key))
+  ///   .warmUp(
+  ///     trigger: WarmUpTrigger.onInit,
+  ///     keepFresh: Duration(minutes: 5),
+  ///   );
+  /// ```
+  Func1<T, R> warmUp({
+    WarmUpTrigger trigger = WarmUpTrigger.onInit,
+    Duration? keepFresh,
+  }) {
+    return WarmUpExtension1(
+      this,
+      trigger: trigger,
+      keepFresh: keepFresh,
     );
   }
 }
@@ -1111,6 +1154,28 @@ class Func2<T1, T2, R> {
       maxCalls: maxCalls,
       window: window,
       strategy: strategy,
+    );
+  }
+
+  /// Eagerly loads and keeps the result fresh.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loadCache = Func2(
+  /// (String key, int id) async => await loadFromDb(key, id))
+  ///   .warmUp(
+  ///     trigger: WarmUpTrigger.onInit,
+  ///     keepFresh: Duration(minutes: 5),
+  ///   );
+  /// ```
+  Func2<T1, T2, R> warmUp({
+    WarmUpTrigger trigger = WarmUpTrigger.onInit,
+    Duration? keepFresh,
+  }) {
+    return WarmUpExtension2(
+      this,
+      trigger: trigger,
+      keepFresh: keepFresh,
     );
   }
 }

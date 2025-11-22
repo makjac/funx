@@ -40,6 +40,7 @@ export 'src/performance/memoize.dart';
 export 'src/performance/once.dart';
 export 'src/performance/rate_limit.dart';
 export 'src/performance/share.dart';
+export 'src/performance/warm_up.dart';
 
 // Reliability
 export 'src/reliability/backoff.dart';
