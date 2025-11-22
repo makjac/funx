@@ -12,8 +12,10 @@ import 'package:funx/src/concurrency/queue.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
+import 'package:funx/src/reliability/backoff.dart';
 import 'package:funx/src/reliability/circuit_breaker.dart';
 import 'package:funx/src/reliability/fallback.dart';
+import 'package:funx/src/reliability/recover.dart';
 import 'package:funx/src/reliability/retry.dart';
 import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
@@ -312,6 +314,20 @@ class Func<R> {
       onFallback: onFallback,
     );
   }
+
+  /// Applies error recovery strategy.
+  ///
+  /// Example:
+  /// ```dart
+  /// final strategy = RecoveryStrategy(
+  ///   onError: (error) async => await reconnect(),
+  /// );
+  /// final fetch = Func(() async => await api.getData())
+  ///   .recover(strategy);
+  /// ```
+  Func<R> recover(RecoveryStrategy strategy) {
+    return RecoverExtension(this, strategy);
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -550,6 +566,13 @@ class Func1<T, R> {
       onFallback: onFallback,
     );
   }
+
+  /// Applies error recovery strategy.
+  ///
+  /// See [Func.recover] for details.
+  Func1<T, R> recover(RecoveryStrategy strategy) {
+    return RecoverExtension1(this, strategy);
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -785,5 +808,12 @@ class Func2<T1, T2, R> {
       fallbackIf: fallbackIf,
       onFallback: onFallback,
     );
+  }
+
+  /// Applies error recovery strategy.
+  ///
+  /// See [Func.recover] for details.
+  Func2<T1, T2, R> recover(RecoveryStrategy strategy) {
+    return RecoverExtension2(this, strategy);
   }
 }
