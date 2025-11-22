@@ -12,6 +12,7 @@ import 'package:funx/src/concurrency/queue.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
+import 'package:funx/src/reliability/retry.dart';
 import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
 import 'package:funx/src/timing/throttle.dart';
@@ -250,6 +251,31 @@ class Func<R> {
   Func<R> monitor(Monitor monitor) {
     return MonitorExtension(this, monitor);
   }
+
+  /// Applies retry logic with configurable backoff.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetch = Func(() async => await api.getData())
+  ///   .retry(
+  ///     maxAttempts: 3,
+  ///     backoff: ExponentialBackoff(initialDelay: Duration(milliseconds: 100))
+  ///   );
+  /// ```
+  Func<R> retry({
+    int maxAttempts = 3,
+    BackoffStrategy? backoff,
+    bool Function(Object error)? retryIf,
+    void Function(int attempt, Object error)? onRetry,
+  }) {
+    return RetryExtension(
+      this,
+      maxAttempts: maxAttempts,
+      backoff: backoff,
+      retryIf: retryIf,
+      onRetry: onRetry,
+    );
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -445,6 +471,24 @@ class Func1<T, R> {
       maxQueueSize,
     );
   }
+
+  /// Applies retry logic with configurable backoff.
+  ///
+  /// See [Func.retry] for details.
+  Func1<T, R> retry({
+    int maxAttempts = 3,
+    BackoffStrategy? backoff,
+    bool Function(Object error)? retryIf,
+    void Function(int attempt, Object error)? onRetry,
+  }) {
+    return RetryExtension1(
+      this,
+      maxAttempts: maxAttempts,
+      backoff: backoff,
+      retryIf: retryIf,
+      onRetry: onRetry,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -636,6 +680,24 @@ class Func2<T1, T2, R> {
       concurrency,
       onQueueChange,
       maxQueueSize,
+    );
+  }
+
+  /// Applies retry logic with configurable backoff.
+  ///
+  /// See [Func.retry] for details.
+  Func2<T1, T2, R> retry({
+    int maxAttempts = 3,
+    BackoffStrategy? backoff,
+    bool Function(Object error)? retryIf,
+    void Function(int attempt, Object error)? onRetry,
+  }) {
+    return RetryExtension2(
+      this,
+      maxAttempts: maxAttempts,
+      backoff: backoff,
+      retryIf: retryIf,
+      onRetry: onRetry,
     );
   }
 }

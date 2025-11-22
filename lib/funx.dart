@@ -33,6 +33,9 @@ export 'src/core/func.dart';
 export 'src/core/func_sync.dart';
 export 'src/core/types.dart';
 
+// Reliability
+export 'src/reliability/retry.dart';
+
 // Timing
 export 'src/timing/debounce.dart';
 export 'src/timing/defer.dart';
