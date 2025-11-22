@@ -24,6 +24,7 @@ export 'src/concurrency/bulkhead.dart';
 export 'src/concurrency/countdown_latch.dart';
 export 'src/concurrency/lock.dart';
 export 'src/concurrency/monitor.dart';
+export 'src/concurrency/queue.dart';
 export 'src/concurrency/rw_lock.dart';
 export 'src/concurrency/semaphore.dart';
 

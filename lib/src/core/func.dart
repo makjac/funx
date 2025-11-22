@@ -8,6 +8,7 @@ import 'package:funx/src/concurrency/bulkhead.dart';
 import 'package:funx/src/concurrency/countdown_latch.dart';
 import 'package:funx/src/concurrency/lock.dart';
 import 'package:funx/src/concurrency/monitor.dart';
+import 'package:funx/src/concurrency/queue.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
@@ -416,6 +417,34 @@ class Func1<T, R> {
   Func1<T, R> monitor(Monitor monitor) {
     return MonitorExtension1(this, monitor);
   }
+
+  /// Queues executions with configurable concurrency.
+  ///
+  /// Example:
+  /// ```dart
+  /// final task = Func1<String, void>((data) async {
+  ///   await process(data);
+  /// }).queue(
+  ///   concurrency: 1,
+  ///   mode: QueueMode.fifo,
+  /// );
+  /// ```
+  Func1<T, R> queue({
+    required int concurrency,
+    QueueMode mode = QueueMode.fifo,
+    PriorityFunction<T>? priorityFn,
+    QueueChangeCallback? onQueueChange,
+    int? maxQueueSize,
+  }) {
+    return QueueExtension1(
+      this,
+      mode,
+      concurrency,
+      priorityFn,
+      onQueueChange,
+      maxQueueSize,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -582,5 +611,31 @@ class Func2<T1, T2, R> {
   /// Executes within a monitor.
   Func2<T1, T2, R> monitor(Monitor monitor) {
     return MonitorExtension2(this, monitor);
+  }
+
+  /// Queues executions with configurable concurrency.
+  ///
+  /// Example:
+  /// ```dart
+  /// final task = Func2<String, int, void>((data, priority) async {
+  ///   await process(data, priority);
+  /// }).queue(
+  ///   concurrency: 2,
+  ///   mode: QueueMode.fifo,
+  /// );
+  /// ```
+  Func2<T1, T2, R> queue({
+    required int concurrency,
+    QueueMode mode = QueueMode.fifo,
+    QueueChangeCallback? onQueueChange,
+    int? maxQueueSize,
+  }) {
+    return QueueExtension2(
+      this,
+      mode,
+      concurrency,
+      onQueueChange,
+      maxQueueSize,
+    );
   }
 }
