@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:funx/src/concurrency/lock.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
+import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
 import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
@@ -164,6 +165,28 @@ class Func<R> {
   }) {
     return WriteLockExtension(this, rwLock, timeout);
   }
+
+  /// Applies semaphore to limit concurrent executions.
+  ///
+  /// Example:
+  /// ```dart
+  /// final download = Func(() async => await http.get(url))
+  ///   .semaphore(maxConcurrent: 3);
+  /// ```
+  Func<R> semaphore({
+    required int maxConcurrent,
+    QueueMode queueMode = QueueMode.fifo,
+    WaitPositionCallback? onWaiting,
+    Duration? timeout,
+  }) {
+    return SemaphoreExtension(
+      this,
+      maxConcurrent,
+      queueMode,
+      onWaiting,
+      timeout,
+    );
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -284,6 +307,22 @@ class Func1<T, R> {
   }) {
     return WriteLockExtension1(this, rwLock, timeout);
   }
+
+  /// Applies semaphore to limit concurrent executions.
+  Func1<T, R> semaphore({
+    required int maxConcurrent,
+    QueueMode queueMode = QueueMode.fifo,
+    WaitPositionCallback? onWaiting,
+    Duration? timeout,
+  }) {
+    return SemaphoreExtension1(
+      this,
+      maxConcurrent,
+      queueMode,
+      onWaiting,
+      timeout,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -403,5 +442,21 @@ class Func2<T1, T2, R> {
     Duration? timeout,
   }) {
     return WriteLockExtension2(this, rwLock, timeout);
+  }
+
+  /// Applies semaphore to limit concurrent executions.
+  Func2<T1, T2, R> semaphore({
+    required int maxConcurrent,
+    QueueMode queueMode = QueueMode.fifo,
+    WaitPositionCallback? onWaiting,
+    Duration? timeout,
+  }) {
+    return SemaphoreExtension2(
+      this,
+      maxConcurrent,
+      queueMode,
+      onWaiting,
+      timeout,
+    );
   }
 }

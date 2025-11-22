@@ -21,6 +21,7 @@ library;
 // Concurrency
 export 'src/concurrency/lock.dart';
 export 'src/concurrency/rw_lock.dart';
+export 'src/concurrency/semaphore.dart';
 
 // Core
 export 'src/core/func.dart';
