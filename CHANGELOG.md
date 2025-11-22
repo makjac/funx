@@ -1,3 +1,89 @@
+## 0.4.0
+
+- **Once**: Execute function only once and cache result forever
+  - `OnceExtension`, `OnceExtension1`, `OnceExtension2` for `Func`, `Func1`, `Func2`
+  - Result and error caching
+  - Reset functionality with optional predicate
+  - Cache invalidation support
+
+- **Lazy**: Defer function execution until first call
+  - `LazyExtension`, `LazyExtension1`, `LazyExtension2`
+  - Deferred initialization pattern
+  - Lazy loading support
+
+- **Memoize**: Cache function results with TTL and eviction policies
+  - `MemoizeExtension`, `MemoizeExtension1`, `MemoizeExtension2`
+  - Configurable time-to-live (TTL)
+  - Maximum cache size limits
+  - Multiple eviction policies:
+    - `EvictionPolicy.lru`: Least Recently Used
+    - `EvictionPolicy.lfu`: Least Frequently Used
+    - `EvictionPolicy.fifo`: First In First Out
+  - Per-argument caching for `Func1` and `Func2`
+  - Manual cache clearing
+
+- **Deduplicate**: Prevent duplicate function calls within a time window
+  - `DeduplicateExtension`, `DeduplicateExtension1`, `DeduplicateExtension2`
+  - Configurable deduplication window
+  - Per-argument deduplication tracking
+  - Manual reset functionality
+
+- **Share**: Share single execution among concurrent callers
+  - `ShareExtension`, `ShareExtension1`, `ShareExtension2`
+  - Concurrent call deduplication
+  - Per-argument sharing for `Func1` and `Func2`
+  - Automatic cleanup after execution
+
+- **Batch**: Accumulate calls and execute in batches
+  - `BatchExtension`, `BatchExtension2` for `Func1` and `Func2`
+  - Configurable batch size (`maxSize`)
+  - Configurable wait time (`maxWait`)
+  - Custom batch executor
+  - Manual flush and cancel support
+  - Individual result handling
+
+- **RateLimit**: Control function execution rate
+  - `RateLimitExtension`, `RateLimitExtension1`, `RateLimitExtension2`
+  - Multiple rate limiting strategies:
+    - `RateLimitStrategy.tokenBucket`: Allows bursts, maintains average rate
+    - `RateLimitStrategy.leakyBucket`: Enforces steady rate, no bursts
+    - `RateLimitStrategy.fixedWindow`: Fixed time window limiting
+    - `RateLimitStrategy.slidingWindow`: Sliding time window limiting
+  - Configurable rate limits (calls per window)
+  - Manual reset and disposal
+
+- **WarmUp**: Pre-execute functions for eager loading
+  - `WarmUpExtension`, `WarmUpExtension1`, `WarmUpExtension2`
+  - Multiple trigger strategies:
+    - `WarmUpTrigger.onInit`: Warm up immediately
+    - `WarmUpTrigger.onFirstCall`: Warm up on first call
+    - `WarmUpTrigger.manual`: Manual warm-up control
+  - Periodic refresh support (`keepFresh`)
+  - Manual warm-up with `warmUpWith()` for Func1/Func2
+  - Resource disposal
+
+- **Compress/Decompress**: Automatic data compression
+  - `CompressExtension1`, `CompressBytesExtension1` for compression
+  - `DecompressExtension`, `DecompressBytesExtension` for decompression
+  - Multiple algorithms:
+    - `CompressionAlgorithm.gzip`: GZIP compression
+    - `CompressionAlgorithm.zlib`: ZLIB compression
+  - Configurable compression levels (none, fast, balanced, best)
+  - Automatic threshold-based compression
+  - Support for both string and byte data
+
+- **CacheAside**: Cache-aside pattern with automatic loading
+  - `CacheAsideExtension1`, `CacheAsideExtension2`
+  - `Cache<K,V>` interface for custom cache backends
+  - `InMemoryCache` implementation included
+  - Configurable TTL for cache entries
+  - Multiple refresh strategies:
+    - `RefreshStrategy.none`: No automatic refresh
+    - `RefreshStrategy.backgroundRefresh`: Refresh in background
+    - `RefreshStrategy.refreshOnAccess`: Refresh on next access
+  - Cache hit/miss callbacks
+  - Manual cache invalidation
+
 ## 0.3.0
 
 - **Retry**: Automatic retry with configurable backoff strategies

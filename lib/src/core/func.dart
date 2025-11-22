@@ -2,6 +2,7 @@
 library;
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:funx/src/concurrency/barrier.dart';
 import 'package:funx/src/concurrency/bulkhead.dart';
@@ -12,6 +13,16 @@ import 'package:funx/src/concurrency/queue.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
+import 'package:funx/src/performance/batch.dart';
+import 'package:funx/src/performance/cache_aside.dart';
+import 'package:funx/src/performance/compress.dart';
+import 'package:funx/src/performance/deduplicate.dart';
+import 'package:funx/src/performance/lazy.dart';
+import 'package:funx/src/performance/memoize.dart';
+import 'package:funx/src/performance/once.dart';
+import 'package:funx/src/performance/rate_limit.dart';
+import 'package:funx/src/performance/share.dart';
+import 'package:funx/src/performance/warm_up.dart';
 import 'package:funx/src/reliability/backoff.dart';
 import 'package:funx/src/reliability/circuit_breaker.dart';
 import 'package:funx/src/reliability/fallback.dart';
@@ -328,6 +339,121 @@ class Func<R> {
   Func<R> recover(RecoveryStrategy strategy) {
     return RecoverExtension(this, strategy);
   }
+
+  // Performance methods
+
+  /// Ensures the function executes only once and caches the result.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loadConfig = Func(() async => await loadConfiguration())
+  ///   .once();
+  /// ```
+  Func<R> once() {
+    return OnceExtension(this);
+  }
+
+  /// Defers execution until the function is first called.
+  ///
+  /// Example:
+  /// ```dart
+  /// final connection = Func(() async => await connect())
+  ///   .lazy();
+  /// ```
+  Func<R> lazy() {
+    return LazyExtension(this);
+  }
+
+  /// Caches function results with optional TTL and eviction policy.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchData = Func(() async => await api.getData())
+  ///   .memoize(
+  ///     ttl: Duration(minutes: 5),
+  ///     maxSize: 100,
+  ///     evictionPolicy: EvictionPolicy.lru,
+  ///   );
+  /// ```
+  Func<R> memoize({
+    Duration? ttl,
+    int maxSize = 100,
+    EvictionPolicy evictionPolicy = EvictionPolicy.lru,
+  }) {
+    return MemoizeExtension(
+      this,
+      ttl: ttl,
+      maxSize: maxSize,
+      evictionPolicy: evictionPolicy,
+    );
+  }
+
+  /// Prevents duplicate executions within a time window.
+  ///
+  /// Example:
+  /// ```dart
+  /// final submit = Func(() async => await submitForm())
+  ///   .deduplicate(window: Duration(seconds: 2));
+  /// ```
+  Func<R> deduplicate({required Duration window}) {
+    return DeduplicateExtension(this, window: window);
+  }
+
+  /// Shares a single execution among concurrent callers.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func(() async => await api.getUser())
+  ///   .share();
+  /// ```
+  Func<R> share() {
+    return ShareExtension(this);
+  }
+
+  /// Limits execution rate using various strategies.
+  ///
+  /// Example:
+  /// ```dart
+  /// final apiCall = Func(() async => await api.call())
+  ///   .rateLimit(
+  ///     maxCalls: 10,
+  ///     window: Duration(seconds: 1),
+  ///     strategy: RateLimitStrategy.tokenBucket,
+  ///   );
+  /// ```
+  Func<R> rateLimit({
+    required int maxCalls,
+    required Duration window,
+    RateLimitStrategy strategy = RateLimitStrategy.tokenBucket,
+  }) {
+    return RateLimitExtension(
+      this,
+      maxCalls: maxCalls,
+      window: window,
+      strategy: strategy,
+    );
+  }
+
+  /// Eagerly loads and keeps the result fresh.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loadCache = Func(() async => await loadFromDb())
+  ///   .warmUp(
+  ///     trigger: WarmUpTrigger.onInit,
+  ///     keepFresh: Duration(minutes: 5),
+  ///   );
+  /// ```
+  Func<R> warmUp({
+    WarmUpTrigger trigger = WarmUpTrigger.onInit,
+    Duration? keepFresh,
+  }) {
+    return WarmUpExtension(
+      this,
+      trigger: trigger,
+      keepFresh: keepFresh,
+    );
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -573,6 +699,219 @@ class Func1<T, R> {
   Func1<T, R> recover(RecoveryStrategy strategy) {
     return RecoverExtension1(this, strategy);
   }
+
+  // Performance methods
+
+  /// Ensures the function executes only once per argument and caches the result
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func1((String id) async => await api.getUser(id))
+  ///   .once();
+  /// ```
+  Func1<T, R> once() {
+    return OnceExtension1(this);
+  }
+
+  /// Defers execution until the function is first called.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loadResource = Func1((String path) async => await load(path))
+  ///   .lazy();
+  /// ```
+  Func1<T, R> lazy() {
+    return LazyExtension1(this);
+  }
+
+  /// Caches function results per argument with optional TTL and eviction policy
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchData = Func1((String key) async => await api.getData(key))
+  ///   .memoize(
+  ///     ttl: Duration(minutes: 5),
+  ///     maxSize: 100,
+  ///     evictionPolicy: EvictionPolicy.lru,
+  ///   );
+  /// ```
+  Func1<T, R> memoize({
+    Duration? ttl,
+    int maxSize = 100,
+    EvictionPolicy evictionPolicy = EvictionPolicy.lru,
+  }) {
+    return MemoizeExtension1(
+      this,
+      ttl: ttl,
+      maxSize: maxSize,
+      evictionPolicy: evictionPolicy,
+    );
+  }
+
+  /// Prevents duplicate executions per argument within a time window.
+  ///
+  /// Example:
+  /// ```dart
+  /// final submit = Func1((String id) async => await submitForm(id))
+  ///   .deduplicate(window: Duration(seconds: 2));
+  /// ```
+  Func1<T, R> deduplicate({required Duration window}) {
+    return DeduplicateExtension1(this, window: window);
+  }
+
+  /// Shares a single execution among concurrent callers per argument.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func1((String id) async => await api.getUser(id))
+  ///   .share();
+  /// ```
+  Func1<T, R> share() {
+    return ShareExtension1(this);
+  }
+
+  /// Batches multiple calls for efficient processing.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUsers = Func1((String id) async => await api.getUser(id))
+  ///   .batch(
+  ///     executor: Func1((ids) async => await api.getUsers(ids)),
+  ///     maxSize: 10,
+  ///     maxWait: Duration(seconds: 1),
+  ///   );
+  /// ```
+  Func1<T, R> batch({
+    required Func1<List<T>, void> executor,
+    int maxSize = 10,
+    Duration maxWait = const Duration(seconds: 1),
+  }) {
+    return BatchExtension(
+      this,
+      executor: executor,
+      maxSize: maxSize,
+      maxWait: maxWait,
+    );
+  }
+
+  /// Limits execution rate using various strategies.
+  ///
+  /// Example:
+  /// ```dart
+  /// final apiCall = Func1((String id) async => await api.call(id))
+  ///   .rateLimit(
+  ///     maxCalls: 10,
+  ///     window: Duration(seconds: 1),
+  ///     strategy: RateLimitStrategy.tokenBucket,
+  ///   );
+  /// ```
+  Func1<T, R> rateLimit({
+    required int maxCalls,
+    required Duration window,
+    RateLimitStrategy strategy = RateLimitStrategy.tokenBucket,
+  }) {
+    return RateLimitExtension1(
+      this,
+      maxCalls: maxCalls,
+      window: window,
+      strategy: strategy,
+    );
+  }
+
+  /// Eagerly loads and keeps the result fresh.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loadCache = Func1((String key) async => await loadFromDb(key))
+  ///   .warmUp(
+  ///     trigger: WarmUpTrigger.onInit,
+  ///     keepFresh: Duration(minutes: 5),
+  ///   );
+  /// ```
+  Func1<T, R> warmUp({
+    WarmUpTrigger trigger = WarmUpTrigger.onInit,
+    Duration? keepFresh,
+  }) {
+    return WarmUpExtension1(
+      this,
+      trigger: trigger,
+      keepFresh: keepFresh,
+    );
+  }
+
+  /// Compresses string output using gzip or zlib compression.
+  ///
+  /// Only available when R is String. Use compressBytes for List\<int>.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchLargeText = Func1(
+  /// (String id) async => await api.getLargeText(id))
+  ///   .compress(
+  ///     threshold: 1024,
+  ///     algorithm: CompressionAlgorithm.gzip,
+  ///     level: CompressionLevel.balanced,
+  ///   );
+  /// ```
+  CompressExtension1<R> compress({
+    int threshold = 1024,
+    CompressionAlgorithm algorithm = CompressionAlgorithm.gzip,
+    CompressionLevel level = CompressionLevel.balanced,
+  }) {
+    return CompressExtension1(
+      this as Func1<String, R>,
+      threshold: threshold,
+      algorithm: algorithm,
+      level: level,
+    );
+  }
+
+  /// Compresses byte output using gzip or zlib compression.
+  ///
+  /// Only available when R is List\<int>.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchData = Func1((String id) async => await api.getData(id))
+  ///   .compressBytes(
+  ///     threshold: 1024,
+  ///     algorithm: CompressionAlgorithm.gzip,
+  ///     level: CompressionLevel.balanced,
+  ///   );
+  /// ```
+  CompressBytesExtension1<R> compressBytes({
+    int threshold = 1024,
+    CompressionAlgorithm algorithm = CompressionAlgorithm.gzip,
+    CompressionLevel level = CompressionLevel.balanced,
+  }) {
+    return CompressBytesExtension1(
+      this as Func1<Uint8List, R>,
+      threshold: threshold,
+      algorithm: algorithm,
+      level: level,
+    );
+  }
+
+  /// Implements cache-aside pattern with automatic cache management.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func1((String id) async => await api.getUser(id))
+  ///   .cacheAside(
+  ///     ttl: Duration(minutes: 5),
+  ///     refreshStrategy: RefreshStrategy.backgroundRefresh,
+  ///   );
+  /// ```
+  Func1<T, R> cacheAside({
+    Duration? ttl,
+    RefreshStrategy refreshStrategy = RefreshStrategy.none,
+  }) {
+    return CacheAsideExtension1(
+      this,
+      ttl: ttl,
+      refreshStrategy: refreshStrategy,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -815,5 +1154,175 @@ class Func2<T1, T2, R> {
   /// See [Func.recover] for details.
   Func2<T1, T2, R> recover(RecoveryStrategy strategy) {
     return RecoverExtension2(this, strategy);
+  }
+
+  // Performance methods
+
+  /// Ensures the function executes only once per argument pair and caches the
+  /// result.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchData = Func2(
+  /// (String key, int version) async => await api.get(key, version))
+  ///   .once();
+  /// ```
+  Func2<T1, T2, R> once() {
+    return OnceExtension2(this);
+  }
+
+  /// Defers execution until the function is first called.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loadResource = Func2(
+  /// (String path, String locale) async => await load(path, locale))
+  ///   .lazy();
+  /// ```
+  Func2<T1, T2, R> lazy() {
+    return LazyExtension2(this);
+  }
+
+  /// Caches function results per argument pair with optional TTL and eviction
+  /// policy.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchData = Func2(
+  ///   (String key, int id) async => await api.getData(key, id))
+  ///     .memoize(
+  ///       ttl: Duration(minutes: 5),
+  ///       maxSize: 100,
+  ///       evictionPolicy: EvictionPolicy.lru,
+  ///     );
+  /// ```
+  Func2<T1, T2, R> memoize({
+    Duration? ttl,
+    int maxSize = 100,
+    EvictionPolicy evictionPolicy = EvictionPolicy.lru,
+  }) {
+    return MemoizeExtension2(
+      this,
+      ttl: ttl,
+      maxSize: maxSize,
+      evictionPolicy: evictionPolicy,
+    );
+  }
+
+  /// Prevents duplicate executions per argument pair within a time window.
+  ///
+  /// Example:
+  /// ```dart
+  /// final submit = Func2(
+  ///   (String id, int count) async => await submitForm(id, count))
+  ///   .deduplicate(window: Duration(seconds: 2));
+  /// ```
+  Func2<T1, T2, R> deduplicate({required Duration window}) {
+    return DeduplicateExtension2(this, window: window);
+  }
+
+  /// Shares a single execution among concurrent callers per argument pair.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func2(
+  /// (String id, String role) async => await api.getUser(id, role))
+  ///   .share();
+  /// ```
+  Func2<T1, T2, R> share() {
+    return ShareExtension2(this);
+  }
+
+  /// Batches multiple calls for efficient processing.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchData = Func2(
+  /// (String key, int ver) async => await api.get(key, ver))
+  ///   .batch(
+  ///     executor: Func1((pairs) async => await api.getBatch(pairs)),
+  ///     maxSize: 10,\n  ///     maxWait: Duration(seconds: 1),
+  ///   );
+  /// ```
+  Func2<T1, T2, R> batch({
+    required Func1<List<(T1, T2)>, void> executor,
+    int maxSize = 10,
+    Duration maxWait = const Duration(seconds: 1),
+  }) {
+    return BatchExtension2(
+      this,
+      executor: executor,
+      maxSize: maxSize,
+      maxWait: maxWait,
+    );
+  }
+
+  /// Limits execution rate using various strategies.
+  ///
+  /// Example:
+  /// ```dart
+  /// final apiCall = Func2(
+  /// (String id, int count) async => await api.call(id, count))
+  ///   .rateLimit(
+  ///     maxCalls: 10,
+  ///     window: Duration(seconds: 1),
+  ///     strategy: RateLimitStrategy.tokenBucket,
+  ///   );
+  /// ```
+  Func2<T1, T2, R> rateLimit({
+    required int maxCalls,
+    required Duration window,
+    RateLimitStrategy strategy = RateLimitStrategy.tokenBucket,
+  }) {
+    return RateLimitExtension2(
+      this,
+      maxCalls: maxCalls,
+      window: window,
+      strategy: strategy,
+    );
+  }
+
+  /// Eagerly loads and keeps the result fresh.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loadCache = Func2(
+  /// (String key, int id) async => await loadFromDb(key, id))
+  ///   .warmUp(
+  ///     trigger: WarmUpTrigger.onInit,
+  ///     keepFresh: Duration(minutes: 5),
+  ///   );
+  /// ```
+  Func2<T1, T2, R> warmUp({
+    WarmUpTrigger trigger = WarmUpTrigger.onInit,
+    Duration? keepFresh,
+  }) {
+    return WarmUpExtension2(
+      this,
+      trigger: trigger,
+      keepFresh: keepFresh,
+    );
+  }
+
+  /// Implements cache-aside pattern with automatic cache management.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func2(
+  /// (String id, String role) async => await api.getUser(id, role))
+  ///   .cacheAside(
+  ///     ttl: Duration(minutes: 5),
+  ///     refreshStrategy: RefreshStrategy.backgroundRefresh,
+  ///   );
+  /// ```
+  Func2<T1, T2, R> cacheAside({
+    Duration? ttl,
+    RefreshStrategy refreshStrategy = RefreshStrategy.none,
+  }) {
+    return CacheAsideExtension2(
+      this,
+      ttl: ttl,
+      refreshStrategy: refreshStrategy,
+    );
   }
 }

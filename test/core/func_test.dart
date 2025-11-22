@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:funx/src/core/func.dart' as funx;
+import 'package:funx/src/performance/rate_limit.dart';
+import 'package:funx/src/performance/warm_up.dart';
 import 'package:funx/src/reliability/circuit_breaker.dart';
 import 'package:funx/src/reliability/recover.dart';
 import 'package:test/test.dart';
@@ -337,6 +339,159 @@ void main() {
       final result = await func(42, 'answer');
       expect(result, equals('answer: 42'));
       expect(attempts, equals(2));
+    });
+  });
+
+  // Performance method tests
+
+  group('Func.once', () {
+    test('executes only once and caches result', () async {
+      var callCount = 0;
+      final func = funx.Func(() async {
+        callCount++;
+        return 'result';
+      }).once();
+
+      expect(await func(), equals('result'));
+      expect(await func(), equals('result'));
+      expect(await func(), equals('result'));
+      expect(callCount, equals(1));
+    });
+  });
+
+  group('Func1.memoize', () {
+    test('caches results per argument', () async {
+      var callCount = 0;
+      final func = funx.Func1((int x) async {
+        callCount++;
+        return x * 2;
+      }).memoize();
+
+      expect(await func(5), equals(10));
+      expect(await func(5), equals(10)); // Cached
+      expect(await func(10), equals(20)); // New arg
+      expect(callCount, equals(2)); // Only called twice
+    });
+  });
+
+  group('Func2.deduplicate', () {
+    test('prevents duplicate calls within window', () async {
+      var callCount = 0;
+      final func = funx.Func2((int a, int b) async {
+        callCount++;
+        return a + b;
+      }).deduplicate(window: const Duration(milliseconds: 100));
+
+      expect(await func(3, 4), equals(7));
+      expect(await func(3, 4), equals(7)); // Deduplicated
+      expect(callCount, equals(1));
+
+      // Wait for window to expire
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      expect(await func(3, 4), equals(7)); // New execution
+      expect(callCount, equals(2));
+    });
+  });
+
+  group('Func.share', () {
+    test('shares execution among concurrent calls', () async {
+      var callCount = 0;
+      final func = funx.Func(() async {
+        callCount++;
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        return callCount;
+      }).share();
+
+      final results = await Future.wait([
+        func(),
+        func(),
+        func(),
+      ]);
+
+      expect(results, equals([1, 1, 1])); // All share same execution
+      expect(callCount, equals(1));
+    });
+  });
+
+  group('Func1.batch', () {
+    test('batches multiple calls together', () async {
+      final batches = <List<int>>[];
+      final func = funx.Func1((int x) async => x).batch(
+        executor: funx.Func1((List<int> items) async {
+          batches.add(List.from(items));
+        }),
+        maxSize: 3,
+        maxWait: const Duration(milliseconds: 100),
+      );
+
+      unawaited(func(1));
+      unawaited(func(2));
+      await func(3); // Triggers batch
+
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      expect(batches.length, equals(1));
+      expect(batches[0], equals([1, 2, 3]));
+    });
+  });
+
+  group('Func.rateLimit', () {
+    test('limits execution rate', () async {
+      var callCount = 0;
+      final func =
+          funx.Func(() async {
+            return ++callCount;
+          }).rateLimit(
+            maxCalls: 2,
+            window: const Duration(milliseconds: 100),
+            strategy: RateLimitStrategy.fixedWindow,
+          );
+
+      // First two calls execute immediately
+      await func();
+      await func();
+      expect(callCount, equals(2));
+
+      // Third call waits for window to reset
+      final start = DateTime.now();
+      await func();
+      final elapsed = DateTime.now().difference(start);
+
+      expect(callCount, equals(3));
+      expect(elapsed.inMilliseconds, greaterThanOrEqualTo(90));
+    });
+  });
+
+  group('Func.warmUp', () {
+    test('eagerly loads result', () async {
+      var callCount = 0;
+      final func = funx.Func(() async {
+        callCount++;
+        return 'loaded';
+      }).warmUp(trigger: WarmUpTrigger.onInit);
+
+      // Give time for warm-up
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final result = await func();
+      expect(result, equals('loaded'));
+      expect(callCount, equals(1)); // Already warmed up
+    });
+  });
+
+  group('Func1.cacheAside', () {
+    test('implements cache-aside pattern', () async {
+      var callCount = 0;
+      final func = funx.Func1((String key) async {
+        callCount++;
+        return 'value-$key';
+      }).cacheAside(ttl: const Duration(minutes: 5));
+
+      expect(await func('key1'), equals('value-key1'));
+      expect(await func('key1'), equals('value-key1')); // Cached
+      expect(await func('key2'), equals('value-key2')); // New key
+      expect(callCount, equals(2)); // Only 2 actual calls
     });
   });
 }

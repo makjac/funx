@@ -10,6 +10,7 @@ import 'dart:math';
 /// - [FibonacciBackoff]: Fibonacci sequence-based delay
 /// - [DecorrelatedJitterBackoff]: Randomized exponential backoff
 /// - [CustomBackoff]: User-defined backoff logic
+// ignore: one_member_abstracts
 abstract class BackoffStrategy {
   /// Calculates the backoff duration for the given retry [attempt].
   ///
