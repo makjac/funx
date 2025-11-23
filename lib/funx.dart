@@ -33,6 +33,10 @@ export 'src/core/func.dart';
 export 'src/core/func_sync.dart';
 export 'src/core/types.dart';
 
+// Error Handling
+export 'src/error_handling/catch.dart';
+export 'src/error_handling/default.dart';
+
 // Performance
 export 'src/performance/batch.dart';
 export 'src/performance/cache_aside.dart';

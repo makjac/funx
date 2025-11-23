@@ -13,6 +13,8 @@ import 'package:funx/src/concurrency/queue.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/types.dart';
+import 'package:funx/src/error_handling/catch.dart';
+import 'package:funx/src/error_handling/default.dart';
 import 'package:funx/src/performance/batch.dart';
 import 'package:funx/src/performance/cache_aside.dart';
 import 'package:funx/src/performance/compress.dart';
@@ -452,6 +454,52 @@ class Func<R> {
       this,
       trigger: trigger,
       keepFresh: keepFresh,
+    );
+  }
+
+  /// Catches specific error types and handles them.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetch = Func(() async => await api.fetch())
+  ///   .catch(
+  ///     handlers: {
+  ///       NetworkException: (e) async => cachedData,
+  ///     },
+  ///   );
+  /// ```
+  Func<R> catchError({
+    required Map<Type, Future<R> Function(Object)> handlers,
+    Future<R> Function(Object)? catchAll,
+    void Function(Object error)? onCatch,
+  }) {
+    return CatchExtension(
+      this,
+      handlers: handlers,
+      catchAll: catchAll,
+      onCatch: onCatch,
+    );
+  }
+
+  /// Returns a default value when execution fails.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetch = Func(() async => await api.getConfig())
+  ///   .defaultValue(
+  ///     defaultValue: Config.fallback(),
+  ///   );
+  /// ```
+  Func<R> defaultValue({
+    required R defaultValue,
+    bool Function(Object error)? defaultIf,
+    void Function()? onDefault,
+  }) {
+    return DefaultExtension(
+      this,
+      defaultValue: defaultValue,
+      defaultIf: defaultIf,
+      onDefault: onDefault,
     );
   }
 }
@@ -912,6 +960,53 @@ class Func1<T, R> {
       refreshStrategy: refreshStrategy,
     );
   }
+
+  /// Catches specific error types and handles them.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fetchUser = Func1<String, User>((id) async => await api.get(id))
+  ///   .catchError(
+  ///     handlers: {
+  ///       NotFoundException: (e) async => User.guest(),
+  ///     },
+  ///   );
+  /// ```
+  Func1<T, R> catchError({
+    required Map<Type, Future<R> Function(Object)> handlers,
+    Future<R> Function(Object)? catchAll,
+    void Function(Object error)? onCatch,
+  }) {
+    return CatchExtension1(
+      this,
+      handlers: handlers,
+      catchAll: catchAll,
+      onCatch: onCatch,
+    );
+  }
+
+  /// Returns a default value when execution fails.
+  ///
+  /// Example:
+  /// ```dart
+  /// final parse = Func1<String, int>((s) async => int.parse(s))
+  ///   .defaultValue(
+  ///     defaultValue: 0,
+  ///     defaultIf: (e) => e is FormatException,
+  ///   );
+  /// ```
+  Func1<T, R> defaultValue({
+    required R defaultValue,
+    bool Function(Object error)? defaultIf,
+    void Function()? onDefault,
+  }) {
+    return DefaultExtension1(
+      this,
+      defaultValue: defaultValue,
+      defaultIf: defaultIf,
+      onDefault: onDefault,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -1323,6 +1418,52 @@ class Func2<T1, T2, R> {
       this,
       ttl: ttl,
       refreshStrategy: refreshStrategy,
+    );
+  }
+
+  /// Catches specific error types and handles them.
+  ///
+  /// Example:
+  /// ```dart
+  /// final divide = Func2<int, int, double>((a, b) async => a / b)
+  ///   .catchError(
+  ///     handlers: {
+  ///       IntegerDivisionByZeroException: (e) async => 0.0,
+  ///     },
+  ///   );
+  /// ```
+  Func2<T1, T2, R> catchError({
+    required Map<Type, Future<R> Function(Object)> handlers,
+    Future<R> Function(Object)? catchAll,
+    void Function(Object error)? onCatch,
+  }) {
+    return CatchExtension2(
+      this,
+      handlers: handlers,
+      catchAll: catchAll,
+      onCatch: onCatch,
+    );
+  }
+
+  /// Returns a default value when execution fails.
+  ///
+  /// Example:
+  /// ```dart
+  /// final divide = Func2<int, int, double>((a, b) async => a / b)
+  ///   .defaultValue(
+  ///     defaultValue: 0.0,
+  ///   );
+  /// ```
+  Func2<T1, T2, R> defaultValue({
+    required R defaultValue,
+    bool Function(Object error)? defaultIf,
+    void Function()? onDefault,
+  }) {
+    return DefaultExtension2(
+      this,
+      defaultValue: defaultValue,
+      defaultIf: defaultIf,
+      onDefault: onDefault,
     );
   }
 }
