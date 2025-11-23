@@ -35,6 +35,7 @@ import 'package:funx/src/timing/delay.dart';
 import 'package:funx/src/timing/throttle.dart';
 import 'package:funx/src/timing/timeout.dart';
 import 'package:funx/src/validation/guard.dart';
+import 'package:funx/src/validation/validate.dart';
 
 /// A wrapper for async functions that provides execution control mechanisms.
 ///
@@ -1058,6 +1059,31 @@ class Func1<T, R> {
       postConditionMessage: postConditionMessage,
     );
   }
+
+  /// Validates argument before execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final createUser = Func1<String, User>((email) async {
+  ///   return await api.createUser(email);
+  /// }).validate(
+  ///   validators: [
+  ///     (email) => email.contains('@') ? null : 'Invalid email',
+  ///   ],
+  /// );
+  /// ```
+  Func1<T, R> validate({
+    required List<String? Function(T arg)> validators,
+    ValidationMode mode = ValidationMode.failFast,
+    void Function(List<String> errors)? onValidationError,
+  }) {
+    return ValidateExtension1(
+      this,
+      validators: validators,
+      mode: mode,
+      onValidationError: onValidationError,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -1540,6 +1566,31 @@ class Func2<T1, T2, R> {
       postCondition: postCondition,
       preConditionMessage: preConditionMessage,
       postConditionMessage: postConditionMessage,
+    );
+  }
+
+  /// Validates arguments before execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final createPost = Func2<String, String, Post>(
+  ///   (title, content) async => await api.create(title, content),
+  /// ).validate(
+  ///   validators: [
+  ///     (title, content) => title.isNotEmpty ? null : 'Title required',
+  ///   ],
+  /// );
+  /// ```
+  Func2<T1, T2, R> validate({
+    required List<String? Function(T1 arg1, T2 arg2)> validators,
+    ValidationMode mode = ValidationMode.failFast,
+    void Function(List<String> errors)? onValidationError,
+  }) {
+    return ValidateExtension2(
+      this,
+      validators: validators,
+      mode: mode,
+      onValidationError: onValidationError,
     );
   }
 }
