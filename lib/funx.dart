@@ -35,6 +35,7 @@ export 'src/core/types.dart';
 
 // Error Handling
 export 'src/error_handling/catch.dart';
+export 'src/error_handling/default.dart';
 
 // Performance
 export 'src/performance/batch.dart';
