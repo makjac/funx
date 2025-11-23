@@ -1,3 +1,39 @@
+## 0.6.0
+
+- **Guard**: Pre and post-condition validation for functions
+  - `GuardException` for guard failures
+  - `GuardExtension`, `GuardExtension1`, `GuardExtension2` for `Func`, `Func1`, `Func2`
+  - Pre-condition validation before execution
+  - Post-condition validation after execution with result
+  - Custom error messages for failed conditions
+  - Exception includes failing value for debugging
+
+- **Validate**: Argument validation before function execution
+  - `ValidationException` with detailed error information
+  - `ValidationMode` enum (failFast, aggregate)
+  - `ValidateExtension1`, `ValidateExtension2` for `Func1` and `Func2`
+  - Multiple validators support
+  - Fail-fast mode (stops at first error)
+  - Aggregate mode (collects all errors)
+  - Validation error callbacks
+
+## 0.5.0
+
+- **Catch**: Type-safe error handling with specific handlers
+  - `CatchExtension`, `CatchExtension1`, `CatchExtension2` for `Func`, `Func1`, `Func2`
+  - `Map<Type, Handler>` for type-specific error handling
+  - `catchAll` handler for unmatched errors
+  - `onCatch` callback for each caught error
+  - `rethrowUnhandled` option for unhandled errors
+  - Stack trace preservation
+
+- **Default**: Provide default values when function execution fails
+  - `DefaultExtension`, `DefaultExtension1`, `DefaultExtension2`
+  - Default value or default factory support
+  - `defaultIf` predicate to determine when to use default
+  - `onDefault` callback when default value is used
+  - Graceful error recovery
+
 ## 0.4.0
 
 - **Once**: Execute function only once and cache result forever
