@@ -34,6 +34,8 @@ import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
 import 'package:funx/src/timing/throttle.dart';
 import 'package:funx/src/timing/timeout.dart';
+import 'package:funx/src/validation/guard.dart';
+import 'package:funx/src/validation/validate.dart';
 
 /// A wrapper for async functions that provides execution control mechanisms.
 ///
@@ -500,6 +502,31 @@ class Func<R> {
       defaultValue: defaultValue,
       defaultIf: defaultIf,
       onDefault: onDefault,
+    );
+  }
+
+  /// Adds guard conditions to execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final process = Func(() async => await heavyOperation())
+  ///   .guard(
+  ///     preCondition: () => systemReady,
+  ///     postCondition: (result) => result.isValid,
+  ///   );
+  /// ```
+  Func<R> guard({
+    bool Function()? preCondition,
+    bool Function(R result)? postCondition,
+    String preConditionMessage = 'Pre-condition failed',
+    String postConditionMessage = 'Post-condition failed',
+  }) {
+    return GuardExtension(
+      this,
+      preCondition: preCondition,
+      postCondition: postCondition,
+      preConditionMessage: preConditionMessage,
+      postConditionMessage: postConditionMessage,
     );
   }
 }
@@ -1007,6 +1034,56 @@ class Func1<T, R> {
       onDefault: onDefault,
     );
   }
+
+  /// Adds guard conditions to execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final process = Func1<int, String>((n) async => n.toString())
+  ///   .guard(
+  ///     preCondition: (n) => n >= 0,
+  ///     preConditionMessage: 'Value must be non-negative',
+  ///   );
+  /// ```
+  Func1<T, R> guard({
+    bool Function(T arg)? preCondition,
+    bool Function(R result)? postCondition,
+    String preConditionMessage = 'Pre-condition failed',
+    String postConditionMessage = 'Post-condition failed',
+  }) {
+    return GuardExtension1(
+      this,
+      preCondition: preCondition,
+      postCondition: postCondition,
+      preConditionMessage: preConditionMessage,
+      postConditionMessage: postConditionMessage,
+    );
+  }
+
+  /// Validates argument before execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final createUser = Func1<String, User>((email) async {
+  ///   return await api.createUser(email);
+  /// }).validate(
+  ///   validators: [
+  ///     (email) => email.contains('@') ? null : 'Invalid email',
+  ///   ],
+  /// );
+  /// ```
+  Func1<T, R> validate({
+    required List<String? Function(T arg)> validators,
+    ValidationMode mode = ValidationMode.failFast,
+    void Function(List<String> errors)? onValidationError,
+  }) {
+    return ValidateExtension1(
+      this,
+      validators: validators,
+      mode: mode,
+      onValidationError: onValidationError,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -1464,6 +1541,56 @@ class Func2<T1, T2, R> {
       defaultValue: defaultValue,
       defaultIf: defaultIf,
       onDefault: onDefault,
+    );
+  }
+
+  /// Adds guard conditions to execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final divide = Func2<int, int, double>((a, b) async => a / b)
+  ///   .guard(
+  ///     preCondition: (a, b) => b != 0,
+  ///     preConditionMessage: 'Division by zero not allowed',
+  ///   );
+  /// ```
+  Func2<T1, T2, R> guard({
+    bool Function(T1 arg1, T2 arg2)? preCondition,
+    bool Function(R result)? postCondition,
+    String preConditionMessage = 'Pre-condition failed',
+    String postConditionMessage = 'Post-condition failed',
+  }) {
+    return GuardExtension2(
+      this,
+      preCondition: preCondition,
+      postCondition: postCondition,
+      preConditionMessage: preConditionMessage,
+      postConditionMessage: postConditionMessage,
+    );
+  }
+
+  /// Validates arguments before execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final createPost = Func2<String, String, Post>(
+  ///   (title, content) async => await api.create(title, content),
+  /// ).validate(
+  ///   validators: [
+  ///     (title, content) => title.isNotEmpty ? null : 'Title required',
+  ///   ],
+  /// );
+  /// ```
+  Func2<T1, T2, R> validate({
+    required List<String? Function(T1 arg1, T2 arg2)> validators,
+    ValidationMode mode = ValidationMode.failFast,
+    void Function(List<String> errors)? onValidationError,
+  }) {
+    return ValidateExtension2(
+      this,
+      validators: validators,
+      mode: mode,
+      onValidationError: onValidationError,
     );
   }
 }
