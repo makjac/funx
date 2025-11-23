@@ -1,3 +1,22 @@
+## 0.5.0
+
+### Error Handling
+
+- **Catch**: Type-safe error handling with specific handlers
+  - `CatchExtension`, `CatchExtension1`, `CatchExtension2` for `Func`, `Func1`, `Func2`
+  - `Map<Type, Handler>` for type-specific error handling
+  - `catchAll` handler for unmatched errors
+  - `onCatch` callback for each caught error
+  - `rethrowUnhandled` option for unhandled errors
+  - Stack trace preservation
+
+- **Default**: Provide default values when function execution fails
+  - `DefaultExtension`, `DefaultExtension1`, `DefaultExtension2`
+  - Default value or default factory support
+  - `defaultIf` predicate to determine when to use default
+  - `onDefault` callback when default value is used
+  - Graceful error recovery
+
 ## 0.4.0
 
 - **Once**: Execute function only once and cache result forever
