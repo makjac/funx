@@ -28,6 +28,9 @@ export 'src/concurrency/queue.dart';
 export 'src/concurrency/rw_lock.dart';
 export 'src/concurrency/semaphore.dart';
 
+// Control Flow
+export 'src/control_flow/conditional.dart';
+
 // Core
 export 'src/core/func.dart';
 export 'src/core/func_sync.dart';
