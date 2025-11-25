@@ -69,6 +69,11 @@ export 'src/timing/idle_callback.dart';
 export 'src/timing/throttle.dart';
 export 'src/timing/timeout.dart';
 
+// Transformation
+export 'src/transformation/merge.dart';
+export 'src/transformation/proxy.dart';
+export 'src/transformation/transform.dart';
+
 // Validation
 export 'src/validation/guard.dart';
 export 'src/validation/validate.dart';
