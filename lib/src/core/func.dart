@@ -36,6 +36,7 @@ import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
 import 'package:funx/src/timing/throttle.dart';
 import 'package:funx/src/timing/timeout.dart';
+import 'package:funx/src/transformation/proxy.dart';
 import 'package:funx/src/validation/guard.dart';
 import 'package:funx/src/validation/validate.dart';
 
@@ -529,6 +530,28 @@ class Func<R> {
       postCondition: postCondition,
       preConditionMessage: preConditionMessage,
       postConditionMessage: postConditionMessage,
+    );
+  }
+
+  /// Proxies this function with interceptor hooks.
+  ///
+  /// Example:
+  /// ```dart
+  /// final logged = myFunc.proxy(
+  ///   beforeCall: () => print('Starting'),
+  ///   afterCall: (result) => enrichResult(result),
+  /// );
+  /// ```
+  Func<R> proxy({
+    void Function()? beforeCall,
+    R Function(R result)? afterCall,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    return ProxyExtension(
+      this,
+      beforeCall: beforeCall,
+      afterCall: afterCall,
+      onError: onError,
     );
   }
 
@@ -1112,6 +1135,30 @@ class Func1<T, R> {
     );
   }
 
+  /// Proxies this function with interceptor hooks.
+  ///
+  /// Example:
+  /// ```dart
+  /// final logged = myFunc.proxy(
+  ///   beforeCall: (arg) => print('Calling with: $arg'),
+  ///   transformArg: (arg) => arg.trim(),
+  /// );
+  /// ```
+  Func1<T, R> proxy({
+    void Function(T arg)? beforeCall,
+    T Function(T arg)? transformArg,
+    R Function(R result)? afterCall,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    return ProxyExtension1(
+      this,
+      beforeCall: beforeCall,
+      transformArg: transformArg,
+      afterCall: afterCall,
+      onError: onError,
+    );
+  }
+
   /// Repeats this function execution.
   ///
   /// Example:
@@ -1643,6 +1690,30 @@ class Func2<T1, T2, R> {
       validators: validators,
       mode: mode,
       onValidationError: onValidationError,
+    );
+  }
+
+  /// Proxies this function with interceptor hooks.
+  ///
+  /// Example:
+  /// ```dart
+  /// final logged = myFunc.proxy(
+  ///   beforeCall: (a, b) => print('Calling with: $a, $b'),
+  ///   transformArgs: (a, b) => (a.abs(), b.abs()),
+  /// );
+  /// ```
+  Func2<T1, T2, R> proxy({
+    void Function(T1 arg1, T2 arg2)? beforeCall,
+    (T1, T2) Function(T1 arg1, T2 arg2)? transformArgs,
+    R Function(R result)? afterCall,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    return ProxyExtension2(
+      this,
+      beforeCall: beforeCall,
+      transformArgs: transformArgs,
+      afterCall: afterCall,
+      onError: onError,
     );
   }
 
