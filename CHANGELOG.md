@@ -1,3 +1,28 @@
+## 0.8.0
+
+- **Transformation**: Function result and call manipulation
+  - **Proxy**: Intercept and modify function calls
+    - `ProxyExtension`, `ProxyExtension1`, `ProxyExtension2` for `Func`, `Func1`, `Func2`
+    - `beforeCall` callback executed before function invocation
+    - `afterCall` callback to transform results after execution
+    - `transformArg`/`transformArgs` to modify arguments before execution
+    - `onError` callback for error handling with stack trace
+    - All callbacks optional for flexible interception
+  
+  - **Transform**: Transform function results to different types
+    - `TransformExtension`, `TransformExtension1`, `TransformExtension2`
+    - Generic type transformation via mapper function
+    - Chainable transformations for complex pipelines
+    - Support for async mappers
+    - Type-safe result conversion
+  
+  - **Merge**: Combine results from multiple function sources
+    - `MergeExtension1`, `MergeExtension2` for `Func1` and `Func2`
+    - Parallel execution with `Future.wait`
+    - Combiner function for result aggregation
+    - Support for multiple source functions
+    - Maintains source execution order in results
+
 ## 0.7.0
 
 - **Control Flow**: Advanced execution control patterns
