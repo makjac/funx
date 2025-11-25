@@ -71,6 +71,7 @@ export 'src/timing/timeout.dart';
 
 // Transformation
 export 'src/transformation/proxy.dart';
+export 'src/transformation/transform.dart';
 
 // Validation
 export 'src/validation/guard.dart';
