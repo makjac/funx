@@ -12,6 +12,8 @@ import 'package:funx/src/concurrency/monitor.dart';
 import 'package:funx/src/concurrency/queue.dart';
 import 'package:funx/src/concurrency/rw_lock.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
+import 'package:funx/src/control_flow/conditional.dart';
+import 'package:funx/src/control_flow/repeat.dart';
 import 'package:funx/src/core/types.dart';
 import 'package:funx/src/error_handling/catch.dart';
 import 'package:funx/src/error_handling/default.dart';
@@ -527,6 +529,31 @@ class Func<R> {
       postCondition: postCondition,
       preConditionMessage: preConditionMessage,
       postConditionMessage: postConditionMessage,
+    );
+  }
+
+  /// Repeats this function execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final poll = checkStatus.repeat(
+  ///   times: 10,
+  ///   interval: Duration(seconds: 5),
+  ///   until: (result) => result.isComplete,
+  /// );
+  /// ```
+  Func<R> repeat({
+    int? times,
+    Duration? interval,
+    bool Function(R result)? until,
+    void Function(int iteration, R result)? onIteration,
+  }) {
+    return RepeatExtension(
+      this,
+      times: times,
+      interval: interval,
+      until: until,
+      onIteration: onIteration,
     );
   }
 }
@@ -1084,6 +1111,31 @@ class Func1<T, R> {
       onValidationError: onValidationError,
     );
   }
+
+  /// Repeats this function execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final retry = fetchData.repeat(
+  ///   times: 3,
+  ///   interval: Duration(seconds: 2),
+  ///   until: (result) => result.isValid,
+  /// );
+  /// ```
+  Func1<T, R> repeat({
+    int? times,
+    Duration? interval,
+    bool Function(R result)? until,
+    void Function(int iteration, R result)? onIteration,
+  }) {
+    return RepeatExtension1(
+      this,
+      times: times,
+      interval: interval,
+      until: until,
+      onIteration: onIteration,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -1591,6 +1643,31 @@ class Func2<T1, T2, R> {
       validators: validators,
       mode: mode,
       onValidationError: onValidationError,
+    );
+  }
+
+  /// Repeats this function execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final retry = fetchData.repeat(
+  ///   times: 5,
+  ///   interval: Duration(milliseconds: 500),
+  ///   until: (result) => result.isComplete,
+  /// );
+  /// ```
+  Func2<T1, T2, R> repeat({
+    int? times,
+    Duration? interval,
+    bool Function(R result)? until,
+    void Function(int iteration, R result)? onIteration,
+  }) {
+    return RepeatExtension2(
+      this,
+      times: times,
+      interval: interval,
+      until: until,
+      onIteration: onIteration,
     );
   }
 }
