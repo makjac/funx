@@ -1,3 +1,29 @@
+## 0.7.0
+
+- **Control Flow**: Advanced execution control patterns
+  - **Switch**: Dynamic function selection based on selector
+    - `SwitchExtension1`, `SwitchExtension2` for `Func1` and `Func2`
+    - `SwitchException` thrown when no case matches and no default provided
+    - Selector function determines which case to execute
+    - Map of cases for different selector values
+    - Optional default case for fallback behavior
+  
+  - **Conditional**: If-then-else execution logic
+    - `ConditionalExtension`, `ConditionalExtension1`, `ConditionalExtension2`
+    - Condition predicate determines execution path
+    - Optional `otherwise` alternative for false conditions
+    - Throws `StateError` when condition false and no alternative
+    - Condition receives function arguments for context
+  
+  - **Repeat**: Controlled loop and polling mechanism
+    - `RepeatExtension`, `RepeatExtension1`, `RepeatExtension2`
+    - Configurable iteration count via `times` parameter
+    - Optional `interval` for delays between iterations
+    - `until` predicate for conditional stopping
+    - `onIteration` callback after each execution
+    - Support for infinite loops with stop conditions
+    - Returns last execution result
+
 ## 0.6.0
 
 - **Guard**: Pre and post-condition validation for functions
