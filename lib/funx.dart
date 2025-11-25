@@ -31,6 +31,7 @@ export 'src/concurrency/semaphore.dart';
 // Control Flow
 export 'src/control_flow/conditional.dart';
 export 'src/control_flow/repeat.dart';
+export 'src/control_flow/switch.dart';
 
 // Core
 export 'src/core/func.dart';
