@@ -49,6 +49,7 @@ export 'src/observability/monitor.dart'
 export 'src/observability/tap.dart';
 
 // Orchestration
+export 'src/orchestration/all.dart';
 export 'src/orchestration/race.dart';
 
 // Performance

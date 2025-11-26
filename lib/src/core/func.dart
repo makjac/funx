@@ -1313,6 +1313,28 @@ class Func1<T, R> {
     );
   }
 
+  /// Executes all functions in parallel.
+  ///
+  /// Example:
+  /// ```dart
+  /// final allResults = fetchFromPrimary.all(
+  ///   functions: [fetchFromBackup1, fetchFromBackup2],
+  ///   onComplete: (index, result) => print('Done: $index'),
+  /// );
+  /// ```
+  Func1<T, List<R>> all({
+    required List<Func1<T, R>> functions,
+    bool failFast = true,
+    void Function(int index, R result)? onComplete,
+  }) {
+    return AllExtension1(
+      this,
+      functions: functions,
+      failFast: failFast,
+      onComplete: onComplete,
+    );
+  }
+
   /// Executes side effects without modifying the result.
   ///
   /// Example:
@@ -1982,6 +2004,28 @@ class Func2<T1, T2, R> {
       competitors: competitors,
       onWin: onWin,
       onLose: onLose,
+    );
+  }
+
+  /// Executes all functions in parallel.
+  ///
+  /// Example:
+  /// ```dart
+  /// final allResults = fetchData.all(
+  ///   functions: [fetchFromBackup],
+  ///   onComplete: (index, result) => print('Done: $index'),
+  /// );
+  /// ```
+  Func2<T1, T2, List<R>> all({
+    required List<Func2<T1, T2, R>> functions,
+    bool failFast = true,
+    void Function(int index, R result)? onComplete,
+  }) {
+    return AllExtension2(
+      this,
+      functions: functions,
+      failFast: failFast,
+      onComplete: onComplete,
     );
   }
 
