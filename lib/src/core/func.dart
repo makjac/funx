@@ -20,6 +20,7 @@ import 'package:funx/src/error_handling/default.dart';
 import 'package:funx/src/observability/audit.dart';
 import 'package:funx/src/observability/monitor.dart' as obs;
 import 'package:funx/src/observability/tap.dart';
+import 'package:funx/src/orchestration/race.dart';
 import 'package:funx/src/performance/batch.dart';
 import 'package:funx/src/performance/cache_aside.dart';
 import 'package:funx/src/performance/compress.dart';
@@ -1290,6 +1291,28 @@ class Func1<T, R> {
     );
   }
 
+  /// Races this function against competitors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fastest = fetchFromPrimary.race(
+  ///   competitors: [fetchFromBackup1, fetchFromBackup2],
+  ///   onWin: (index, result) => print('Backup $index won'),
+  /// );
+  /// ```
+  Func1<T, R> race({
+    required List<Func1<T, R>> competitors,
+    void Function(int index, R result)? onWin,
+    void Function(int index, R result)? onLose,
+  }) {
+    return RaceExtension1(
+      this,
+      competitors: competitors,
+      onWin: onWin,
+      onLose: onLose,
+    );
+  }
+
   /// Executes side effects without modifying the result.
   ///
   /// Example:
@@ -1937,6 +1960,28 @@ class Func2<T1, T2, R> {
       interval: interval,
       until: until,
       onIteration: onIteration,
+    );
+  }
+
+  /// Races this function against competitors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fastest = fetchData.race(
+  ///   competitors: [fetchFromBackup],
+  ///   onWin: (index, result) => print('Won: $index'),
+  /// );
+  /// ```
+  Func2<T1, T2, R> race({
+    required List<Func2<T1, T2, R>> competitors,
+    void Function(int index, R result)? onWin,
+    void Function(int index, R result)? onLose,
+  }) {
+    return RaceExtension2(
+      this,
+      competitors: competitors,
+      onWin: onWin,
+      onLose: onLose,
     );
   }
 

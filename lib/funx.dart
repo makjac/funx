@@ -48,6 +48,9 @@ export 'src/observability/monitor.dart'
     hide MonitorExtension, MonitorExtension1, MonitorExtension2;
 export 'src/observability/tap.dart';
 
+// Orchestration
+export 'src/orchestration/race.dart';
+
 // Performance
 export 'src/performance/batch.dart';
 export 'src/performance/cache_aside.dart';
