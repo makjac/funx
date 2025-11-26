@@ -17,6 +17,9 @@ import 'package:funx/src/control_flow/repeat.dart';
 import 'package:funx/src/core/types.dart';
 import 'package:funx/src/error_handling/catch.dart';
 import 'package:funx/src/error_handling/default.dart';
+import 'package:funx/src/observability/audit.dart';
+import 'package:funx/src/observability/monitor.dart' as obs;
+import 'package:funx/src/observability/tap.dart';
 import 'package:funx/src/performance/batch.dart';
 import 'package:funx/src/performance/cache_aside.dart';
 import 'package:funx/src/performance/compress.dart';
@@ -610,6 +613,44 @@ class Func<R> {
       interval: interval,
       until: until,
       onIteration: onIteration,
+    );
+  }
+
+  /// Executes side effects without modifying the result.
+  ///
+  /// Example:
+  /// ```dart
+  /// final logged = fetchData.tap(
+  ///   onValue: (data) => print('Got: $data'),
+  ///   onError: (e, s) => logError(e, s),
+  /// );\n  /// ```
+  Func<R> tap({
+    void Function(R value)? onValue,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    return TapExtension(
+      this,
+      onValue: onValue,
+      onError: onError,
+    );
+  }
+
+  /// Adds execution monitoring and metrics collection.
+  ///
+  /// Example:
+  /// ```dart
+  /// final monitored = processData.monitorObservability(
+  ///  onMetricsUpdate: (metrics) {
+  ///   print('Calls: ${metrics.executionCount}, Rate: ${metrics.successRate}');
+  ///  },
+  /// );
+  /// ```
+  Func<R> monitorObservability({
+    void Function(obs.Metrics metrics)? onMetricsUpdate,
+  }) {
+    return obs.MonitorExtension(
+      this,
+      onMetricsUpdate: onMetricsUpdate,
     );
   }
 }
@@ -1248,6 +1289,66 @@ class Func1<T, R> {
       onIteration: onIteration,
     );
   }
+
+  /// Executes side effects without modifying the result.
+  ///
+  /// Example:
+  /// ```dart
+  /// final logged = fetchUser.tap(
+  ///   onValue: (user) => print('User: ${user.name}'),
+  /// );
+  /// ```
+  Func1<T, R> tap({
+    void Function(R value)? onValue,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    return TapExtension1(
+      this,
+      onValue: onValue,
+      onError: onError,
+    );
+  }
+
+  /// Adds execution monitoring and metrics collection.
+  ///
+  /// Example:
+  /// ```dart
+  /// final monitored = processItem.monitorObservability(
+  ///   onMetricsUpdate: (metrics) {
+  ///     print('Success rate: ${metrics.successRate}');
+  ///   },
+  /// );
+  /// ```
+  Func1<T, R> monitorObservability({
+    void Function(obs.Metrics metrics)? onMetricsUpdate,
+  }) {
+    return obs.MonitorExtension1(
+      this,
+      onMetricsUpdate: onMetricsUpdate,
+    );
+  }
+
+  /// Adds detailed audit logging with arguments, results, and errors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final audited = processItem.audit(
+  ///   maxLogs: 100,
+  ///   onAudit: (log) {
+  ///     print('Execution ${log.isSuccess ? "succeeded" : "failed"}');
+  ///   },
+  /// );
+  /// ```
+  Func1<T, R> audit({
+    void Function(AuditLog<T, R> log)? onAudit,
+    int maxLogs = 100,
+  }) {
+    return AuditExtension1(
+      this,
+      onAudit: onAudit,
+      maxLogs: maxLogs,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -1836,6 +1937,66 @@ class Func2<T1, T2, R> {
       interval: interval,
       until: until,
       onIteration: onIteration,
+    );
+  }
+
+  /// Executes side effects without modifying the result.
+  ///
+  /// Example:
+  /// ```dart
+  /// final logged = saveData.tap(
+  ///   onValue: (result) => print('Saved'),
+  /// );
+  /// ```
+  Func2<T1, T2, R> tap({
+    void Function(R value)? onValue,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    return TapExtension2(
+      this,
+      onValue: onValue,
+      onError: onError,
+    );
+  }
+
+  /// Adds execution monitoring and metrics collection.
+  ///
+  /// Example:
+  /// ```dart
+  /// final monitored = updateData.monitorObservability(
+  ///   onMetricsUpdate: (metrics) {
+  ///     print('Avg duration: ${metrics.averageDuration}ms');
+  ///   },
+  /// );
+  /// ```
+  Func2<T1, T2, R> monitorObservability({
+    void Function(obs.Metrics metrics)? onMetricsUpdate,
+  }) {
+    return obs.MonitorExtension2(
+      this,
+      onMetricsUpdate: onMetricsUpdate,
+    );
+  }
+
+  /// Adds detailed audit logging with arguments, results, and errors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final audited = updateData.audit(
+  ///   maxLogs: 50,
+  ///   onAudit: (log) {
+  ///     print('Duration: ${log.duration}ms');
+  ///   },
+  /// );
+  /// ```
+  Func2<T1, T2, R> audit({
+    void Function(AuditLog<(T1, T2), R> log)? onAudit,
+    int maxLogs = 100,
+  }) {
+    return AuditExtension2(
+      this,
+      onAudit: onAudit,
+      maxLogs: maxLogs,
     );
   }
 }
