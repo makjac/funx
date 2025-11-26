@@ -72,6 +72,9 @@ export 'src/reliability/fallback.dart';
 export 'src/reliability/recover.dart';
 export 'src/reliability/retry.dart';
 
+// State
+export 'src/state/snapshot.dart';
+
 // Timing
 export 'src/timing/debounce.dart';
 export 'src/timing/defer.dart';
