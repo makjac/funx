@@ -1,3 +1,33 @@
+## 0.9.0
+
+- **Observability**: Function execution monitoring and audit trails
+  - **Tap**: Side-effect observation without modifying results
+    - `TapExtension`, `TapExtension1`, `TapExtension2` for `Func`, `Func1`, `Func2`
+    - `onValue` callback for successful executions
+    - `onError` callback for failures with stack traces
+    - Non-intrusive observation pattern
+    - Useful for logging and debugging
+    - Preserves original function behavior
+  
+  - **Monitor**: Comprehensive execution metrics and monitoring
+    - `MonitorExtension` with global instance support
+    - `MonitorExtension1`, `MonitorExtension2` for `Func1` and `Func2`
+    - Tracks total calls, successes, and failures
+    - Measures min/max/average execution duration
+    - Calculates success/failure rates
+    - Real-time metrics collection
+    - `getMetrics()` for retrieving statistics
+    - Thread-safe metric updates
+  
+  - **Audit**: Detailed execution logging and audit trails
+    - `AuditExtension1`, `AuditExtension2` for `Func1` and `Func2`
+    - `AuditLog<T, R>` class for log entries
+    - Records arguments, results, errors, and timing
+    - Configurable maximum log retention
+    - `onAudit` callback for custom audit handlers
+    - Retrieval of all logs, success logs, or failure logs
+    - Support for compliance and security auditing
+
 ## 0.8.0
 
 - **Transformation**: Function result and call manipulation
