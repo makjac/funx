@@ -51,6 +51,7 @@ export 'src/observability/tap.dart';
 // Orchestration
 export 'src/orchestration/all.dart';
 export 'src/orchestration/race.dart';
+export 'src/orchestration/saga.dart';
 
 // Performance
 export 'src/performance/batch.dart';

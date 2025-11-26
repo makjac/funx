@@ -20,7 +20,9 @@ import 'package:funx/src/error_handling/default.dart';
 import 'package:funx/src/observability/audit.dart';
 import 'package:funx/src/observability/monitor.dart' as obs;
 import 'package:funx/src/observability/tap.dart';
+import 'package:funx/src/orchestration/all.dart';
 import 'package:funx/src/orchestration/race.dart';
+import 'package:funx/src/orchestration/saga.dart';
 import 'package:funx/src/performance/batch.dart';
 import 'package:funx/src/performance/cache_aside.dart';
 import 'package:funx/src/performance/compress.dart';
@@ -1354,6 +1356,32 @@ class Func1<T, R> {
     );
   }
 
+  /// Adds saga pattern for distributed transactions with compensating actions.
+  ///
+  /// Example:
+  /// ```dart
+  /// final sagaFunc = createOrder.saga(
+  ///   steps: [
+  ///     SagaStep(
+  ///       action: reserveInventory,
+  ///       compensation: releaseInventory,
+  ///     ),
+  ///   ],
+  /// );
+  /// ```
+  Func1<T, R> saga({
+    required List<SagaStep<dynamic, dynamic>> steps,
+    void Function(int index, dynamic result)? onCompensate,
+    void Function(int index, dynamic result)? onStepComplete,
+  }) {
+    return SagaExtension1(
+      this,
+      steps: steps,
+      onCompensate: onCompensate,
+      onStepComplete: onStepComplete,
+    );
+  }
+
   /// Adds execution monitoring and metrics collection.
   ///
   /// Example:
@@ -2045,6 +2073,32 @@ class Func2<T1, T2, R> {
       this,
       onValue: onValue,
       onError: onError,
+    );
+  }
+
+  /// Adds saga pattern for distributed transactions with compensating actions.
+  ///
+  /// Example:
+  /// ```dart
+  /// final sagaFunc = updateData.saga(
+  ///   steps: [
+  ///     SagaStep(
+  ///       action: saveToDb,
+  ///       compensation: rollbackDb,
+  ///     ),
+  ///   ],
+  /// );
+  /// ```
+  Func2<T1, T2, R> saga({
+    required List<SagaStep<dynamic, dynamic>> steps,
+    void Function(int index, dynamic result)? onCompensate,
+    void Function(int index, dynamic result)? onStepComplete,
+  }) {
+    return SagaExtension2(
+      this,
+      steps: steps,
+      onCompensate: onCompensate,
+      onStepComplete: onStepComplete,
     );
   }
 
