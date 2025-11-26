@@ -18,6 +18,8 @@ import 'package:funx/src/core/types.dart';
 import 'package:funx/src/error_handling/catch.dart';
 import 'package:funx/src/error_handling/default.dart';
 import 'package:funx/src/observability/audit.dart';
+import 'package:funx/src/observability/monitor.dart' as obs;
+import 'package:funx/src/observability/tap.dart';
 import 'package:funx/src/performance/batch.dart';
 import 'package:funx/src/performance/cache_aside.dart';
 import 'package:funx/src/performance/compress.dart';
@@ -611,6 +613,25 @@ class Func<R> {
       interval: interval,
       until: until,
       onIteration: onIteration,
+    );
+  }
+
+  /// Executes side effects without modifying the result.
+  ///
+  /// Example:
+  /// ```dart
+  /// final logged = fetchData.tap(
+  ///   onValue: (data) => print('Got: $data'),
+  ///   onError: (e, s) => logError(e, s),
+  /// );\n  /// ```
+  Func<R> tap({
+    void Function(R value)? onValue,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    return TapExtension(
+      this,
+      onValue: onValue,
+      onError: onError,
     );
   }
 
@@ -1269,6 +1290,25 @@ class Func1<T, R> {
     );
   }
 
+  /// Executes side effects without modifying the result.
+  ///
+  /// Example:
+  /// ```dart
+  /// final logged = fetchUser.tap(
+  ///   onValue: (user) => print('User: ${user.name}'),
+  /// );
+  /// ```
+  Func1<T, R> tap({
+    void Function(R value)? onValue,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    return TapExtension1(
+      this,
+      onValue: onValue,
+      onError: onError,
+    );
+  }
+
   /// Adds execution monitoring and metrics collection.
   ///
   /// Example:
@@ -1897,6 +1937,25 @@ class Func2<T1, T2, R> {
       interval: interval,
       until: until,
       onIteration: onIteration,
+    );
+  }
+
+  /// Executes side effects without modifying the result.
+  ///
+  /// Example:
+  /// ```dart
+  /// final logged = saveData.tap(
+  ///   onValue: (result) => print('Saved'),
+  /// );
+  /// ```
+  Func2<T1, T2, R> tap({
+    void Function(R value)? onValue,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    return TapExtension2(
+      this,
+      onValue: onValue,
+      onError: onError,
     );
   }
 

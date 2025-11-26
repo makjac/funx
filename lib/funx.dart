@@ -46,6 +46,7 @@ export 'src/error_handling/default.dart';
 export 'src/observability/audit.dart' hide AuditExtension1, AuditExtension2;
 export 'src/observability/monitor.dart'
     hide MonitorExtension, MonitorExtension1, MonitorExtension2;
+export 'src/observability/tap.dart';
 
 // Performance
 export 'src/performance/batch.dart';
