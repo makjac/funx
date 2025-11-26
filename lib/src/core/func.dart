@@ -38,6 +38,7 @@ import 'package:funx/src/reliability/circuit_breaker.dart';
 import 'package:funx/src/reliability/fallback.dart';
 import 'package:funx/src/reliability/recover.dart';
 import 'package:funx/src/reliability/retry.dart';
+import 'package:funx/src/state/snapshot.dart';
 import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
 import 'package:funx/src/timing/throttle.dart';
@@ -635,6 +636,33 @@ class Func<R> {
       this,
       onValue: onValue,
       onError: onError,
+    );
+  }
+
+  /// Adds state checkpointing and restoration.
+  ///
+  /// Example:
+  /// ```dart
+  /// final snapshotted = processData.snapshot(
+  ///   getState: () => currentState,
+  ///   setState: (s) => currentState = s,
+  ///   autoSnapshot: true,
+  /// );
+  /// ```
+  Func<R> snapshot<S>({
+    required S Function() getState,
+    required void Function(S state) setState,
+    bool autoSnapshot = false,
+    void Function(Snapshot<S> snapshot)? onSnapshot,
+    void Function(Snapshot<S> snapshot)? onRestore,
+  }) {
+    return SnapshotExtension(
+      this,
+      getState: getState,
+      setState: setState,
+      autoSnapshot: autoSnapshot,
+      onSnapshot: onSnapshot,
+      onRestore: onRestore,
     );
   }
 
@@ -1356,6 +1384,32 @@ class Func1<T, R> {
     );
   }
 
+  /// Adds state checkpointing and restoration.
+  ///
+  /// Example:
+  /// ```dart
+  /// final snapshotted = processItem.snapshot(
+  ///   getState: () => state,
+  ///   setState: (s) => state = s,
+  /// );
+  /// ```
+  Func1<T, R> snapshot<S>({
+    required S Function() getState,
+    required void Function(S state) setState,
+    bool autoSnapshot = false,
+    void Function(Snapshot<S> snapshot)? onSnapshot,
+    void Function(Snapshot<S> snapshot)? onRestore,
+  }) {
+    return SnapshotExtension1(
+      this,
+      getState: getState,
+      setState: setState,
+      autoSnapshot: autoSnapshot,
+      onSnapshot: onSnapshot,
+      onRestore: onRestore,
+    );
+  }
+
   /// Adds saga pattern for distributed transactions with compensating actions.
   ///
   /// Example:
@@ -2073,6 +2127,32 @@ class Func2<T1, T2, R> {
       this,
       onValue: onValue,
       onError: onError,
+    );
+  }
+
+  /// Adds state checkpointing and restoration.
+  ///
+  /// Example:
+  /// ```dart
+  /// final snapshotted = updateData.snapshot(
+  ///   getState: () => state,
+  ///   setState: (s) => state = s,
+  /// );
+  /// ```
+  Func2<T1, T2, R> snapshot<S>({
+    required S Function() getState,
+    required void Function(S state) setState,
+    bool autoSnapshot = false,
+    void Function(Snapshot<S> snapshot)? onSnapshot,
+    void Function(Snapshot<S> snapshot)? onRestore,
+  }) {
+    return SnapshotExtension2(
+      this,
+      getState: getState,
+      setState: setState,
+      autoSnapshot: autoSnapshot,
+      onSnapshot: onSnapshot,
+      onRestore: onRestore,
     );
   }
 
