@@ -1,3 +1,31 @@
+## 0.10.0
+
+- **Orchestration**: Complex function coordination and execution patterns
+  - **Race**: Execute multiple functions, return first successful result
+    - `RaceExtension`, `RaceExtension1`, `RaceExtension2` for `Func`, `Func1`, `Func2`
+    - Parallel execution with `Future.any`
+    - Returns first successful result
+    - Cancels remaining operations
+    - Configurable list of racing functions
+    - Error handling for all failures
+  
+  - **All**: Execute multiple functions, return all results or fail if any fails
+    - `AllExtension`, `AllExtension1`, `AllExtension2` for `Func`, `Func1`, `Func2`
+    - Parallel execution with `Future.wait`
+    - Collects all successful results
+    - Fails if any function fails
+    - Configurable list of functions to execute
+    - Maintains execution order in results
+  
+  - **Saga**: Distributed transaction pattern with compensating actions
+    - `Saga` class for orchestrating multi-step transactions
+    - `SagaStep` for defining transaction steps
+    - Forward execution with automatic rollback on failure
+    - Compensating transactions for each step
+    - Step-by-step execution tracking
+    - Automatic compensation on failure
+    - `SagaExtension`, `SagaExtension1`, `SagaExtension2` for wrapping functions in saga context
+
 ## 0.9.0
 
 - **Observability**: Function execution monitoring and audit trails
