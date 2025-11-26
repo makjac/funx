@@ -20,6 +20,9 @@ import 'package:funx/src/error_handling/default.dart';
 import 'package:funx/src/observability/audit.dart';
 import 'package:funx/src/observability/monitor.dart' as obs;
 import 'package:funx/src/observability/tap.dart';
+import 'package:funx/src/orchestration/all.dart';
+import 'package:funx/src/orchestration/race.dart';
+import 'package:funx/src/orchestration/saga.dart';
 import 'package:funx/src/performance/batch.dart';
 import 'package:funx/src/performance/cache_aside.dart';
 import 'package:funx/src/performance/compress.dart';
@@ -1290,6 +1293,50 @@ class Func1<T, R> {
     );
   }
 
+  /// Races this function against competitors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fastest = fetchFromPrimary.race(
+  ///   competitors: [fetchFromBackup1, fetchFromBackup2],
+  ///   onWin: (index, result) => print('Backup $index won'),
+  /// );
+  /// ```
+  Func1<T, R> race({
+    required List<Func1<T, R>> competitors,
+    void Function(int index, R result)? onWin,
+    void Function(int index, R result)? onLose,
+  }) {
+    return RaceExtension1(
+      this,
+      competitors: competitors,
+      onWin: onWin,
+      onLose: onLose,
+    );
+  }
+
+  /// Executes all functions in parallel.
+  ///
+  /// Example:
+  /// ```dart
+  /// final allResults = fetchFromPrimary.all(
+  ///   functions: [fetchFromBackup1, fetchFromBackup2],
+  ///   onComplete: (index, result) => print('Done: $index'),
+  /// );
+  /// ```
+  Func1<T, List<R>> all({
+    required List<Func1<T, R>> functions,
+    bool failFast = true,
+    void Function(int index, R result)? onComplete,
+  }) {
+    return AllExtension1(
+      this,
+      functions: functions,
+      failFast: failFast,
+      onComplete: onComplete,
+    );
+  }
+
   /// Executes side effects without modifying the result.
   ///
   /// Example:
@@ -1306,6 +1353,32 @@ class Func1<T, R> {
       this,
       onValue: onValue,
       onError: onError,
+    );
+  }
+
+  /// Adds saga pattern for distributed transactions with compensating actions.
+  ///
+  /// Example:
+  /// ```dart
+  /// final sagaFunc = createOrder.saga(
+  ///   steps: [
+  ///     SagaStep(
+  ///       action: reserveInventory,
+  ///       compensation: releaseInventory,
+  ///     ),
+  ///   ],
+  /// );
+  /// ```
+  Func1<T, R> saga({
+    required List<SagaStep<dynamic, dynamic>> steps,
+    void Function(int index, dynamic result)? onCompensate,
+    void Function(int index, dynamic result)? onStepComplete,
+  }) {
+    return SagaExtension1(
+      this,
+      steps: steps,
+      onCompensate: onCompensate,
+      onStepComplete: onStepComplete,
     );
   }
 
@@ -1940,6 +2013,50 @@ class Func2<T1, T2, R> {
     );
   }
 
+  /// Races this function against competitors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final fastest = fetchData.race(
+  ///   competitors: [fetchFromBackup],
+  ///   onWin: (index, result) => print('Won: $index'),
+  /// );
+  /// ```
+  Func2<T1, T2, R> race({
+    required List<Func2<T1, T2, R>> competitors,
+    void Function(int index, R result)? onWin,
+    void Function(int index, R result)? onLose,
+  }) {
+    return RaceExtension2(
+      this,
+      competitors: competitors,
+      onWin: onWin,
+      onLose: onLose,
+    );
+  }
+
+  /// Executes all functions in parallel.
+  ///
+  /// Example:
+  /// ```dart
+  /// final allResults = fetchData.all(
+  ///   functions: [fetchFromBackup],
+  ///   onComplete: (index, result) => print('Done: $index'),
+  /// );
+  /// ```
+  Func2<T1, T2, List<R>> all({
+    required List<Func2<T1, T2, R>> functions,
+    bool failFast = true,
+    void Function(int index, R result)? onComplete,
+  }) {
+    return AllExtension2(
+      this,
+      functions: functions,
+      failFast: failFast,
+      onComplete: onComplete,
+    );
+  }
+
   /// Executes side effects without modifying the result.
   ///
   /// Example:
@@ -1956,6 +2073,32 @@ class Func2<T1, T2, R> {
       this,
       onValue: onValue,
       onError: onError,
+    );
+  }
+
+  /// Adds saga pattern for distributed transactions with compensating actions.
+  ///
+  /// Example:
+  /// ```dart
+  /// final sagaFunc = updateData.saga(
+  ///   steps: [
+  ///     SagaStep(
+  ///       action: saveToDb,
+  ///       compensation: rollbackDb,
+  ///     ),
+  ///   ],
+  /// );
+  /// ```
+  Func2<T1, T2, R> saga({
+    required List<SagaStep<dynamic, dynamic>> steps,
+    void Function(int index, dynamic result)? onCompensate,
+    void Function(int index, dynamic result)? onStepComplete,
+  }) {
+    return SagaExtension2(
+      this,
+      steps: steps,
+      onCompensate: onCompensate,
+      onStepComplete: onStepComplete,
     );
   }
 
