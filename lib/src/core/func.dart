@@ -17,6 +17,7 @@ import 'package:funx/src/control_flow/repeat.dart';
 import 'package:funx/src/core/types.dart';
 import 'package:funx/src/error_handling/catch.dart';
 import 'package:funx/src/error_handling/default.dart';
+import 'package:funx/src/observability/audit.dart';
 import 'package:funx/src/performance/batch.dart';
 import 'package:funx/src/performance/cache_aside.dart';
 import 'package:funx/src/performance/compress.dart';
@@ -1248,6 +1249,28 @@ class Func1<T, R> {
       onIteration: onIteration,
     );
   }
+
+  /// Adds detailed audit logging with arguments, results, and errors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final audited = processItem.audit(
+  ///   maxLogs: 100,
+  ///   onAudit: (log) {
+  ///     print('Execution ${log.isSuccess ? "succeeded" : "failed"}');
+  ///   },
+  /// );
+  /// ```
+  Func1<T, R> audit({
+    void Function(AuditLog<T, R> log)? onAudit,
+    int maxLogs = 100,
+  }) {
+    return AuditExtension1(
+      this,
+      onAudit: onAudit,
+      maxLogs: maxLogs,
+    );
+  }
 }
 
 /// A wrapper for async functions with two parameters.
@@ -1836,6 +1859,28 @@ class Func2<T1, T2, R> {
       interval: interval,
       until: until,
       onIteration: onIteration,
+    );
+  }
+
+  /// Adds detailed audit logging with arguments, results, and errors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final audited = updateData.audit(
+  ///   maxLogs: 50,
+  ///   onAudit: (log) {
+  ///     print('Duration: ${log.duration}ms');
+  ///   },
+  /// );
+  /// ```
+  Func2<T1, T2, R> audit({
+    void Function(AuditLog<(T1, T2), R> log)? onAudit,
+    int maxLogs = 100,
+  }) {
+    return AuditExtension2(
+      this,
+      onAudit: onAudit,
+      maxLogs: maxLogs,
     );
   }
 }

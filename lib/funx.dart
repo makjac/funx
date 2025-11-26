@@ -42,6 +42,9 @@ export 'src/core/types.dart';
 export 'src/error_handling/catch.dart';
 export 'src/error_handling/default.dart';
 
+// Observability
+export 'src/observability/audit.dart' hide AuditExtension1, AuditExtension2;
+
 // Performance
 export 'src/performance/batch.dart';
 export 'src/performance/cache_aside.dart';
