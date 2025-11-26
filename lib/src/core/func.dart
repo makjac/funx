@@ -613,6 +613,25 @@ class Func<R> {
       onIteration: onIteration,
     );
   }
+
+  /// Adds execution monitoring and metrics collection.
+  ///
+  /// Example:
+  /// ```dart
+  /// final monitored = processData.monitorObservability(
+  ///  onMetricsUpdate: (metrics) {
+  ///   print('Calls: ${metrics.executionCount}, Rate: ${metrics.successRate}');
+  ///  },
+  /// );
+  /// ```
+  Func<R> monitorObservability({
+    void Function(obs.Metrics metrics)? onMetricsUpdate,
+  }) {
+    return obs.MonitorExtension(
+      this,
+      onMetricsUpdate: onMetricsUpdate,
+    );
+  }
 }
 
 /// A wrapper for async functions with one parameter.
@@ -1250,6 +1269,25 @@ class Func1<T, R> {
     );
   }
 
+  /// Adds execution monitoring and metrics collection.
+  ///
+  /// Example:
+  /// ```dart
+  /// final monitored = processItem.monitorObservability(
+  ///   onMetricsUpdate: (metrics) {
+  ///     print('Success rate: ${metrics.successRate}');
+  ///   },
+  /// );
+  /// ```
+  Func1<T, R> monitorObservability({
+    void Function(obs.Metrics metrics)? onMetricsUpdate,
+  }) {
+    return obs.MonitorExtension1(
+      this,
+      onMetricsUpdate: onMetricsUpdate,
+    );
+  }
+
   /// Adds detailed audit logging with arguments, results, and errors.
   ///
   /// Example:
@@ -1859,6 +1897,25 @@ class Func2<T1, T2, R> {
       interval: interval,
       until: until,
       onIteration: onIteration,
+    );
+  }
+
+  /// Adds execution monitoring and metrics collection.
+  ///
+  /// Example:
+  /// ```dart
+  /// final monitored = updateData.monitorObservability(
+  ///   onMetricsUpdate: (metrics) {
+  ///     print('Avg duration: ${metrics.averageDuration}ms');
+  ///   },
+  /// );
+  /// ```
+  Func2<T1, T2, R> monitorObservability({
+    void Function(obs.Metrics metrics)? onMetricsUpdate,
+  }) {
+    return obs.MonitorExtension2(
+      this,
+      onMetricsUpdate: onMetricsUpdate,
     );
   }
 
