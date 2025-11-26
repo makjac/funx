@@ -1,3 +1,15 @@
+## 0.11.0
+
+- **State**: State management and snapshots
+  - **Snapshot**: Capture and restore function state
+    - `SnapshotExtension`, `SnapshotExtension1`, `SnapshotExtension2` for `Func`, `Func1`, `Func2`
+    - State capture before execution
+    - State restoration capabilities
+    - Custom snapshot and restore functions
+    - Support for complex state management
+    - Automatic state tracking
+    - Manual snapshot creation and restoration
+
 ## 0.10.0
 
 - **Orchestration**: Complex function coordination and execution patterns
