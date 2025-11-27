@@ -1,0 +1,37 @@
+{
+  "title": "Funx Microbenchmark Results",
+  "generated": "2025-11-27T16:46:35.775572",
+  "results": [
+    {
+      "name": "Example.Baseline",
+      "iterations": 10000,
+      "mean": 1.234,
+      "ci95": 5.5,
+      "stdDev": 0.8,
+      "min": 0.5,
+      "max": 10.0,
+      "p50": 1.2,
+      "p90": 2.5,
+      "p95": 3.0,
+      "p99": 5.0
+    },
+    {
+      "name": "Example.Debounce",
+      "iterations": 10000,
+      "mean": 25.678,
+      "ci95": 5.5,
+      "stdDev": 5.2,
+      "min": 20.0,
+      "max": 50.0,
+      "p50": 25.0,
+      "p90": 30.0,
+      "p95": 35.0,
+      "p99": 45.0
+    }
+  ],
+  "summary": {
+    "totalBenchmarks": 2,
+    "totalIterations": 20000,
+    "averageMean": 13.456
+  }
+}
