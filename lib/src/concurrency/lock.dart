@@ -6,28 +6,49 @@ import 'dart:async';
 import 'package:funx/src/core/func.dart';
 import 'package:funx/src/core/types.dart';
 
-/// A simple mutual exclusion lock.
+/// Mutual exclusion lock for synchronized access.
 ///
-/// Ensures that only one operation can execute at a time.
+/// Ensures only one operation executes at a time by blocking
+/// concurrent access to a critical section. Operations acquire the
+/// lock before entering the critical section and release it after
+/// completion. While locked, other operations wait until the lock
+/// becomes available. The [synchronized] method provides automatic
+/// lock management with guaranteed release. The [isLocked] getter
+/// indicates lock status. This pattern is essential for protecting
+/// shared mutable state, preventing race conditions, and ensuring
+/// thread-safe access to resources.
 ///
 /// Example:
 /// ```dart
 /// final lock = Lock();
+/// int counter = 0;
+///
 /// await lock.synchronized(() async {
-///   // Critical section
+///   counter++;
+///   await saveCounter(counter);
 /// });
 /// ```
 class Lock {
   Completer<void>? _completer;
   bool _isLocked = false;
 
-  /// Acquires the lock, waiting if necessary.
+  /// Acquires the lock, blocking if already held.
+  ///
+  /// Waits until the lock becomes available, then acquires it. If the
+  /// lock is already held by another operation, this method blocks
+  /// until release. The optional [timeout] parameter limits the
+  /// maximum wait duration, throwing [TimeoutException] if exceeded.
+  /// Must be paired with [release] to avoid deadlocks.
+  ///
+  /// Throws:
+  /// - [TimeoutException] when timeout expires before lock acquisition
   ///
   /// Example:
   /// ```dart
-  /// await lock.acquire();
+  /// await lock.acquire(timeout: Duration(seconds: 5));
   /// try {
   ///   // Critical section
+  ///   await updateSharedState();
   /// } finally {
   ///   lock.release();
   /// }
@@ -44,11 +65,20 @@ class Lock {
     _isLocked = true;
   }
 
-  /// Releases the lock.
+  /// Releases the lock, allowing waiting operations to proceed.
+  ///
+  /// Marks the lock as available and signals one waiting operation to
+  /// acquire it. Must be called after [acquire] to prevent deadlocks.
+  /// Use the [synchronized] method for automatic release management.
   ///
   /// Example:
   /// ```dart
-  /// lock.release();
+  /// await lock.acquire();
+  /// try {
+  ///   await criticalOperation();
+  /// } finally {
+  ///   lock.release();
+  /// }
   /// ```
   void release() {
     _isLocked = false;
@@ -56,12 +86,21 @@ class Lock {
     _completer = null;
   }
 
-  /// Executes the action within the lock.
+  /// Executes an action within automatic lock management.
+  ///
+  /// Acquires the lock, executes the [action] function, and
+  /// guarantees lock release via finally block. Preferred over manual
+  /// [acquire] and [release] as it prevents deadlocks from forgotten
+  /// releases or exceptions. Returns the result of executing [action].
+  ///
+  /// Returns the result produced by [action].
   ///
   /// Example:
   /// ```dart
-  /// await lock.synchronized(() async {
-  ///   // Critical section
+  /// final result = await lock.synchronized(() async {
+  ///   final data = await fetchData();
+  ///   await processData(data);
+  ///   return data;
   /// });
   /// ```
   Future<T> synchronized<T>(Future<T> Function() action) async {
@@ -73,33 +112,59 @@ class Lock {
     }
   }
 
-  /// Returns whether the lock is currently held.
+  /// Whether the lock is currently held by an operation.
+  ///
+  /// Returns true if the lock is acquired and held, false if
+  /// available. Use this to check lock status without blocking.
   ///
   /// Example:
   /// ```dart
   /// if (lock.isLocked) {
-  ///   print('Lock is held');
+  ///   print('Lock is currently held');
+  /// } else {
+  ///   await lock.acquire();
   /// }
   /// ```
   bool get isLocked => _isLocked;
 }
 
-/// Applies mutual exclusion lock to a [Func].
+/// Applies mutual exclusion lock to no-parameter functions.
+///
+/// Wraps a [Func] to ensure only one execution at a time through
+/// automatic lock acquisition and release. Before executing the
+/// wrapped function, acquires the lock and waits if necessary. The
+/// optional [_timeout] limits wait duration. The optional
+/// [_onBlocked] callback is invoked when execution finds the lock
+/// already held. The [_throwOnTimeout] flag controls timeout
+/// behavior. The [isLocked] getter indicates lock status. This
+/// pattern is essential for protecting critical sections and
+/// preventing concurrent access to shared resources.
 ///
 /// Example:
 /// ```dart
-/// final initDb = Func(() async => await database.initialize())
-///   .lock(timeout: Duration(seconds: 5));
+/// final updateDb = Func(() async => await database.update())
+///   .lock(
+///     timeout: Duration(seconds: 5),
+///     onBlocked: () => logger.warn('Waiting for lock'),
+///     throwOnTimeout: true,
+///   );
 /// ```
 class LockExtension<R> extends Func<R> {
-  /// Creates a lock extension for a function.
+  /// Creates a lock extension for a no-parameter function.
+  ///
+  /// The [_inner] parameter is the function to wrap. The optional
+  /// [_timeout] sets the maximum wait time for lock acquisition. The
+  /// optional [_onBlocked] callback is invoked when the lock is
+  /// already held. The [throwOnTimeout] parameter determines whether
+  /// to throw [TimeoutException] on timeout (true) or proceed anyway
+  /// (false).
   ///
   /// Example:
   /// ```dart
   /// final locked = LockExtension(
   ///   myFunc,
   ///   Duration(seconds: 5),
-  ///   () => print('Blocked'),
+  ///   () => print('Lock is busy'),
   ///   throwOnTimeout: true,
   /// );
   /// ```
@@ -151,21 +216,41 @@ class LockExtension<R> extends Func<R> {
   bool get isLocked => _lock.isLocked;
 }
 
-/// Applies mutual exclusion lock to a [Func1].
+/// Applies mutual exclusion lock to one-parameter functions.
+///
+/// Wraps a [Func1] to ensure only one execution at a time through
+/// automatic lock acquisition and release. Before executing the
+/// wrapped function, acquires the lock and waits if necessary. The
+/// optional [_timeout] limits wait duration. The optional
+/// [_onBlocked] callback is invoked when execution finds the lock
+/// already held. The [_throwOnTimeout] flag controls timeout
+/// behavior. The [isLocked] getter indicates lock status. This
+/// pattern is essential for protecting critical sections and
+/// preventing concurrent access to shared resources.
 ///
 /// Example:
 /// ```dart
-/// final saveUser = Func1<User, void>((user) async => await db.save(user))
-///   .lock();
+/// final saveUser = Func1<User, void>((user) async {
+///   await database.save(user);
+/// }).lock(
+///   timeout: Duration(seconds: 3),
+/// );
 /// ```
 class LockExtension1<T, R> extends Func1<T, R> {
-  /// Creates a lock extension for a single-parameter function.
+  /// Creates a lock extension for a one-parameter function.
+  ///
+  /// The [_inner] parameter is the function to wrap. The optional
+  /// [_timeout] sets the maximum wait time for lock acquisition. The
+  /// optional [_onBlocked] callback is invoked when the lock is
+  /// already held. The [throwOnTimeout] parameter determines whether
+  /// to throw [TimeoutException] on timeout (true) or proceed anyway
+  /// (false).
   ///
   /// Example:
   /// ```dart
   /// final locked = LockExtension1(
   ///   myFunc,
-  ///   null,
+  ///   Duration(seconds: 3),
   ///   null,
   ///   throwOnTimeout: true,
   /// );
@@ -206,33 +291,55 @@ class LockExtension1<T, R> extends Func1<T, R> {
     }
   }
 
-  /// Returns whether the lock is currently held.
+  /// Whether the lock is currently held.
+  ///
+  /// Returns true if the lock is acquired and held by an execution,
+  /// false if available. Use this to check lock status.
   ///
   /// Example:
   /// ```dart
   /// if (lockedFunc.isLocked) {
-  ///   print('Function is locked');
+  ///   print('Function is currently executing');
   /// }
   /// ```
   bool get isLocked => _lock.isLocked;
 }
 
-/// Applies mutual exclusion lock to a [Func2].
+/// Applies mutual exclusion lock to two-parameter functions.ter functions.
+///
+/// Wraps a [Func2] to ensure only one execution at a time through
+/// automatic lock acquisition and release. Before executing the
+/// wrapped function, acquires the lock and waits if necessary. The
+/// optional [_timeout] limits wait duration. The optional
+/// [_onBlocked] callback is invoked when execution finds the lock
+/// already held. The [_throwOnTimeout] flag controls timeout
+/// behavior. The [isLocked] getter indicates lock status. This
+/// pattern is essential for protecting critical sections and
+/// preventing concurrent access to shared resources.
 ///
 /// Example:
 /// ```dart
 /// final update = Func2<String, int, void>((id, value) async {
-///   await db.update(id, value);
-/// }).lock();
+///   await database.update(id, value);
+/// }).lock(
+///   timeout: Duration(seconds: 5),
+/// );
 /// ```
 class LockExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a lock extension for a two-parameter function.
+  ///
+  /// The [_inner] parameter is the function to wrap. The optional
+  /// [_timeout] sets the maximum wait time for lock acquisition. The
+  /// optional [_onBlocked] callback is invoked when the lock is
+  /// already held. The [throwOnTimeout] parameter determines whether
+  /// to throw [TimeoutException] on timeout (true) or proceed anyway
+  /// (false).
   ///
   /// Example:
   /// ```dart
   /// final locked = LockExtension2(
   ///   myFunc,
-  ///   null,
+  ///   Duration(seconds: 5),
   ///   null,
   ///   throwOnTimeout: true,
   /// );
