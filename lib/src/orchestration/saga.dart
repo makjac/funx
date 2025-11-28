@@ -5,28 +5,69 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// A step in a saga with action and compensation.
+/// Represents a step in a saga transaction with compensation.
+///
+/// Combines an [action] function that performs work with a
+/// [compensation] function that undoes the work if a later step
+/// fails. The action accepts input of type [T] and returns result
+/// of type [R]. The compensation accepts the action's result and
+/// reverts its effects.
+///
+/// Example:
+/// ```dart
+/// final step = SagaStep(
+///   action: (orderId) async => await chargePayment(orderId),
+///   compensation: (chargeId) async => await refund(chargeId),
+/// );
+/// ```
 class SagaStep<T, R> {
-  /// Creates a saga step.
+  /// Creates a saga step with action and compensation.
   ///
-  /// [action] is the main function to execute.
-  /// [compensation] is called to undo if a later step fails.
+  /// The [action] function performs the step's work and returns a
+  /// result. The [compensation] function accepts the action's
+  /// result and undoes the work if a later step fails.
+  ///
+  /// Example:
+  /// ```dart
+  /// SagaStep(
+  ///   action: (data) async => await process(data),
+  ///   compensation: (result) async => await undo(result),
+  /// );
+  /// ```
   SagaStep({
     required this.action,
     required this.compensation,
   });
 
-  /// The action to execute.
+  /// The main function to execute for this saga step.
+  ///
+  /// Accepts input of type [T] and returns result of type [R].
+  /// Result is passed to the next step or to [compensation] if
+  /// rollback is needed.
   final Func1<T, R> action;
 
-  /// The compensation to execute on rollback.
+  /// The function to execute during rollback.
+  ///
+  /// Accepts the result from [action] and undoes its effects.
+  /// Called in reverse order if any subsequent saga step fails.
   final Func1<R, void> compensation;
 }
 
 /// Executes saga pattern with compensating transactions.
 ///
-/// Runs a sequence of steps, each with a compensation function.
-/// If any step fails, all completed steps are compensated in reverse order.
+/// Runs [_inner] function followed by a sequence of [steps],
+/// each with a compensation function. If any step fails, all
+/// completed steps are compensated in reverse order to maintain
+/// consistency. The [onCompensate] callback receives
+/// notification when compensating a step. The [onStepComplete]
+/// callback receives notification when a step completes
+/// successfully.
+///
+/// Returns a [Future] of type [R] from the last step if all
+/// steps complete successfully.
+///
+/// Throws:
+/// - Any exception from steps, after compensating completed work
 ///
 /// Example:
 /// ```dart
@@ -47,12 +88,13 @@ class SagaStep<T, R> {
 /// );
 /// ```
 class SagaExtension1<T, R> extends Func1<T, R> {
-  /// Creates a saga wrapper for a single-parameter function.
+  /// Creates a saga wrapper for single-parameter function.
   ///
-  /// [_inner] is the initial function to execute.
-  /// [steps] are the saga steps to execute in sequence.
-  /// [onCompensate] is called when compensating a step.
-  /// [onStepComplete] is called when a step completes successfully.
+  /// Wraps [_inner] function as the initial step, followed by
+  /// [steps] executed in sequence. The [onCompensate] callback is
+  /// invoked when compensating a step during rollback. The
+  /// [onStepComplete] callback is invoked when a step completes
+  /// successfully.
   ///
   /// Example:
   /// ```dart
@@ -71,13 +113,23 @@ class SagaExtension1<T, R> extends Func1<T, R> {
 
   final Func1<T, R> _inner;
 
-  /// The saga steps to execute.
+  /// The saga steps to execute in sequence.
+  ///
+  /// Each step is executed in order, with the previous step's
+  /// result passed as input. If any step fails, completed steps
+  /// are compensated in reverse order.
   final List<SagaStep<dynamic, dynamic>> steps;
 
-  /// Callback when compensating a step.
+  /// Optional callback invoked when compensating a step.
+  ///
+  /// Receives the step index and its result during rollback.
+  /// Called for each step being compensated in reverse order.
   final void Function(int index, dynamic result)? onCompensate;
 
-  /// Callback when a step completes.
+  /// Optional callback invoked when a step completes.
+  ///
+  /// Receives the step index and its result upon successful
+  /// completion. Called for each step including the initial step.
   final void Function(int index, dynamic result)? onStepComplete;
 
   @override
@@ -131,13 +183,25 @@ class SagaExtension1<T, R> extends Func1<T, R> {
 
 /// Executes saga pattern for two-parameter functions.
 ///
-/// Same as [SagaExtension1] but for functions with two parameters.
+/// Runs [_inner] function followed by a sequence of [steps],
+/// each with a compensation function. Accepts two parameters [T1]
+/// and [T2] passed to the initial function. If any step fails,
+/// all completed steps are compensated in reverse order to
+/// maintain consistency.
+///
+/// Returns a [Future] of type [R] from the last step if all
+/// steps complete successfully.
+///
+/// Throws:
+/// - Any exception from steps, after compensating completed work
 ///
 /// Example:
 /// ```dart
-/// final saga = Func2<UserId, Amount, Transaction>((userId, amount) async {
-///   return await createTransaction(userId, amount);
-/// }).saga(
+/// final saga = Func2<UserId, Amount, Transaction>(
+///   (userId, amount) async {
+///     return await createTransaction(userId, amount);
+///   },
+/// ).saga(
 ///   steps: [
 ///     SagaStep(
 ///       action: (tx) async => await debitAccount(tx),
@@ -147,7 +211,21 @@ class SagaExtension1<T, R> extends Func1<T, R> {
 /// );
 /// ```
 class SagaExtension2<T1, T2, R> extends Func2<T1, T2, R> {
-  /// Creates a saga wrapper for a two-parameter function.
+  /// Creates a saga wrapper for two-parameter function.
+  ///
+  /// Wraps [_inner] function as the initial step, followed by
+  /// [steps] executed in sequence. The [onCompensate] callback is
+  /// invoked when compensating a step during rollback. The
+  /// [onStepComplete] callback is invoked when a step completes
+  /// successfully.
+  ///
+  /// Example:
+  /// ```dart
+  /// final saga = SagaExtension2(
+  ///   initialStep,
+  ///   steps: [step1, step2],
+  /// );
+  /// ```
   SagaExtension2(
     this._inner, {
     required this.steps,
@@ -156,8 +234,24 @@ class SagaExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   }) : super((arg1, arg2) => throw UnimplementedError());
 
   final Func2<T1, T2, R> _inner;
+
+  /// The saga steps to execute in sequence.
+  ///
+  /// Each step is executed in order, with the previous step's
+  /// result passed as input. If any step fails, completed steps
+  /// are compensated in reverse order.
   final List<SagaStep<dynamic, dynamic>> steps;
+
+  /// Optional callback invoked when compensating a step.
+  ///
+  /// Receives the step index and its result during rollback.
+  /// Called for each step being compensated in reverse order.
   final void Function(int index, dynamic result)? onCompensate;
+
+  /// Optional callback invoked when a step completes.
+  ///
+  /// Receives the step index and its result upon successful
+  /// completion. Called for each step including the initial step.
   final void Function(int index, dynamic result)? onStepComplete;
 
   @override

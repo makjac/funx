@@ -2,54 +2,83 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// A strategy for recovering from errors during function execution.
+/// Defines error recovery behavior for function execution.
 ///
-/// Recovery strategies define how to handle errors and attempt to recover
-/// from failures. Different strategies provide different recovery behaviors:
-/// - Reset internal state
-/// - Reconnect to a service
-/// - Switch to a backup mode
-/// - Reschedule the operation
+/// Recovery strategies specify actions executed when errors occur
+/// during function execution. The [onError] callback performs
+/// recovery actions like state reset, service reconnection, or
+/// resource cleanup. The [shouldRecover] predicate controls which
+/// errors trigger recovery. The [rethrowAfterRecovery] flag
+/// determines whether errors are rethrown after recovery. Use for
+/// cleanup actions, logging failures, reconnecting services, or
+/// switching to backup modes while preserving error propagation.
 ///
 /// Example:
 /// ```dart
 /// final strategy = RecoveryStrategy(
 ///   onError: (error) async {
 ///     print('Recovering from: $error');
-///     await reconnectToService();
+///     await service.reconnect();
 ///   },
 ///   shouldRecover: (error) => error is NetworkException,
+///   rethrowAfterRecovery: true,
 /// );
 /// ```
 class RecoveryStrategy {
-  /// Creates a recovery strategy.
+  /// Creates recovery strategy with specified behavior.
   ///
-  /// - [onError]: The recovery action to perform when an error occurs.
-  /// - [shouldRecover]: Optional predicate to determine if recovery should
-  ///   be attempted for a given error. If not provided, all errors trigger
-  ///   recovery.
-  /// - [rethrowAfterRecovery]: If true, the error is rethrown after recovery.
-  ///   Defaults to true.
+  /// The [onError] parameter defines recovery action executed when
+  /// error occurs. Receives error object as parameter. The optional
+  /// [shouldRecover] predicate determines which errors trigger
+  /// recovery (defaults to all errors). The [rethrowAfterRecovery]
+  /// flag (defaults to true) controls whether error is rethrown
+  /// after recovery completes.
+  ///
+  /// Example:
+  /// ```dart
+  /// final strategy = RecoveryStrategy(
+  ///   onError: (e) async => await cleanup(e),
+  ///   shouldRecover: (e) => e is! FatalException,
+  ///   rethrowAfterRecovery: true,
+  /// );
+  /// ```
   const RecoveryStrategy({
     required this.onError,
     this.shouldRecover,
     this.rethrowAfterRecovery = true,
   });
 
-  /// The recovery action to perform when an error occurs.
+  /// Recovery action executed when error occurs.
+  ///
+  /// Receives error object and performs recovery operations like
+  /// cleanup, reconnection, or state reset. Executed before error
+  /// rethrow when [rethrowAfterRecovery] is true.
   final Future<void> Function(Object error) onError;
 
-  /// Optional predicate to determine if recovery should be attempted.
+  /// Predicate determining which errors trigger recovery.
+  ///
+  /// When null, all errors trigger recovery. When provided, only
+  /// errors passing predicate trigger recovery; others are rethrown
+  /// immediately.
   final bool Function(Object error)? shouldRecover;
 
-  /// Whether to rethrow the error after recovery.
+  /// Whether to rethrow error after recovery completes.
+  ///
+  /// When true (default), error is rethrown after recovery allowing
+  /// error propagation. When false, error is suppressed after
+  /// recovery.
   final bool rethrowAfterRecovery;
 }
 
-/// Extension on [Func] that adds error recovery capabilities.
+/// Applies error recovery to no-parameter functions.
 ///
-/// Allows executing recovery actions when errors occur, such as cleaning up
-/// state, reconnecting to services, or logging failures.
+/// Wraps [Func] to execute recovery actions when errors occur. The
+/// [strategy] parameter defines recovery behavior including error
+/// handling, filtering, and rethrow policy. Automatically invokes
+/// recovery on matching errors. Useful for cleanup actions,
+/// reconnection logic, logging failures, or switching to degraded
+/// modes while preserving error propagation. This pattern ensures
+/// proper resource cleanup and state management during failures.
 ///
 /// Example:
 /// ```dart
@@ -59,25 +88,33 @@ class RecoveryStrategy {
 ///
 /// final withRecovery = func.recover(
 ///   RecoveryStrategy(
-///     onError: (error) async {
-///       await service.reconnect();
-///       print('Reconnected after error: $error');
-///     },
-///     shouldRecover: (error) => error is ConnectionException,
-///     rethrowAfterRecovery: true,
+///     onError: (e) async => await service.reconnect(),
+///     shouldRecover: (e) => e is ConnectionException,
 ///   ),
 /// );
 /// ```
 class RecoverExtension<R> extends Func<R> {
-  /// Creates a recovery wrapper around the given [_inner] function.
+  /// Creates recovery wrapper for no-parameter function.
   ///
-  /// The [strategy] parameter defines the recovery behavior.
+  /// The [_inner] parameter is function to wrap. The [strategy]
+  /// parameter defines recovery behavior executed on errors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final withRecovery = RecoverExtension(
+  ///   myFunc,
+  ///   RecoveryStrategy(onError: (e) async => cleanup()),
+  /// );
+  /// ```
   RecoverExtension(this._inner, this.strategy)
     : super(() => throw UnimplementedError());
 
   final Func<R> _inner;
 
-  /// The recovery strategy to use.
+  /// Recovery strategy defining error handling behavior.
+  ///
+  /// Controls which errors trigger recovery, recovery actions, and
+  /// error rethrow policy.
   final RecoveryStrategy strategy;
 
   @override
@@ -108,19 +145,48 @@ class RecoverExtension<R> extends Func<R> {
   }
 }
 
-/// Extension on [Func1] that adds error recovery capabilities.
+/// Applies error recovery to one-parameter functions.
 ///
-/// See [RecoverExtension] for details.
+/// Wraps [Func1] to execute recovery actions when errors occur. The
+/// [strategy] parameter defines recovery behavior including error
+/// handling, filtering, and rethrow policy. Automatically invokes
+/// recovery on matching errors. Useful for cleanup actions,
+/// reconnection logic, logging failures, or switching to degraded
+/// modes while preserving error propagation. This pattern ensures
+/// proper resource cleanup and state management during failures.
+///
+/// Example:
+/// ```dart
+/// final fetch = Func1<String, Data>((id) async {
+///   return await api.fetch(id);
+/// }).recover(
+///   RecoveryStrategy(
+///     onError: (e) async => await api.reset(),
+///   ),
+/// );
+/// ```
 class RecoverExtension1<T, R> extends Func1<T, R> {
-  /// Creates a recovery wrapper around the given [_inner] function.
+  /// Creates recovery wrapper for one-parameter function.
   ///
-  /// See [RecoverExtension] for parameter documentation.
+  /// The [_inner] parameter is function to wrap. The [strategy]
+  /// parameter defines recovery behavior executed on errors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final withRecovery = RecoverExtension1(
+  ///   myFunc,
+  ///   RecoveryStrategy(onError: (e) async => cleanup()),
+  /// );
+  /// ```
   RecoverExtension1(this._inner, this.strategy)
     : super((arg) => throw UnimplementedError());
 
   final Func1<T, R> _inner;
 
-  /// The recovery strategy to use.
+  /// Recovery strategy defining error handling behavior.
+  ///
+  /// Controls which errors trigger recovery, recovery actions, and
+  /// error rethrow policy.
   final RecoveryStrategy strategy;
 
   @override
@@ -151,19 +217,48 @@ class RecoverExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// Extension on [Func2] that adds error recovery capabilities.
+/// Applies error recovery to two-parameter functions.
 ///
-/// See [RecoverExtension] for details.
+/// Wraps [Func2] to execute recovery actions when errors occur. The
+/// [strategy] parameter defines recovery behavior including error
+/// handling, filtering, and rethrow policy. Automatically invokes
+/// recovery on matching errors. Useful for cleanup actions,
+/// reconnection logic, logging failures, or switching to degraded
+/// modes while preserving error propagation. This pattern ensures
+/// proper resource cleanup and state management during failures.
+///
+/// Example:
+/// ```dart
+/// final update = Func2<String, Data, void>((id, data) async {
+///   await db.update(id, data);
+/// }).recover(
+///   RecoveryStrategy(
+///     onError: (e) async => await db.rollback(),
+///   ),
+/// );
+/// ```
 class RecoverExtension2<T1, T2, R> extends Func2<T1, T2, R> {
-  /// Creates a recovery wrapper around the given [_inner] function.
+  /// Creates recovery wrapper for two-parameter function.
   ///
-  /// See [RecoverExtension] for parameter documentation.
+  /// The [_inner] parameter is function to wrap. The [strategy]
+  /// parameter defines recovery behavior executed on errors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final withRecovery = RecoverExtension2(
+  ///   myFunc,
+  ///   RecoveryStrategy(onError: (e) async => cleanup()),
+  /// );
+  /// ```
   RecoverExtension2(this._inner, this.strategy)
     : super((arg1, arg2) => throw UnimplementedError());
 
   final Func2<T1, T2, R> _inner;
 
-  /// The recovery strategy to use.
+  /// Recovery strategy defining error handling behavior.
+  ///
+  /// Controls which errors trigger recovery, recovery actions, and
+  /// error rethrow policy.
   final RecoveryStrategy strategy;
 
   @override

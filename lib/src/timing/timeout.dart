@@ -5,8 +5,23 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// Adds a timeout to a [Func], throwing [TimeoutException] if execution
-/// exceeds [Duration].
+/// Enforces time limit on function execution by throwing exception on
+/// timeout.
+///
+/// Wraps [_inner] function with timeout constraint using [_duration] as
+/// maximum execution time. If execution exceeds the limit, throws
+/// [TimeoutException] unless [_onTimeout] callback is provided. The
+/// optional [_onTimeout] callback executes when timeout occurs, providing
+/// opportunity to return default value or handle timeout gracefully. Uses
+/// [Future.timeout] to implement time limit enforcement.
+///
+/// Returns a [Future] of type [R] from the executed function if it
+/// completes within the time limit, or the result from [_onTimeout]
+/// callback if provided and timeout occurs.
+///
+/// Throws:
+/// - [TimeoutException] when execution exceeds [_duration] and no
+/// [_onTimeout] callback is provided
 ///
 /// Example:
 /// ```dart
@@ -20,7 +35,13 @@ import 'package:funx/src/core/func.dart';
 /// }
 /// ```
 class TimeoutExtension<R> extends Func<R> {
-  /// Creates a timeout wrapper for a function.
+  /// Creates a timeout wrapper for function.
+  ///
+  /// Wraps [_inner] function with timeout enforcement using [_duration] as
+  /// time limit. The optional [_onTimeout] callback handles timeout events
+  /// and can provide fallback values. If omitted, timeout throws
+  /// [TimeoutException]. The wrapper applies timeout to each execution
+  /// independently.
   ///
   /// Example:
   /// ```dart
@@ -36,8 +57,13 @@ class TimeoutExtension<R> extends Func<R> {
     this._onTimeout,
   ]) : super(() => throw UnimplementedError());
 
+  /// The wrapped function to execute with timeout constraint.
   final Func<R> _inner;
+
+  /// The maximum duration allowed for execution.
   final Duration _duration;
+
+  /// Optional callback to handle timeout events and provide fallback.
   final FutureOr<R> Function()? _onTimeout;
 
   @override
@@ -49,7 +75,22 @@ class TimeoutExtension<R> extends Func<R> {
   }
 }
 
-/// Adds a timeout to a [Func1] with one parameter.
+/// Enforces time limit on single-parameter function execution.
+///
+/// Wraps [_inner] function accepting parameter [T] with timeout constraint
+/// using [_duration] as maximum execution time. If execution exceeds the
+/// limit, throws [TimeoutException] unless [_onTimeout] callback is
+/// provided. The optional [_onTimeout] callback executes when timeout
+/// occurs, providing opportunity to return default value or handle timeout
+/// gracefully. Uses [Future.timeout] to implement time limit enforcement.
+///
+/// Returns a [Future] of type [R] from the executed function if it
+/// completes within the time limit, or the result from [_onTimeout]
+/// callback if provided and timeout occurs.
+///
+/// Throws:
+/// - [TimeoutException] when execution exceeds [_duration] and no
+/// [_onTimeout] callback is provided
 ///
 /// Example:
 /// ```dart
@@ -58,7 +99,13 @@ class TimeoutExtension<R> extends Func<R> {
 /// }).timeout(Duration(seconds: 5));
 /// ```
 class TimeoutExtension1<T, R> extends Func1<T, R> {
-  /// Creates a timeout wrapper for a single-parameter function.
+  /// Creates a timeout wrapper for single-parameter function.
+  ///
+  /// Wraps [_inner] function accepting parameter [T] with timeout
+  /// enforcement using [_duration] as time limit. The optional [_onTimeout]
+  /// callback handles timeout events and can provide fallback values. If
+  /// omitted, timeout throws [TimeoutException]. The wrapper applies
+  /// timeout to each execution independently.
   ///
   /// Example:
   /// ```dart
@@ -74,8 +121,13 @@ class TimeoutExtension1<T, R> extends Func1<T, R> {
     this._onTimeout,
   ]) : super((arg) => throw UnimplementedError());
 
+  /// The wrapped function to execute with timeout constraint.
   final Func1<T, R> _inner;
+
+  /// The maximum duration allowed for execution.
   final Duration _duration;
+
+  /// Optional callback to handle timeout events and provide fallback.
   final FutureOr<R> Function()? _onTimeout;
 
   @override
@@ -87,7 +139,23 @@ class TimeoutExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// Adds a timeout to a [Func2] with two parameters.
+/// Enforces time limit on two-parameter function execution.
+///
+/// Wraps [_inner] function accepting parameters [T1] and [T2] with timeout
+/// constraint using [_duration] as maximum execution time. If execution
+/// exceeds the limit, throws [TimeoutException] unless [_onTimeout]
+/// callback is provided. The optional [_onTimeout] callback executes when
+/// timeout occurs, providing opportunity to return default value or handle
+/// timeout gracefully. Uses [Future.timeout] to implement time limit
+/// enforcement.
+///
+/// Returns a [Future] of type [R] from the executed function if it
+/// completes within the time limit, or the result from [_onTimeout]
+/// callback if provided and timeout occurs.
+///
+/// Throws:
+/// - [TimeoutException] when execution exceeds [_duration] and no
+/// [_onTimeout] callback is provided
 ///
 /// Example:
 /// ```dart
@@ -96,7 +164,13 @@ class TimeoutExtension1<T, R> extends Func1<T, R> {
 /// }).timeout(Duration(seconds: 5));
 /// ```
 class TimeoutExtension2<T1, T2, R> extends Func2<T1, T2, R> {
-  /// Creates a timeout wrapper for a two-parameter function.
+  /// Creates a timeout wrapper for two-parameter function.
+  ///
+  /// Wraps [_inner] function accepting parameters [T1] and [T2] with
+  /// timeout enforcement using [_duration] as time limit. The optional
+  /// [_onTimeout] callback handles timeout events and can provide fallback
+  /// values. If omitted, timeout throws [TimeoutException]. The wrapper
+  /// applies timeout to each execution independently.
   ///
   /// Example:
   /// ```dart
@@ -112,8 +186,13 @@ class TimeoutExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     this._onTimeout,
   ]) : super((arg1, arg2) => throw UnimplementedError());
 
+  /// The wrapped function to execute with timeout constraint.
   final Func2<T1, T2, R> _inner;
+
+  /// The maximum duration allowed for execution.
   final Duration _duration;
+
+  /// Optional callback to handle timeout events and provide fallback.
   final FutureOr<R> Function()? _onTimeout;
 
   @override

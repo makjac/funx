@@ -2,11 +2,15 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// A function that shares a single execution among concurrent callers.
+/// Shares a single execution among concurrent callers.
 ///
-/// When multiple calls are made concurrently, only one execution occurs
-/// and all callers receive the same result. Once the execution completes,
-/// subsequent calls will trigger new executions.
+/// When multiple calls occur concurrently, only one execution happens
+/// and all callers receive the same result. This prevents duplicate
+/// work when the same operation is requested multiple times before the
+/// first completes. Once execution finishes, subsequent calls trigger
+/// new executions. This pattern is ideal for API calls, database
+/// queries, or expensive computations that multiple parts of your
+/// application might request simultaneously.
 ///
 /// Example:
 /// ```dart
@@ -23,7 +27,16 @@ import 'package:funx/src/core/func.dart';
 /// // Only one API call was made
 /// ```
 class ShareExtension<R> extends Func<R> {
-  /// Creates a sharing wrapper that prevents concurrent duplicate executions.
+  /// Creates a sharing wrapper that prevents duplicate concurrent calls.
+  ///
+  /// The [_inner] function executes only once when called concurrently.
+  /// All concurrent callers receive the same result. Sequential calls
+  /// (after completion) trigger new executions.
+  ///
+  /// Example:
+  /// ```dart
+  /// final shared = ShareExtension(expensiveOperation);
+  /// ```
   ShareExtension(this._inner) : super(() => throw UnimplementedError());
 
   final Func<R> _inner;
@@ -50,10 +63,14 @@ class ShareExtension<R> extends Func<R> {
   }
 }
 
-/// A function that shares a single execution among concurrent callers,
-/// for functions with one argument.
+/// Shares single execution among concurrent callers per argument.
 ///
-/// Sharing is tracked per unique argument value.
+/// Extends sharing to functions with one parameter. Sharing is tracked
+/// separately for each unique argument value. Multiple concurrent calls
+/// with the same argument share one execution, while different arguments
+/// trigger separate executions. This pattern prevents redundant work for
+/// identical requests while allowing parallel processing of different
+/// inputs.
 ///
 /// Example:
 /// ```dart
@@ -73,6 +90,14 @@ class ShareExtension<R> extends Func<R> {
 /// ```
 class ShareExtension1<T, R> extends Func1<T, R> {
   /// Creates a sharing wrapper for single-argument functions.
+  ///
+  /// Concurrent calls with the same argument share one execution. Each
+  /// unique argument value has its own execution tracking.
+  ///
+  /// Example:
+  /// ```dart
+  /// final shared = ShareExtension1(fetchResource);
+  /// ```
   ShareExtension1(this._inner) : super((_) => throw UnimplementedError());
 
   final Func1<T, R> _inner;
@@ -105,7 +130,10 @@ class ShareExtension1<T, R> extends Func1<T, R> {
 class _ArgPair<T1, T2> {
   const _ArgPair(this.arg1, this.arg2);
 
+  /// The first argument of the pair.
   final T1 arg1;
+
+  /// The second argument of the pair.
   final T2 arg2;
 
   @override
@@ -120,10 +148,14 @@ class _ArgPair<T1, T2> {
   int get hashCode => Object.hash(arg1, arg2);
 }
 
-/// A function that shares a single execution among concurrent callers,
-/// for functions with two arguments.
+/// Shares single execution among concurrent callers per argument pair.
 ///
-/// Sharing is tracked per unique argument pair.
+/// Extends sharing to functions with two parameters. Sharing is tracked
+/// separately for each unique argument pair. Multiple concurrent calls
+/// with the same argument pair share one execution, while different
+/// pairs trigger separate executions. Useful for operations like matrix
+/// computations, coordinate-based lookups, or any function where the
+/// same two-parameter combination might be requested concurrently.
 ///
 /// Example:
 /// ```dart
@@ -144,6 +176,14 @@ class _ArgPair<T1, T2> {
 /// ```
 class ShareExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a sharing wrapper for two-argument functions.
+  ///
+  /// Concurrent calls with the same argument pair share one execution.
+  /// Each unique argument pair has its own execution tracking.
+  ///
+  /// Example:
+  /// ```dart
+  /// final shared = ShareExtension2(computeValue);
+  /// ```
   ShareExtension2(this._inner) : super((_, _) => throw UnimplementedError());
 
   final Func2<T1, T2, R> _inner;
@@ -173,6 +213,7 @@ class ShareExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   }
 }
 
+/// Extension methods on [Func] for share functionality.
 extension FuncShareExtension<R> on Func<R> {
   /// Creates a shared version of this function that prevents
   /// concurrent duplicate executions.
@@ -190,6 +231,7 @@ extension FuncShareExtension<R> on Func<R> {
   Func<R> share() => ShareExtension(this);
 }
 
+/// Extension methods on [Func1] for share functionality.
 extension Func1ShareExtension<T, R> on Func1<T, R> {
   /// Creates a shared version of this function that prevents
   /// concurrent duplicate executions per argument.
@@ -208,6 +250,7 @@ extension Func1ShareExtension<T, R> on Func1<T, R> {
   Func1<T, R> share() => ShareExtension1(this);
 }
 
+/// Extension methods on [Func2] for share functionality.
 extension Func2ShareExtension<T1, T2, R> on Func2<T1, T2, R> {
   /// Creates a shared version of this function that prevents
   /// concurrent duplicate executions per argument pair.

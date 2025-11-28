@@ -5,10 +5,17 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// Executes a side effect without modifying the function result.
+/// Executes side effects without modifying function result.
 ///
-/// Allows observing function execution and results without affecting
-/// the actual return value. Useful for logging, metrics, debugging.
+/// Allows observing function execution and results through callbacks
+/// without affecting the actual return value. The [onValue] callback is
+/// invoked with successful results. The [onError] callback is invoked
+/// with errors and stack traces. Neither callback affects the function's
+/// return value or error propagation. Useful for logging, metrics,
+/// debugging, and analytics.
+///
+/// Returns a [Future] of type [R] with the original execution result.
+/// Side effects execute before the result is returned.
 ///
 /// Example:
 /// ```dart
@@ -16,7 +23,7 @@ import 'package:funx/src/core/func.dart';
 ///   return await api.getUser();
 /// }).tap(
 ///   onValue: (user) => print('Got user: ${user.name}'),
-///   onError: (error) => print('Error: $error'),
+///   onError: (error, stack) => print('Error: $error'),
 /// );
 ///
 /// final user = await logged(); // Side effect executes, result unchanged
@@ -24,16 +31,17 @@ import 'package:funx/src/core/func.dart';
 class TapExtension<R> extends Func<R> {
   /// Creates a tap wrapper for a no-parameter function.
   ///
-  /// [_inner] is the function to wrap.
-  /// [onValue] is called with the result on success.
-  /// [onError] is called with the error on failure.
+  /// Wraps [_inner] function to observe execution without modifying
+  /// results. The [onValue] callback is invoked with the result if
+  /// execution succeeds. The [onError] callback is invoked with error
+  /// and stack trace if execution fails. Both callbacks are optional.
   ///
   /// Example:
   /// ```dart
   /// final tapped = TapExtension(
   ///   fetchData,
   ///   onValue: (data) => log('Success: $data'),
-  ///   onError: (error) => log('Error: $error'),
+  ///   onError: (error, stack) => log('Error: $error'),
   /// );
   /// ```
   TapExtension(
@@ -42,12 +50,13 @@ class TapExtension<R> extends Func<R> {
     this.onError,
   }) : super(() => throw UnimplementedError());
 
+  /// The wrapped function to execute and observe.
   final Func<R> _inner;
 
-  /// Callback called with the result on success.
+  /// Optional callback invoked with the result on successful execution.
   final void Function(R value)? onValue;
 
-  /// Callback called with the error on failure.
+  /// Optional callback invoked with error and stack trace on failure.
   final void Function(Object error, StackTrace stackTrace)? onError;
 
   @override
@@ -63,9 +72,18 @@ class TapExtension<R> extends Func<R> {
   }
 }
 
-/// Taps into single-parameter function execution.
+/// Executes side effects on single-parameter function without modifying
+/// result.
 ///
-/// Same as [TapExtension] but for functions with one parameter.
+/// Allows observing function execution and results through callbacks
+/// without affecting the actual return value. The [onValue] callback is
+/// invoked with successful results. The [onError] callback is invoked
+/// with errors and stack traces. Neither callback affects the function's
+/// return value or error propagation. Useful for logging, metrics, and
+/// analytics.
+///
+/// Returns a [Future] of type [R] with the original execution result.
+/// Side effects execute before the result is returned.
 ///
 /// Example:
 /// ```dart
@@ -78,9 +96,10 @@ class TapExtension<R> extends Func<R> {
 class TapExtension1<T, R> extends Func1<T, R> {
   /// Creates a tap wrapper for a single-parameter function.
   ///
-  /// [_inner] is the function to wrap.
-  /// [onValue] is called with the result on success.
-  /// [onError] is called with the error on failure.
+  /// Wraps [_inner] function to observe execution without modifying
+  /// results. The [onValue] callback is invoked with the result if
+  /// execution succeeds. The [onError] callback is invoked with error
+  /// and stack trace if execution fails. Both callbacks are optional.
   ///
   /// Example:
   /// ```dart
@@ -95,12 +114,13 @@ class TapExtension1<T, R> extends Func1<T, R> {
     this.onError,
   }) : super((arg) => throw UnimplementedError());
 
+  /// The wrapped function to execute and observe.
   final Func1<T, R> _inner;
 
-  /// Callback called with the result on success.
+  /// Optional callback invoked with the result on successful execution.
   final void Function(R value)? onValue;
 
-  /// Callback called with the error on failure.
+  /// Optional callback invoked with error and stack trace on failure.
   final void Function(Object error, StackTrace stackTrace)? onError;
 
   @override
@@ -116,9 +136,18 @@ class TapExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// Taps into two-parameter function execution.
+/// Executes side effects on two-parameter function without modifying
+/// result.
 ///
-/// Same as [TapExtension] but for functions with two parameters.
+/// Allows observing function execution and results through callbacks
+/// without affecting the actual return value. The [onValue] callback is
+/// invoked with successful results. The [onError] callback is invoked
+/// with errors and stack traces. Neither callback affects the function's
+/// return value or error propagation. Useful for logging, caching, and
+/// error tracking.
+///
+/// Returns a [Future] of type [R] with the original execution result.
+/// Side effects execute before the result is returned.
 ///
 /// Example:
 /// ```dart
@@ -132,9 +161,10 @@ class TapExtension1<T, R> extends Func1<T, R> {
 class TapExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a tap wrapper for a two-parameter function.
   ///
-  /// [_inner] is the function to wrap.
-  /// [onValue] is called with the result on success.
-  /// [onError] is called with the error on failure.
+  /// Wraps [_inner] function to observe execution without modifying
+  /// results. The [onValue] callback is invoked with the result if
+  /// execution succeeds. The [onError] callback is invoked with error
+  /// and stack trace if execution fails. Both callbacks are optional.
   ///
   /// Example:
   /// ```dart
@@ -149,12 +179,13 @@ class TapExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     this.onError,
   }) : super((arg1, arg2) => throw UnimplementedError());
 
+  /// The wrapped function to execute and observe.
   final Func2<T1, T2, R> _inner;
 
-  /// Callback called with the result on success.
+  /// Optional callback invoked with the result on successful execution.
   final void Function(R value)? onValue;
 
-  /// Callback called with the error on failure.
+  /// Optional callback invoked with error and stack trace on failure.
   final void Function(Object error, StackTrace stackTrace)? onError;
 
   @override

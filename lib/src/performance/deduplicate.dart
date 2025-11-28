@@ -201,6 +201,7 @@ class DeduplicateExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   }
 }
 
+/// Extension methods for adding deduplication to functions.
 extension FuncDeduplicateExtension<R> on Func<R> {
   /// Creates a deduplicated version of this function that prevents
   /// duplicate executions within a time window.
@@ -215,6 +216,7 @@ extension FuncDeduplicateExtension<R> on Func<R> {
       DeduplicateExtension(this, window: window);
 }
 
+/// Extension methods for adding deduplication to functions with one argument.
 extension Func1DeduplicateExtension<T, R> on Func1<T, R> {
   /// Creates a deduplicated version of this function that prevents
   /// duplicate executions within a time window per argument.
@@ -229,6 +231,7 @@ extension Func1DeduplicateExtension<T, R> on Func1<T, R> {
       DeduplicateExtension1(this, window: window);
 }
 
+/// Extension methods for adding deduplication to functions with two arguments.
 extension Func2DeduplicateExtension<T1, T2, R> on Func2<T1, T2, R> {
   /// Creates a deduplicated version of this function that prevents
   /// duplicate executions within a time window per argument pair.

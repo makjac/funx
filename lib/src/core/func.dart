@@ -1,4 +1,11 @@
-/// Base Func class for wrapping async functions with execution control.
+/// Async function wrappers with chainable execution control.
+///
+/// Provides [Func], [Func1], and [Func2] wrapper classes for async
+/// functions with zero, one, and two parameters respectively. Each
+/// wrapper enables composable execution control via decorator
+/// methods for timing, concurrency, reliability, performance,
+/// validation, and observability patterns. Decorators chain fluently
+/// to build complex execution pipelines.
 library;
 
 import 'dart:async';
@@ -48,10 +55,17 @@ import 'package:funx/src/transformation/transform.dart';
 import 'package:funx/src/validation/guard.dart';
 import 'package:funx/src/validation/validate.dart';
 
-/// A wrapper for async functions that provides execution control mechanisms.
+/// Wraps async no-parameter functions with execution control.
 ///
-/// [Func] wraps a function and allows applying various execution control
-/// patterns like debouncing, throttling, retry logic, etc.
+/// Provides wrapper for async zero-parameter functions enabling
+/// chainable execution control decorators. Supports timing controls
+/// (debounce, throttle, delay, timeout), concurrency mechanisms
+/// (lock, semaphore, barrier, bulkhead), reliability patterns
+/// (retry, circuit breaker, fallback), performance optimizations
+/// (memoize, deduplicate, share), validation (guard), error
+/// handling (catch, recover), observability (tap, monitor), and
+/// transformations (proxy, transform). Decorators chain fluently to
+/// compose complex execution behaviors.
 ///
 /// Example:
 /// ```dart
@@ -59,16 +73,20 @@ import 'package:funx/src/validation/validate.dart';
 ///   return await api.getUser();
 /// });
 ///
-/// // Apply execution controls
+/// // Chain execution controls
 /// final controlled = fetchUser
 ///   .debounce(Duration(milliseconds: 300))
+///   .retry(maxAttempts: 3)
 ///   .timeout(Duration(seconds: 5));
 ///
-/// // Execute
 /// final user = await controlled();
 /// ```
 class Func<R> {
-  /// Creates a [Func] wrapping the provided async function.
+  /// Creates wrapper for async no-parameter function.
+  ///
+  /// The function parameter accepts async no-parameter function
+  /// returning [Future] of type [R]. Wraps function for execution
+  /// via [call] method and decorator application.
   ///
   /// Example:
   /// ```dart
@@ -80,7 +98,12 @@ class Func<R> {
 
   final AsyncFunction<R> _function;
 
-  /// Executes the wrapped function.
+  /// Executes wrapped async function.
+  ///
+  /// Invokes underlying function and returns [Future] of type [R].
+  /// Executes with all applied decorators in composition order.
+  ///
+  /// Returns [Future] completing with function result.
   ///
   /// Example:
   /// ```dart
@@ -686,13 +709,27 @@ class Func<R> {
   }
 }
 
-/// A wrapper for async functions with one parameter.
+/// Wraps async one-parameter functions with execution control.
+///
+/// Provides wrapper for async single-parameter functions enabling
+/// chainable execution control decorators. Accepts argument of type
+/// [T] and returns [Future] of type [R]. Supports same decorator
+/// set as [Func] including timing, concurrency, reliability,
+/// performance, validation, error handling, observability, and
+/// transformations. Decorators chain fluently to compose complex
+/// execution behaviors with parameter passing.
 ///
 /// Example:
 /// ```dart
 /// final fetchUser = Func1<String, User>((userId) async {
 ///   return await api.getUser(userId);
 /// });
+///
+/// final controlled = fetchUser
+///   .memoize(ttl: Duration(minutes: 5))
+///   .retry(maxAttempts: 3);
+///
+/// final user = await controlled('user-123');
 /// ```
 class Func1<T, R> {
   /// Creates a [Func1] wrapping the provided async function.
@@ -1478,13 +1515,30 @@ class Func1<T, R> {
   }
 }
 
-/// A wrapper for async functions with two parameters.
+/// Wraps async two-parameter functions with execution control.
+///
+/// Provides wrapper for async dual-parameter functions enabling
+/// chainable execution control decorators. Accepts arguments of
+/// types [T1] and [T2], returning [Future] of type [R]. Supports
+/// same decorator set as [Func] and [Func1] including timing,
+/// concurrency, reliability, performance, validation, error
+/// handling, observability, and transformations. Decorators chain
+/// fluently to compose complex execution behaviors with multiple
+/// parameters.
 ///
 /// Example:
 /// ```dart
-/// final fetchPosts = Func2<String, int, List<Post>>((userId, limit) async {
-///   return await api.getPosts(userId, limit);
-/// });
+/// final fetchPosts = Func2<String, int, List<Post>>(
+///   (userId, limit) async {
+///     return await api.getPosts(userId, limit);
+///   },
+/// );
+///
+/// final controlled = fetchPosts
+///   .rateLimit(maxCalls: 10, window: Duration(seconds: 1))
+///   .timeout(Duration(seconds: 5));
+///
+/// final posts = await controlled('user-123', 10);
 /// ```
 class Func2<T1, T2, R> {
   /// Creates a [Func2] wrapping the provided async function.

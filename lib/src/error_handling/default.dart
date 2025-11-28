@@ -5,11 +5,16 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// Returns a default value when a [Func] execution fails.
+/// Returns a default value when function execution fails.
 ///
-/// Allows specifying a default value that is returned when the function
-/// throws an error. Optionally can use a predicate to determine when to
-/// use the default.
+/// Provides graceful error handling for no-parameter functions by
+/// returning a predefined [_defaultValue] when an exception occurs.
+/// The optional [defaultIf] predicate allows conditional use of the
+/// default value based on the exception type or properties. If
+/// [defaultIf] returns false, the exception is re-thrown. The optional
+/// [onDefault] callback enables monitoring when the default is used.
+/// This pattern is essential for providing fallback values, ensuring
+/// non-null results, or implementing fail-safe defaults.
 ///
 /// Example:
 /// ```dart
@@ -17,20 +22,25 @@ import 'package:funx/src/core/func.dart';
 ///   .defaultValue(
 ///     defaultValue: Config.fallback(),
 ///     defaultIf: (e) => e is NetworkException,
+///     onDefault: () => logger.warn('Using default config'),
 ///   );
 /// ```
 class DefaultExtension<R> extends Func<R> {
-  /// Creates a default value wrapper for a function.
+  /// Creates a default value wrapper for a no-parameter function.
   ///
-  /// [defaultValue] is the value to return on error.
-  /// [defaultIf] determines if default should be used for a specific error.
-  /// [onDefault] is called when default value is returned.
+  /// The [_inner] parameter is the function to wrap. The [defaultValue]
+  /// parameter is the value to return when an exception occurs. The
+  /// optional [defaultIf] predicate determines whether to use the
+  /// default for a specific exception; if it returns false, the
+  /// exception is re-thrown. The optional [onDefault] callback is
+  /// invoked when the default value is returned.
   ///
   /// Example:
   /// ```dart
   /// final safe = DefaultExtension(
   ///   myFunc,
   ///   defaultValue: 42,
+  ///   defaultIf: (e) => e is! CriticalException,
   ///   onDefault: () => logger.warn('Using default'),
   /// );
   /// ```
@@ -44,13 +54,25 @@ class DefaultExtension<R> extends Func<R> {
 
   final Func<R> _inner;
 
-  /// The default value to return on error.
+  /// The default value to return when an exception occurs.
+  ///
+  /// Returned instead of propagating the exception when the function
+  /// fails and [defaultIf] allows it (or [defaultIf] is null).
   final R _defaultValue;
 
-  /// Optional predicate to determine if default should be used for an error.
+  /// Optional predicate to determine if default should be used.
+  ///
+  /// Receives the exception and returns true to use the default value
+  /// or false to re-throw the exception. When null, the default is
+  /// used for all exceptions. Use this to selectively handle specific
+  /// exception types.
   final bool Function(Object error)? defaultIf;
 
-  /// Optional callback invoked when default value is used.
+  /// Optional callback invoked when the default value is returned.
+  ///
+  /// Called after an exception is caught but before returning the
+  /// default value. Useful for logging, metrics, or monitoring
+  /// fallback usage. Does not receive any parameters.
   final void Function()? onDefault;
 
   @override
@@ -69,7 +91,16 @@ class DefaultExtension<R> extends Func<R> {
   }
 }
 
-/// Returns a default value when a [Func1] execution fails.
+/// Returns a default value when one-parameter function fails.
+///
+/// Provides graceful error handling for single-parameter functions by
+/// returning a predefined [_defaultValue] when an exception occurs.
+/// The optional [defaultIf] predicate allows conditional use of the
+/// default value based on the exception type or properties. If
+/// [defaultIf] returns false, the exception is re-thrown. The optional
+/// [onDefault] callback enables monitoring when the default is used.
+/// This pattern is essential for providing fallback values, ensuring
+/// non-null results, or implementing fail-safe defaults.
 ///
 /// Example:
 /// ```dart
@@ -77,16 +108,26 @@ class DefaultExtension<R> extends Func<R> {
 ///   .defaultValue(
 ///     defaultValue: 0,
 ///     defaultIf: (e) => e is FormatException,
+///     onDefault: () => logger.warn('Parse failed'),
 ///   );
 /// ```
 class DefaultExtension1<T, R> extends Func1<T, R> {
-  /// Creates a default value wrapper for a single-parameter function.
+  /// Creates a default value wrapper for a one-parameter function.
+  ///
+  /// The [_inner] parameter is the function to wrap. The [defaultValue]
+  /// parameter is the value to return when an exception occurs. The
+  /// optional [defaultIf] predicate determines whether to use the
+  /// default for a specific exception; if it returns false, the
+  /// exception is re-thrown. The optional [onDefault] callback is
+  /// invoked when the default value is returned.
   ///
   /// Example:
   /// ```dart
   /// final safe = DefaultExtension1(
   ///   myFunc,
   ///   defaultValue: 'N/A',
+  ///   defaultIf: (e) => e is! CriticalException,
+  ///   onDefault: () => logger.warn('Using default'),
   /// );
   /// ```
   DefaultExtension1(
@@ -99,13 +140,25 @@ class DefaultExtension1<T, R> extends Func1<T, R> {
 
   final Func1<T, R> _inner;
 
-  /// The default value to return on error.
+  /// The default value to return when an exception occurs.
+  ///
+  /// Returned instead of propagating the exception when the function
+  /// fails and [defaultIf] allows it (or [defaultIf] is null).
   final R _defaultValue;
 
-  /// Optional predicate to determine if default should be used for an error.
+  /// Optional predicate to determine if default should be used.
+  ///
+  /// Receives the exception and returns true to use the default value
+  /// or false to re-throw the exception. When null, the default is
+  /// used for all exceptions. Use this to selectively handle specific
+  /// exception types.
   final bool Function(Object error)? defaultIf;
 
-  /// Optional callback invoked when default value is used.
+  /// Optional callback invoked when the default value is returned.
+  ///
+  /// Called after an exception is caught but before returning the
+  /// default value. Useful for logging, metrics, or monitoring
+  /// fallback usage. Does not receive any parameters.
   final void Function()? onDefault;
 
   @override
@@ -124,7 +177,16 @@ class DefaultExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// Returns a default value when a [Func2] execution fails.
+/// Returns a default value when two-parameter function fails.
+///
+/// Provides graceful error handling for two-parameter functions by
+/// returning a predefined [_defaultValue] when an exception occurs.
+/// The optional [defaultIf] predicate allows conditional use of the
+/// default value based on the exception type or properties. If
+/// [defaultIf] returns false, the exception is re-thrown. The optional
+/// [onDefault] callback enables monitoring when the default is used.
+/// This pattern is essential for providing fallback values, ensuring
+/// non-null results, or implementing fail-safe defaults.
 ///
 /// Example:
 /// ```dart
@@ -132,16 +194,26 @@ class DefaultExtension1<T, R> extends Func1<T, R> {
 ///   .defaultValue(
 ///     defaultValue: 0.0,
 ///     defaultIf: (e) => e is IntegerDivisionByZeroException,
+///     onDefault: () => logger.warn('Division by zero'),
 ///   );
 /// ```
 class DefaultExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a default value wrapper for a two-parameter function.
+  ///
+  /// The [_inner] parameter is the function to wrap. The [defaultValue]
+  /// parameter is the value to return when an exception occurs. The
+  /// optional [defaultIf] predicate determines whether to use the
+  /// default for a specific exception; if it returns false, the
+  /// exception is re-thrown. The optional [onDefault] callback is
+  /// invoked when the default value is returned.
   ///
   /// Example:
   /// ```dart
   /// final safe = DefaultExtension2(
   ///   myFunc,
   ///   defaultValue: emptyList,
+  ///   defaultIf: (e) => e is! CriticalException,
+  ///   onDefault: () => logger.warn('Using default'),
   /// );
   /// ```
   DefaultExtension2(
@@ -154,13 +226,25 @@ class DefaultExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 
   final Func2<T1, T2, R> _inner;
 
-  /// The default value to return on error.
+  /// The default value to return when an exception occurs.
+  ///
+  /// Returned instead of propagating the exception when the function
+  /// fails and [defaultIf] allows it (or [defaultIf] is null).
   final R _defaultValue;
 
-  /// Optional predicate to determine if default should be used for an error.
+  /// Optional predicate to determine if default should be used.
+  ///
+  /// Receives the exception and returns true to use the default value
+  /// or false to re-throw the exception. When null, the default is
+  /// used for all exceptions. Use this to selectively handle specific
+  /// exception types.
   final bool Function(Object error)? defaultIf;
 
-  /// Optional callback invoked when default value is used.
+  /// Optional callback invoked when the default value is returned.
+  ///
+  /// Called after an exception is caught but before returning the
+  /// default value. Useful for logging, metrics, or monitoring
+  /// fallback usage. Does not receive any parameters.
   final void Function()? onDefault;
 
   @override

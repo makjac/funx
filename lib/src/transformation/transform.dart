@@ -5,9 +5,15 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// Transforms the result of a [Func] to type [R2].
+/// Transforms function results to a different type.
 ///
-/// Allows mapping function results to a different type.
+/// Maps the result of a no-parameter function from type [R1] to type
+/// [R2] using a mapper function. This allows converting function
+/// results to different types without modifying the original function.
+/// Useful for type conversions, formatting, data extraction, or
+/// wrapping results in custom types. The transformation happens after
+/// successful execution, so errors from the original function are
+/// propagated without transformation.
 ///
 /// Example:
 /// ```dart
@@ -17,9 +23,12 @@ import 'package:funx/src/core/func.dart';
 /// print(await getPrice()); // '$42.5'
 /// ```
 class TransformExtension<R1, R2> extends Func<R2> {
-  /// Creates a transform wrapper for a function.
+  /// Creates a transform wrapper for a no-parameter function.
   ///
-  /// [mapper] transforms the result from R1 to R2.
+  /// The [_inner] parameter is the function to wrap. The [mapper]
+  /// function transforms the result from type [R1] to type [R2]. The
+  /// mapper is only invoked on successful execution; errors from the
+  /// original function are propagated unchanged.
   ///
   /// Example:
   /// ```dart
@@ -35,7 +44,11 @@ class TransformExtension<R1, R2> extends Func<R2> {
 
   final Func<R1> _inner;
 
-  /// Function to transform the result.
+  /// Function that transforms the result from [R1] to [R2].
+  ///
+  /// Receives the successful result of the wrapped function and
+  /// returns a transformed value of a different type. Only invoked
+  /// when the function completes successfully.
   final R2 Function(R1 result) mapper;
 
   @override
@@ -45,9 +58,15 @@ class TransformExtension<R1, R2> extends Func<R2> {
   }
 }
 
-/// Transforms the result of a [Func1] to type [R2].
+/// Transforms one-parameter function results to a different type.
 ///
-/// Allows mapping function results to a different type.
+/// Maps the result of a single-parameter function from type [R1] to
+/// type [R2] using a mapper function. This allows converting function
+/// results to different types without modifying the original function.
+/// Useful for type conversions, formatting, data extraction, or
+/// wrapping results in custom types. The transformation happens after
+/// successful execution, so errors from the original function are
+/// propagated without transformation.
 ///
 /// Example:
 /// ```dart
@@ -57,9 +76,12 @@ class TransformExtension<R1, R2> extends Func<R2> {
 /// print(await parseAndFormat('42')); // 'Number: 42'
 /// ```
 class TransformExtension1<T, R1, R2> extends Func1<T, R2> {
-  /// Creates a transform wrapper for a single-parameter function.
+  /// Creates a transform wrapper for a one-parameter function.
   ///
-  /// [mapper] transforms the result from R1 to R2.
+  /// The [_inner] parameter is the function to wrap. The [mapper]
+  /// function transforms the result from type [R1] to type [R2]. The
+  /// mapper is only invoked on successful execution; errors from the
+  /// original function are propagated unchanged.
   ///
   /// Example:
   /// ```dart
@@ -75,7 +97,11 @@ class TransformExtension1<T, R1, R2> extends Func1<T, R2> {
 
   final Func1<T, R1> _inner;
 
-  /// Function to transform the result.
+  /// Function that transforms the result from [R1] to [R2].
+  ///
+  /// Receives the successful result of the wrapped function and
+  /// returns a transformed value of a different type. Only invoked
+  /// when the function completes successfully.
   final R2 Function(R1 result) mapper;
 
   @override
@@ -85,9 +111,15 @@ class TransformExtension1<T, R1, R2> extends Func1<T, R2> {
   }
 }
 
-/// Transforms the result of a [Func2] to type [R2].
+/// Transforms two-parameter function results to a different type.
 ///
-/// Allows mapping function results to a different type.
+/// Maps the result of a two-parameter function from type [R1] to type
+/// [R2] using a mapper function. This allows converting function
+/// results to different types without modifying the original function.
+/// Useful for type conversions, formatting, data extraction, or
+/// wrapping results in custom types. The transformation happens after
+/// successful execution, so errors from the original function are
+/// propagated without transformation.
 ///
 /// Example:
 /// ```dart
@@ -99,7 +131,10 @@ class TransformExtension1<T, R1, R2> extends Func1<T, R2> {
 class TransformExtension2<T1, T2, R1, R2> extends Func2<T1, T2, R2> {
   /// Creates a transform wrapper for a two-parameter function.
   ///
-  /// [mapper] transforms the result from R1 to R2.
+  /// The [_inner] parameter is the function to wrap. The [mapper]
+  /// function transforms the result from type [R1] to type [R2]. The
+  /// mapper is only invoked on successful execution; errors from the
+  /// original function are propagated unchanged.
   ///
   /// Example:
   /// ```dart
@@ -115,7 +150,11 @@ class TransformExtension2<T1, T2, R1, R2> extends Func2<T1, T2, R2> {
 
   final Func2<T1, T2, R1> _inner;
 
-  /// Function to transform the result.
+  /// Function that transforms the result from [R1] to [R2].
+  ///
+  /// Receives the successful result of the wrapped function and
+  /// returns a transformed value of a different type. Only invoked
+  /// when the function completes successfully.
   final R2 Function(R1 result) mapper;
 
   @override

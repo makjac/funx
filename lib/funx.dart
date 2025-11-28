@@ -1,20 +1,45 @@
-/// Funx - A zero-dependency function execution control library for Dart.
+/// Provides function execution control mechanisms for Dart.
 ///
-/// Funx provides a comprehensive set of execution control mechanisms for async
-/// and sync functions, including timing controls, concurrency management,
-/// reliability patterns, and performance optimizations.
+/// Zero-dependency library offering comprehensive execution control
+/// for async and sync functions. Includes timing controls, concurrency
+/// management, reliability patterns, error handling, performance
+/// optimizations, and observability features. Supports method chaining
+/// for composing multiple behaviors. Designed for building robust,
+/// resilient, and performant function pipelines.
+///
+/// Key categories:
+/// - Concurrency: barriers, bulkheads, locks, semaphores, queues
+/// - Control Flow: conditionals, repeats, switch patterns
+/// - Core: function wrappers for async and sync operations
+/// - Error Handling: catch, default values, recovery
+/// - Observability: audit logs, metrics monitoring, tap inspection
+/// - Orchestration: parallel execution, racing, sagas
+/// - Performance: batching, caching, memoization, rate limiting
+/// - Reliability: retries, backoff, circuit breakers, fallbacks
+/// - State: snapshots for state capture and restore
+/// - Timing: debounce, throttle, delay, timeout, defer
+/// - Transformation: merge, proxy, transform operations
+/// - Validation: guards and validators for input checking
 ///
 /// Example:
 /// ```dart
 /// import 'package:funx/funx.dart';
 ///
-/// // Create a debounced search function
+/// // Create debounced search with retry and timeout
 /// final search = Func<List<Result>>(() async {
 ///   return await api.search(query);
-/// }).debounce(Duration(milliseconds: 300));
+/// })
+///   .debounce(Duration(milliseconds: 300))
+///   .retry(maxAttempts: 3)
+///   .timeout(Duration(seconds: 5));
 ///
-/// // Use it
-/// final results = await search();
+/// // Execute with full error handling
+/// try {
+///   final results = await search();
+///   print('Found ${results.length} results');
+/// } catch (e) {
+///   print('Search failed: $e');
+/// }
 /// ```
 library;
 

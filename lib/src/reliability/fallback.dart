@@ -2,10 +2,15 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// Extension on [Func] that adds fallback capabilities.
+/// Provides fallback value or function for no-parameter functions.
 ///
-/// Provides a fallback value or function when the primary function fails.
-/// Supports cascading fallbacks for multiple backup strategies.
+/// Wraps [Func] to return fallback when primary function fails.
+/// Accepts either fallbackValue for constant fallback or
+/// fallbackFunction for computed fallback. The [fallbackIf]
+/// predicate controls which errors trigger fallback. The
+/// [onFallback] callback enables monitoring fallback usage.
+/// Supports cascading fallbacks via chaining. This pattern ensures
+/// graceful degradation with backup strategies for failures.
 ///
 /// Example:
 /// ```dart
@@ -15,19 +20,33 @@ import 'package:funx/src/core/func.dart';
 ///
 /// final withFallback = primary.fallback(
 ///   fallbackValue: 'default value',
+///   onFallback: (e) => print('Using fallback: $e'),
 /// );
 ///
-/// final result = await withFallback(); // Returns 'default value'
+/// final result = await withFallback(); // 'default value'
 /// ```
 class FallbackExtension<R> extends Func<R> {
-  /// Creates a fallback wrapper around the given [_inner] function.
+  /// Creates fallback wrapper for no-parameter function.
   ///
-  /// Provide either [fallbackValue] or [fallbackFunction]:
-  /// - [fallbackValue]: A constant value to return on failure.
-  /// - [fallbackFunction]: A function to call on failure.
-  /// - [fallbackIf]: Optional predicate to determine if an error should
-  ///   trigger the fallback. If not provided, all errors trigger fallback.
-  /// - [onFallback]: Optional callback invoked when fallback is used.
+  /// Provide either [fallbackValue] or [fallbackFunction] (mutually
+  /// exclusive). The [fallbackValue] parameter provides constant
+  /// value returned on failure. The [fallbackFunction] parameter
+  /// provides function called on failure. The optional [fallbackIf]
+  /// predicate determines which errors trigger fallback (defaults to
+  /// all errors). The optional [onFallback] callback is invoked when
+  /// fallback is used.
+  ///
+  /// Throws:
+  /// - [AssertionError] if both or neither fallback options provided
+  ///
+  /// Example:
+  /// ```dart
+  /// final withValue = FallbackExtension(
+  ///   primaryFunc,
+  ///   fallbackValue: 'default',
+  ///   fallbackIf: (e) => e is NetworkException,
+  /// );
+  /// ```
   FallbackExtension(
     this._inner, {
     R? fallbackValue,
@@ -50,10 +69,16 @@ class FallbackExtension<R> extends Func<R> {
   final R? _fallbackValue;
   final Func<R>? _fallbackFunction;
 
-  /// Optional predicate to determine if an error should trigger the fallback.
+  /// Predicate determining if error should trigger fallback.
+  ///
+  /// When null, all errors trigger fallback. When provided, only
+  /// errors passing predicate trigger fallback; others are rethrown.
   final bool Function(Object error)? fallbackIf;
 
-  /// Optional callback invoked when fallback is used.
+  /// Callback invoked when fallback is used.
+  ///
+  /// Receives error that triggered fallback. Useful for logging,
+  /// metrics, or monitoring fallback usage patterns.
   final void Function(Object error)? onFallback;
 
   @override
@@ -78,13 +103,43 @@ class FallbackExtension<R> extends Func<R> {
   }
 }
 
-/// Extension on [Func1] that adds fallback capabilities.
+/// Provides fallback value or function for one-parameter functions.
 ///
-/// See [FallbackExtension] for details.
+/// Wraps [Func1] to return fallback when primary function fails.
+/// Accepts either fallbackValue for constant fallback or
+/// fallbackFunction for computed fallback receiving original
+/// argument. The [fallbackIf] predicate controls which errors
+/// trigger fallback. The [onFallback] callback enables monitoring
+/// fallback usage. Supports cascading fallbacks via chaining. This
+/// pattern ensures graceful degradation with backup strategies.
+///
+/// Example:
+/// ```dart
+/// final fetch = Func1<String, Data>((id) async {
+///   return await api.fetch(id);
+/// }).fallback(
+///   fallbackFunction: (id) async => cache.get(id),
+///   fallbackIf: (e) => e is NetworkException,
+/// );
+/// ```
 class FallbackExtension1<T, R> extends Func1<T, R> {
-  /// Creates a fallback wrapper around the given [_inner] function.
+  /// Creates fallback wrapper for one-parameter function.
   ///
-  /// See [FallbackExtension] for parameter documentation.
+  /// Provide either [fallbackValue] or [fallbackFunction] (mutually
+  /// exclusive). The [fallbackValue] parameter provides constant
+  /// value returned on failure. The [fallbackFunction] parameter
+  /// provides function called on failure receiving original
+  /// argument. The optional [fallbackIf] predicate determines which
+  /// errors trigger fallback. The optional [onFallback] callback is
+  /// invoked when fallback is used.
+  ///
+  /// Example:
+  /// ```dart
+  /// final withFallback = FallbackExtension1(
+  ///   primaryFunc,
+  ///   fallbackFunction: (arg) => defaultValue(arg),
+  /// );
+  /// ```
   FallbackExtension1(
     this._inner, {
     R? fallbackValue,
@@ -107,10 +162,16 @@ class FallbackExtension1<T, R> extends Func1<T, R> {
   final R? _fallbackValue;
   final Func1<T, R>? _fallbackFunction;
 
-  /// Optional predicate to determine if an error should trigger the fallback.
+  /// Predicate determining if error should trigger fallback.
+  ///
+  /// When null, all errors trigger fallback. When provided, only
+  /// errors passing predicate trigger fallback; others are rethrown.
   final bool Function(Object error)? fallbackIf;
 
-  /// Optional callback invoked when fallback is used.
+  /// Callback invoked when fallback is used.
+  ///
+  /// Receives error that triggered fallback. Useful for logging,
+  /// metrics, or monitoring fallback usage patterns.
   final void Function(Object error)? onFallback;
 
   @override
@@ -135,13 +196,42 @@ class FallbackExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// Extension on [Func2] that adds fallback capabilities.
+/// Provides fallback value or function for two-parameter functions.
 ///
-/// See [FallbackExtension] for details.
+/// Wraps [Func2] to return fallback when primary function fails.
+/// Accepts either fallbackValue for constant fallback or
+/// fallbackFunction for computed fallback receiving original
+/// arguments. The [fallbackIf] predicate controls which errors
+/// trigger fallback. The [onFallback] callback enables monitoring
+/// fallback usage. Supports cascading fallbacks via chaining. This
+/// pattern ensures graceful degradation with backup strategies.
+///
+/// Example:
+/// ```dart
+/// final update = Func2<String, Data, void>((id, data) async {
+///   await db.update(id, data);
+/// }).fallback(
+///   fallbackFunction: (id, data) => cache.set(id, data),
+/// );
+/// ```
 class FallbackExtension2<T1, T2, R> extends Func2<T1, T2, R> {
-  /// Creates a fallback wrapper around the given [_inner] function.
+  /// Creates fallback wrapper for two-parameter function.
   ///
-  /// See [FallbackExtension] for parameter documentation.
+  /// Provide either [fallbackValue] or [fallbackFunction] (mutually
+  /// exclusive). The [fallbackValue] parameter provides constant
+  /// value returned on failure. The [fallbackFunction] parameter
+  /// provides function called on failure receiving original
+  /// arguments. The optional [fallbackIf] predicate determines which
+  /// errors trigger fallback. The optional [onFallback] callback is
+  /// invoked when fallback is used.
+  ///
+  /// Example:
+  /// ```dart
+  /// final withFallback = FallbackExtension2(
+  ///   primaryFunc,
+  ///   fallbackValue: defaultResult,
+  /// );
+  /// ```
   FallbackExtension2(
     this._inner, {
     R? fallbackValue,
@@ -164,10 +254,16 @@ class FallbackExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   final R? _fallbackValue;
   final Func2<T1, T2, R>? _fallbackFunction;
 
-  /// Optional predicate to determine if an error should trigger the fallback.
+  /// Predicate determining if error should trigger fallback.
+  ///
+  /// When null, all errors trigger fallback. When provided, only
+  /// errors passing predicate trigger fallback; others are rethrown.
   final bool Function(Object error)? fallbackIf;
 
-  /// Optional callback invoked when fallback is used.
+  /// Callback invoked when fallback is used.
+  ///
+  /// Receives error that triggered fallback. Useful for logging,
+  /// metrics, or monitoring fallback usage patterns.
   final void Function(Object error)? onFallback;
 
   @override

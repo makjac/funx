@@ -5,10 +5,21 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// Executes all functions in parallel and collects their results.
+/// Executes multiple single-parameter functions in parallel.
 ///
-/// Runs all provided functions concurrently and returns their results
-/// in order. Supports different error handling modes.
+/// Runs [_inner] function along with all [functions] concurrently,
+/// returning results in order as a list. The [failFast] parameter
+/// controls error handling: when true (default), fails immediately
+/// on first error; when false, waits for all completions. The
+/// optional [onComplete] callback receives notification when each
+/// function completes with its index and result.
+///
+/// Returns a [Future] of [List] containing results from all
+/// functions in order, starting with [_inner] result followed by
+/// [functions] results.
+///
+/// Throws:
+/// - Any exception from executed functions when [failFast] is true
 ///
 /// Example:
 /// ```dart
@@ -22,15 +33,18 @@ import 'package:funx/src/core/func.dart';
 ///   onComplete: (index, result) => print('Done: $index'),
 /// );
 ///
-/// final results = await allResults(42); // ['primary', 'backup1', 'backup2']
+/// final results = await allResults(42);
 /// ```
 class AllExtension1<T, R> extends Func1<T, List<R>> {
-  /// Creates an all wrapper for a single-parameter function.
+  /// Creates a parallel execution wrapper.
   ///
-  /// [_inner] is the primary function to execute.
-  /// [functions] are additional functions to execute.
-  /// [failFast] if true, fails immediately on first error (default: true).
-  /// [onComplete] is called for each completing function with (index, result).
+  /// Wraps [_inner] function to execute alongside [functions] in
+  /// parallel. The [functions] parameter provides additional
+  /// functions to run concurrently. The [failFast] parameter
+  /// controls error behavior: true (default) fails immediately on
+  /// first error, false waits for all completions. The optional
+  /// [onComplete] callback receives index and result for each
+  /// completing function.
   ///
   /// Example:
   /// ```dart
@@ -51,6 +65,9 @@ class AllExtension1<T, R> extends Func1<T, List<R>> {
   final Func1<T, R> _inner;
 
   /// Additional functions to execute in parallel.
+  ///
+  /// These functions run concurrently with [_inner] and their
+  /// results are collected in order after the primary result.
   final List<Func1<T, R>> functions;
 
   /// If true, fails immediately on first error.
@@ -100,27 +117,41 @@ class AllExtension1<T, R> extends Func1<T, List<R>> {
   }
 }
 
-/// Executes all two-parameter functions in parallel.
+/// Executes multiple two-parameter functions in parallel.
 ///
-/// Same as [AllExtension1] but for functions with two parameters.
+/// Runs [_inner] function along with all [functions] concurrently,
+/// returning results in order as a list. Accepts two parameters
+/// [T1] and [T2] passed to all functions. The [failFast]
+/// parameter controls error handling: when true (default), fails
+/// immediately on first error; when false, waits for all
+/// completions.
+///
+/// Returns a [Future] of [List] containing results from all
+/// functions in order.
+///
+/// Throws:
+/// - Any exception from executed functions when [failFast] is true
 ///
 /// Example:
 /// ```dart
-/// final allResults = Func2<String, int, Data>((url, timeout) async {
-///   return await primaryApi.fetch(url, timeout);
-/// }).all(
+/// final allResults = Func2<String, int, Data>(
+///   (url, timeout) async {
+///     return await primaryApi.fetch(url, timeout);
+///   },
+/// ).all(
 ///   functions: [
 ///     (url, timeout) async => await backupApi.fetch(url, timeout),
 ///   ],
 /// );
 /// ```
 class AllExtension2<T1, T2, R> extends Func2<T1, T2, List<R>> {
-  /// Creates an all wrapper for a two-parameter function.
+  /// Creates a parallel execution wrapper.
   ///
-  /// [_inner] is the primary function to execute.
-  /// [functions] are additional functions to execute.
-  /// [failFast] if true, fails immediately on first error.
-  /// [onComplete] is called for each completing function.
+  /// Wraps [_inner] function to execute alongside [functions] in
+  /// parallel. The [functions] parameter provides additional
+  /// functions to run concurrently. The [failFast] parameter
+  /// controls error behavior: true (default) fails immediately on
+  /// first error, false waits for all completions.
   ///
   /// Example:
   /// ```dart
@@ -139,12 +170,23 @@ class AllExtension2<T1, T2, R> extends Func2<T1, T2, List<R>> {
   final Func2<T1, T2, R> _inner;
 
   /// Additional functions to execute in parallel.
+  ///
+  /// These functions run concurrently with [_inner] and their
+  /// results are collected in order after the primary result.
   final List<Func2<T1, T2, R>> functions;
 
-  /// If true, fails immediately on first error.
+  /// Controls error handling behavior during parallel execution.
+  ///
+  /// When true (default), execution fails immediately when any
+  /// function throws. When false, waits for all functions to
+  /// complete before reporting errors.
   final bool failFast;
 
-  /// Callback when each function completes.
+  /// Optional callback invoked when each function completes.
+  ///
+  /// Receives the function index (0 for [_inner], 1+ for
+  /// [functions]) and its result. Called for each successful
+  /// completion even if others fail.
   final void Function(int index, R result)? onComplete;
 
   @override

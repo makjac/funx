@@ -2,18 +2,22 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// A function that defers execution until the first time it is called.
+/// Defers function execution until the first time it is called.
 ///
-/// This extension allows you to wrap a computation that should only be
-/// performed when needed, not when the lazy function is created.
+/// Wraps a computation that should only be performed when actually
+/// needed, not when the lazy function is created. Unlike memoization,
+/// this executes every time it's called - the "lazy" aspect refers
+/// to deferring the initial setup or execution until first use. This
+/// pattern is useful for expensive initialization that may not always
+/// be needed, or when you want to delay resource allocation.
 ///
 /// Example:
 /// ```dart
 /// final expensiveInit = Func(() => loadHugeDataset()).lazy();
 /// // loadHugeDataset() not called yet
 ///
-/// final data = await expensiveInit(); // now loadHugeDataset() is called
-/// final sameData = await expensiveInit(); // loadHugeDataset() called again
+/// final data = await expensiveInit(); // now loadHugeDataset() called
+/// final data2 = await expensiveInit(); // called again (not cached)
 /// ```
 class LazyExtension<R> extends Func<R> {
   /// Creates a lazy execution wrapper for the given function.
@@ -35,16 +39,20 @@ class LazyExtension<R> extends Func<R> {
   }
 }
 
-/// A function that defers execution until the first time it is called,
-/// for functions with one argument.
+/// Defers function execution until first call for one-argument functions.
+///
+/// Extends lazy evaluation to functions with one parameter. Each call
+/// with any argument triggers execution - arguments are not cached.
+/// Useful for delaying resource-intensive operations that depend on
+/// runtime parameters.
 ///
 /// Example:
 /// ```dart
-/// final loader = Func1((String path) => File(path).readAsString()).lazy();
+/// final loader = Func1((String path) => File(path).read()).lazy();
 /// // File reading not performed yet
 ///
-/// final content = await loader('config.json'); // now the file is read
-/// final content2 = await loader('data.json'); // file read again with new arg
+/// final content = await loader('config.json'); // now file is read
+/// final data = await loader('data.json'); // reads again with new arg
 /// ```
 class LazyExtension1<T, R> extends Func1<T, R> {
   /// Creates a lazy execution wrapper for the given one-argument function.
@@ -63,8 +71,11 @@ class LazyExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// A function that defers execution until the first time it is called,
-/// for functions with two arguments.
+/// Defers function execution until first call for two-argument functions.
+///
+/// Extends lazy evaluation to functions with two parameters. Each call
+/// triggers execution regardless of arguments - no caching occurs.
+/// Useful for computations that should only run when explicitly needed.
 ///
 /// Example:
 /// ```dart

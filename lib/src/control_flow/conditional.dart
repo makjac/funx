@@ -5,24 +5,34 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// Conditionally executes a [Func] based on predicate.
+/// Conditionally executes functions based on runtime predicates.
 ///
-/// Executes the wrapped function only if the condition is true,
-/// otherwise executes an alternative or throws an error.
+/// Provides conditional execution for no-parameter functions by
+/// evaluating a [condition] predicate before execution. If the
+/// condition returns true, the wrapped function executes. If false,
+/// an optional [otherwise] alternative executes, or a [StateError] is
+/// thrown. This pattern enables dynamic control flow, feature flags,
+/// permission checks, or environment-based execution. Useful for
+/// A/B testing, premium features, or conditional processing.
 ///
 /// Example:
 /// ```dart
-/// final process = Func(() async => await heavyOperation())
+/// bool isPremiumUser = false;
+/// final process = Func(() async => await premiumFeature())
 ///   .when(
 ///     condition: () => isPremiumUser,
-///     otherwise: () async => defaultResult,
+///     otherwise: () async => defaultFeature(),
 ///   );
 /// ```
 class ConditionalExtension<R> extends Func<R> {
-  /// Creates a conditional wrapper for a function.
+  /// Creates a conditional wrapper for a no-parameter function.
   ///
-  /// [condition] determines if the function should execute.
-  /// [otherwise] provides alternative when condition is false.
+  /// The [_inner] parameter is the function to wrap. The [condition]
+  /// predicate determines whether to execute the wrapped function; it
+  /// must return true for execution to proceed. The optional
+  /// [otherwise] function provides an alternative result when the
+  /// condition is false. If condition is false and no [otherwise] is
+  /// provided, throws [StateError].
   ///
   /// Example:
   /// ```dart
@@ -40,10 +50,18 @@ class ConditionalExtension<R> extends Func<R> {
 
   final Func<R> _inner;
 
-  /// Predicate to check before execution.
+  /// Predicate that determines whether to execute the function.
+  ///
+  /// Evaluated before each execution. If it returns true, the wrapped
+  /// function executes. If it returns false, the [otherwise] function
+  /// executes or [StateError] is thrown.
   final bool Function() condition;
 
-  /// Optional alternative when condition is false.
+  /// Optional alternative function when condition is false.
+  ///
+  /// Executes when [condition] returns false. If not provided and
+  /// condition is false, throws [StateError] with message 'Condition
+  /// not met and no alternative provided'.
   final Future<R> Function()? otherwise;
 
   @override
@@ -58,9 +76,16 @@ class ConditionalExtension<R> extends Func<R> {
   }
 }
 
-/// Conditionally executes a [Func1] based on predicate with argument access.
+/// Conditionally executes one-parameter functions based on argument.
 ///
-/// The condition can access the function argument to make decisions.
+/// Provides conditional execution for single-parameter functions by
+/// evaluating a [condition] predicate that receives the argument
+/// before execution. If the condition returns true, the wrapped
+/// function executes. If false, an optional [otherwise] alternative
+/// executes, or a [StateError] is thrown. This pattern enables
+/// argument-based validation, input filtering, or conditional
+/// processing. Useful for handling different input types, validating
+/// ranges, or implementing conditional logic.
 ///
 /// Example:
 /// ```dart
@@ -71,10 +96,14 @@ class ConditionalExtension<R> extends Func<R> {
 ///   );
 /// ```
 class ConditionalExtension1<T, R> extends Func1<T, R> {
-  /// Creates a conditional wrapper for a single-parameter function.
+  /// Creates a conditional wrapper for a one-parameter function.
   ///
-  /// [condition] determines if the function should execute based on argument.
-  /// [otherwise] provides alternative when condition is false.
+  /// The [_inner] parameter is the function to wrap. The [condition]
+  /// predicate receives the argument and determines whether to execute
+  /// the wrapped function; it must return true for execution to
+  /// proceed. The optional [otherwise] function provides an
+  /// alternative result when the condition is false. If condition is
+  /// false and no [otherwise] is provided, throws [StateError].
   ///
   /// Example:
   /// ```dart
@@ -92,10 +121,20 @@ class ConditionalExtension1<T, R> extends Func1<T, R> {
 
   final Func1<T, R> _inner;
 
-  /// Predicate to check before execution with argument access.
+  /// Predicate that determines execution based on the argument.
+  ///
+  /// Receives the argument and evaluates whether to execute the
+  /// wrapped function. If it returns true, the wrapped function
+  /// executes. If it returns false, the [otherwise] function executes
+  /// or [StateError] is thrown.
   final bool Function(T arg) condition;
 
-  /// Optional alternative when condition is false.
+  /// Optional alternative function when condition is false.
+  ///
+  /// Receives the argument and executes when [condition] returns
+  /// false. If not provided and condition is false, throws
+  /// [StateError] with message 'Condition not met and no alternative
+  /// provided'.
   final Future<R> Function(T arg)? otherwise;
 
   @override
@@ -110,9 +149,16 @@ class ConditionalExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// Conditionally executes a [Func2] based on predicate with argument access.
+/// Conditionally executes two-parameter functions based on arguments.
 ///
-/// The condition can access both function arguments to make decisions.
+/// Provides conditional execution for two-parameter functions by
+/// evaluating a [condition] predicate that receives both arguments
+/// before execution. If the condition returns true, the wrapped
+/// function executes. If false, an optional [otherwise] alternative
+/// executes, or a [StateError] is thrown. This pattern enables
+/// multi-argument validation, relationship checks, or conditional
+/// processing. Useful for validating argument relationships,
+/// preventing invalid operations, or implementing complex logic.
 ///
 /// Example:
 /// ```dart
@@ -125,8 +171,12 @@ class ConditionalExtension1<T, R> extends Func1<T, R> {
 class ConditionalExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a conditional wrapper for a two-parameter function.
   ///
-  /// [condition] determines if function should execute based on arguments.
-  /// [otherwise] provides alternative when condition is false.
+  /// The [_inner] parameter is the function to wrap. The [condition]
+  /// predicate receives both arguments and determines whether to
+  /// execute the wrapped function; it must return true for execution
+  /// to proceed. The optional [otherwise] function provides an
+  /// alternative result when the condition is false. If condition is
+  /// false and no [otherwise] is provided, throws [StateError].
   ///
   /// Example:
   /// ```dart
@@ -144,10 +194,20 @@ class ConditionalExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 
   final Func2<T1, T2, R> _inner;
 
-  /// Predicate to check before execution with argument access.
+  /// Predicate that determines execution based on both arguments.
+  ///
+  /// Receives both arguments and evaluates whether to execute the
+  /// wrapped function. If it returns true, the wrapped function
+  /// executes. If it returns false, the [otherwise] function executes
+  /// or [StateError] is thrown.
   final bool Function(T1 arg1, T2 arg2) condition;
 
-  /// Optional alternative when condition is false.
+  /// Optional alternative function when condition is false.
+  ///
+  /// Receives both arguments and executes when [condition] returns
+  /// false. If not provided and condition is false, throws
+  /// [StateError] with message 'Condition not met and no alternative
+  /// provided'.
   final Future<R> Function(T1 arg1, T2 arg2)? otherwise;
 
   @override

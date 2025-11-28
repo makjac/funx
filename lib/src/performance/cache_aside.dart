@@ -35,15 +35,19 @@ abstract class Cache<K, V> {
 class InMemoryCache<K, V> implements Cache<K, V> {
   final Map<K, V> _storage = {};
 
+  /// Retrieves value for the given key, or null if not found.
   @override
   V? get(K key) => _storage[key];
 
+  /// Stores value for the given key in cache.
   @override
   void put(K key, V value) => _storage[key] = value;
 
+  /// Removes value for the given key from cache.
   @override
   void remove(K key) => _storage.remove(key);
 
+  /// Clears all entries from cache.
   @override
   void clear() => _storage.clear();
 }
@@ -52,9 +56,13 @@ class InMemoryCache<K, V> implements Cache<K, V> {
 class _CacheEntry<V> {
   _CacheEntry(this.value, this.timestamp);
 
+  /// The cached value.
   final V value;
+
+  /// Timestamp when the entry was cached.
   final DateTime timestamp;
 
+  /// Checks if entry has expired based on TTL.
   bool isExpired(Duration ttl) {
     return DateTime.now().difference(timestamp) > ttl;
   }
@@ -199,10 +207,19 @@ class CacheAsideExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 
   final Func2<T1, T2, R> _inner;
 
+  /// Cache storage backend for storing argument pair results.
   final Cache<_ArgPair<T1, T2>, _CacheEntry<R>> cache;
+
+  /// Time-to-live for cached entries before expiration.
   final Duration? ttl;
+
+  /// Strategy for handling expired cache entries.
   final RefreshStrategy refreshStrategy;
+
+  /// Optional callback invoked when cache miss occurs.
   final void Function()? onCacheMiss;
+
+  /// Optional callback invoked when cache hit occurs.
   final void Function()? onCacheHit;
 
   Future<void> _backgroundRefresh(_ArgPair<T1, T2> key) async {
@@ -279,6 +296,8 @@ class _ArgPair<T1, T2> {
   int get hashCode => Object.hash(arg1, arg2);
 }
 
+/// Extension methods for adding cache-aside pattern to functions with one
+/// argument.
 extension Func1CacheAsideExtension<T, R> on Func1<T, R> {
   /// Applies cache-aside pattern to this function.
   ///
@@ -315,6 +334,8 @@ extension Func1CacheAsideExtension<T, R> on Func1<T, R> {
   );
 }
 
+/// Extension methods for adding cache-aside pattern to functions with two
+/// arguments.
 extension Func2CacheAsideExtension<T1, T2, R> on Func2<T1, T2, R> {
   /// Applies cache-aside pattern to this function.
   ///

@@ -14,10 +14,15 @@ enum WarmUpTrigger {
   manual,
 }
 
-/// A function that pre-executes (warms up) to have results ready.
+/// Pre-executes a function to have results ready for immediate use.
 ///
-/// Warm-up executes the function in advance so that results are
-/// available immediately when needed.
+/// Warm-up executes the function in advance so results are available
+/// immediately when needed, eliminating wait time. The [trigger]
+/// parameter controls when warm-up occurs (on initialization, first
+/// call, or manually). The optional [keepFresh] parameter enables
+/// periodic refresh to maintain up-to-date cached results. This pattern
+/// is ideal for startup initialization, preloading configuration, or
+/// ensuring fast response times for critical operations.
 ///
 /// Example:
 /// ```dart
@@ -34,8 +39,22 @@ enum WarmUpTrigger {
 class WarmUpExtension<R> extends Func<R> {
   /// Creates a warm-up wrapper that pre-executes the function.
   ///
-  /// [trigger] determines when warm-up occurs.
-  /// [keepFresh] enables periodic refresh of cached results.
+  /// The [_inner] function is executed based on the [trigger] strategy.
+  /// The [trigger] parameter determines when warm-up occurs:
+  /// [WarmUpTrigger.onInit] executes immediately on creation,
+  /// [WarmUpTrigger.onFirstCall] waits until first invocation, and
+  /// [WarmUpTrigger.manual] requires calling [triggerWarmUp]. The
+  /// optional [keepFresh] parameter sets a refresh interval to keep
+  /// cached results current.
+  ///
+  /// Example:
+  /// ```dart
+  /// final warmed = WarmUpExtension(
+  ///   loadConfig,
+  ///   trigger: WarmUpTrigger.onInit,
+  ///   keepFresh: Duration(minutes: 10),
+  /// );
+  /// ```
   WarmUpExtension(
     this._inner, {
     required this.trigger,
@@ -80,7 +99,19 @@ class WarmUpExtension<R> extends Func<R> {
     }
   }
 
-  /// Manually trigger warm-up execution.
+  /// Manually triggers warm-up execution.
+  ///
+  /// Forces immediate execution of the wrapped function to populate the
+  /// cache. Useful when [trigger] is set to [WarmUpTrigger.manual] or
+  /// when you need to refresh the cache outside the normal schedule.
+  ///
+  /// Returns a [Future] that completes when warm-up execution finishes.
+  ///
+  /// Example:
+  /// ```dart
+  /// await warmedFunc.triggerWarmUp(); // Pre-execute now
+  /// final result = await warmedFunc(); // Use warmed-up result
+  /// ```
   Future<void> triggerWarmUp() => _performWarmUp();
 
   @override
@@ -96,13 +127,29 @@ class WarmUpExtension<R> extends Func<R> {
     return _inner();
   }
 
-  /// Dispose resources (stop refresh timer).
+  /// Disposes resources and stops the refresh timer.
+  ///
+  /// Cancels any active refresh timer to prevent memory leaks. Call this
+  /// when the warmed-up function is no longer needed, especially when
+  /// [keepFresh] is set.
+  ///
+  /// Example:
+  /// ```dart
+  /// warmedFunc.dispose(); // Clean up resources
+  /// ```
   void dispose() {
     _refreshTimer?.cancel();
   }
 }
 
-/// A function that pre-executes with arguments to warm up cache.
+/// Pre-executes a function with arguments to warm up the cache.
+///
+/// Extends warm-up functionality to functions with one parameter. Unlike
+/// the no-argument version, this requires manual warm-up for specific
+/// arguments using [warmUpWith]. Each warmed argument maintains its own
+/// cache entry and optional refresh timer. This pattern is useful for
+/// preloading frequently accessed data, such as user profiles or
+/// configuration for specific tenants.
 ///
 /// Example:
 /// ```dart
@@ -122,6 +169,20 @@ class WarmUpExtension<R> extends Func<R> {
 /// ```
 class WarmUpExtension1<T, R> extends Func1<T, R> {
   /// Creates a warm-up wrapper for single-argument functions.
+  ///
+  /// The [trigger] parameter is typically [WarmUpTrigger.manual] for
+  /// argument-based warm-up. Use [warmUpWith] to pre-execute for
+  /// specific arguments. The [keepFresh] parameter enables periodic
+  /// refresh for each warmed argument.
+  ///
+  /// Example:
+  /// ```dart
+  /// final warmed = WarmUpExtension1(
+  ///   fetchData,
+  ///   trigger: WarmUpTrigger.manual,
+  ///   keepFresh: Duration(minutes: 5),
+  /// );
+  /// ```
   WarmUpExtension1(
     this._inner, {
     required this.trigger,
@@ -139,7 +200,20 @@ class WarmUpExtension1<T, R> extends Func1<T, R> {
   final Map<T, R> _cache = {};
   final Map<T, Timer> _refreshTimers = {};
 
-  /// Warm up the function with a specific argument.
+  /// Warms up the function with a specific argument.
+  ///
+  /// Pre-executes the wrapped function with the given [arg] and caches
+  /// the result. If [keepFresh] is set, starts a periodic refresh timer
+  /// for this argument. Multiple arguments can be warmed up by calling
+  /// this method multiple times.
+  ///
+  /// Returns a [Future] that completes when warm-up execution finishes.
+  ///
+  /// Example:
+  /// ```dart
+  /// await getUser.warmUpWith('user1'); // Pre-load user1
+  /// await getUser.warmUpWith('user2'); // Pre-load user2
+  /// ```
   Future<void> warmUpWith(T arg) async {
     try {
       final result = await _inner(arg);
@@ -170,7 +244,16 @@ class WarmUpExtension1<T, R> extends Func1<T, R> {
     return _inner(arg);
   }
 
-  /// Dispose all resources.
+  /// Disposes all resources and stops all refresh timers.
+  ///
+  /// Cancels refresh timers for all warmed-up arguments and clears the
+  /// timer map. Call this when the warmed-up function is no longer
+  /// needed to prevent memory leaks.
+  ///
+  /// Example:
+  /// ```dart
+  /// warmedFunc.dispose(); // Clean up all resources
+  /// ```
   void dispose() {
     for (final timer in _refreshTimers.values) {
       timer.cancel();
@@ -179,7 +262,7 @@ class WarmUpExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// A function that pre-executes with argument pairs to warm up cache.
+/// Pre-executes a function with argument pairs to warm up the cache.
 ///
 /// Example:
 /// ```dart
@@ -195,6 +278,20 @@ class WarmUpExtension1<T, R> extends Func1<T, R> {
 /// ```
 class WarmUpExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a warm-up wrapper for two-argument functions.
+  ///
+  /// The [trigger] parameter is typically [WarmUpTrigger.manual] for
+  /// argument-based warm-up. Use [warmUpWith] to pre-execute for
+  /// specific argument pairs. The [keepFresh] parameter enables periodic
+  /// refresh for each warmed pair.
+  ///
+  /// Example:
+  /// ```dart
+  /// final warmed = WarmUpExtension2(
+  ///   calculateValue,
+  ///   trigger: WarmUpTrigger.manual,
+  ///   keepFresh: Duration(minutes: 3),
+  /// );
+  /// ```
   WarmUpExtension2(
     this._inner, {
     required this.trigger,
@@ -212,7 +309,20 @@ class WarmUpExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   final Map<_ArgPair<T1, T2>, R> _cache = {};
   final Map<_ArgPair<T1, T2>, Timer> _refreshTimers = {};
 
-  /// Warm up the function with specific arguments.
+  /// Warms up the function with specific argument pair.
+  ///
+  /// Pre-executes the wrapped function with the given [arg1] and [arg2]
+  /// and caches the result. If [keepFresh] is set, starts a periodic
+  /// refresh timer for this argument pair. Multiple pairs can be warmed
+  /// up by calling this method multiple times.
+  ///
+  /// Returns a [Future] that completes when warm-up execution finishes.
+  ///
+  /// Example:
+  /// ```dart
+  /// await compute.warmUpWith(3, 4); // Pre-compute (3, 4)
+  /// await compute.warmUpWith(5, 6); // Pre-compute (5, 6)
+  /// ```
   Future<void> warmUpWith(T1 arg1, T2 arg2) async {
     final key = _ArgPair(arg1, arg2);
     try {
@@ -245,7 +355,16 @@ class WarmUpExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     return _inner(arg1, arg2);
   }
 
-  /// Dispose all resources.
+  /// Disposes all resources and stops all refresh timers.
+  ///
+  /// Cancels refresh timers for all warmed-up argument pairs and clears
+  /// the timer map. Call this when the warmed-up function is no longer
+  /// needed to prevent memory leaks.
+  ///
+  /// Example:
+  /// ```dart
+  /// warmedFunc.dispose(); // Clean up all resources
+  /// ```
   void dispose() {
     for (final timer in _refreshTimers.values) {
       timer.cancel();
@@ -258,7 +377,10 @@ class WarmUpExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 class _ArgPair<T1, T2> {
   const _ArgPair(this.arg1, this.arg2);
 
+  /// The first argument of the pair.
   final T1 arg1;
+
+  /// The second argument of the pair.
   final T2 arg2;
 
   @override
@@ -273,6 +395,7 @@ class _ArgPair<T1, T2> {
   int get hashCode => Object.hash(arg1, arg2);
 }
 
+/// Extension methods on [Func] for warm-up functionality.
 extension FuncWarmUpExtension<R> on Func<R> {
   /// Creates a warmed-up version of this function.
   ///
@@ -297,6 +420,7 @@ extension FuncWarmUpExtension<R> on Func<R> {
   );
 }
 
+/// Extension methods on [Func1] for warm-up functionality.
 extension Func1WarmUpExtension<T, R> on Func1<T, R> {
   /// Creates a warmed-up version of this function.
   ///
@@ -320,6 +444,7 @@ extension Func1WarmUpExtension<T, R> on Func1<T, R> {
   );
 }
 
+/// Extension methods on [Func2] for warm-up functionality.
 extension Func2WarmUpExtension<T1, T2, R> on Func2<T1, T2, R> {
   /// Creates a warmed-up version of this function.
   ///

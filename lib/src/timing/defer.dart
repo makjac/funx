@@ -5,10 +5,17 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// Defers function execution until the result is actually awaited.
+/// Defers function execution until the result is explicitly awaited.
 ///
-/// Unlike immediate execution, a deferred function creates a "promise"
-/// that won't start executing until explicitly awaited.
+/// Creates a lazy evaluation wrapper that delays actual execution until the
+/// returned [Future] is awaited. Unlike immediate execution, calling the
+/// deferred function returns a promise without starting work. Execution begins
+/// only when the promise is awaited, enabling fine-grained control over when
+/// operations occur. Uses [Future.microtask] to schedule execution in the next
+/// microtask.
+///
+/// Returns a [Future] of type [R] that executes [_inner] when awaited. Multiple
+/// awaits on the same returned future will not trigger multiple executions.
 ///
 /// Example:
 /// ```dart
@@ -23,6 +30,10 @@ import 'package:funx/src/core/func.dart';
 /// ```
 class DeferExtension<R> extends Func<R> {
   /// Creates a deferred function wrapper.
+  ///
+  /// Wraps [_inner] function to enable lazy evaluation. The wrapper stores the
+  /// function reference without executing it, deferring actual execution until
+  /// the returned future is awaited.
   ///
   /// Example:
   /// ```dart
@@ -39,7 +50,17 @@ class DeferExtension<R> extends Func<R> {
   }
 }
 
-/// Defers execution of a [Func1] with one parameter.
+/// Defers execution of single-parameter function until result is awaited.
+///
+/// Creates a lazy evaluation wrapper for [Func1] with parameter [T] and
+/// return type [R]. Calling the deferred function with an argument returns
+/// a promise without executing [_inner]. Actual execution begins only when
+/// the promise is awaited. Uses [Future.microtask] to schedule execution
+/// in the next microtask.
+///
+/// Returns a [Future] of type [R] that executes [_inner] with provided
+/// argument when awaited. Multiple awaits on the same returned future
+/// execute only once.
 ///
 /// Example:
 /// ```dart
@@ -48,7 +69,11 @@ class DeferExtension<R> extends Func<R> {
 /// }).defer();
 /// ```
 class DeferExtension1<T, R> extends Func1<T, R> {
-  /// Creates a deferred function wrapper for single-parameter functions.
+  /// Creates a deferred wrapper for single-parameter functions.
+  ///
+  /// Wraps [_inner] function to enable lazy evaluation with one parameter.
+  /// The wrapper stores the function reference without executing it,
+  /// deferring actual execution until the returned future is awaited.
   ///
   /// Example:
   /// ```dart
@@ -56,6 +81,7 @@ class DeferExtension1<T, R> extends Func1<T, R> {
   /// ```
   DeferExtension1(this._inner) : super((arg) => throw UnimplementedError());
 
+  /// The wrapped function to execute when awaited.
   final Func1<T, R> _inner;
 
   @override
@@ -64,7 +90,17 @@ class DeferExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// Defers execution of a [Func2] with two parameters.
+/// Defers execution of two-parameter function until result is awaited.
+///
+/// Creates a lazy evaluation wrapper for [Func2] with parameters [T1] and
+/// [T2] and return type [R]. Calling the deferred function with arguments
+/// returns a promise without executing [_inner]. Actual execution begins
+/// only when the promise is awaited. Uses [Future.microtask] to schedule
+/// execution in the next microtask.
+///
+/// Returns a [Future] of type [R] that executes [_inner] with provided
+/// arguments when awaited. Multiple awaits on the same returned future
+/// execute only once.
 ///
 /// Example:
 /// ```dart
@@ -73,7 +109,11 @@ class DeferExtension1<T, R> extends Func1<T, R> {
 /// }).defer();
 /// ```
 class DeferExtension2<T1, T2, R> extends Func2<T1, T2, R> {
-  /// Creates a deferred function wrapper for two-parameter functions.
+  /// Creates a deferred wrapper for two-parameter functions.
+  ///
+  /// Wraps [_inner] function to enable lazy evaluation with two parameters.
+  /// The wrapper stores the function reference without executing it,
+  /// deferring actual execution until the returned future is awaited.
   ///
   /// Example:
   /// ```dart
@@ -82,6 +122,7 @@ class DeferExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   DeferExtension2(this._inner)
     : super((arg1, arg2) => throw UnimplementedError());
 
+  /// The wrapped function to execute when awaited.
   final Func2<T1, T2, R> _inner;
 
   @override
@@ -90,9 +131,25 @@ class DeferExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   }
 }
 
-/// Extension to add defer capability to Func classes.
+/// Adds defer capability to [Func] classes.
+///
+/// Provides the [asDeferred] method to convert any [Func] into a deferred
+/// version that delays execution until the returned future is awaited.
+/// Enables lazy evaluation patterns for zero-parameter functions.
+///
+/// Example:
+/// ```dart
+/// final deferred = myFunc.asDeferred();
+/// final promise = deferred(); // Not executed yet
+/// await promise; // Executes now
+/// ```
 extension FuncDeferExtension<R> on Func<R> {
-  /// Defers execution until the result is awaited.
+  /// Converts function to deferred version with lazy evaluation.
+  ///
+  /// Returns a [DeferExtension] wrapper that delays execution until the
+  /// returned future is awaited. The original function remains unchanged.
+  /// Calling the deferred version creates a promise without starting
+  /// execution.
   ///
   /// Example:
   /// ```dart
@@ -103,9 +160,25 @@ extension FuncDeferExtension<R> on Func<R> {
   Func<R> asDeferred() => DeferExtension(this);
 }
 
-/// Extension to add defer capability to Func1 classes.
+/// Adds defer capability to [Func1] classes.
+///
+/// Provides the [asDeferred] method to convert any [Func1] into a deferred
+/// version that delays execution until the returned future is awaited.
+/// Enables lazy evaluation patterns for single-parameter functions.
+///
+/// Example:
+/// ```dart
+/// final deferred = myFunc.asDeferred();
+/// final promise = deferred('arg'); // Not executed yet
+/// await promise; // Executes now
+/// ```
 extension Func1DeferExtension<T, R> on Func1<T, R> {
-  /// Defers execution until the result is awaited.
+  /// Converts function to deferred version with lazy evaluation.
+  ///
+  /// Returns a [DeferExtension1] wrapper that delays execution until the
+  /// returned future is awaited. The original function remains unchanged.
+  /// Calling the deferred version with an argument creates a promise
+  /// without starting execution.
   ///
   /// Example:
   /// ```dart
@@ -116,9 +189,25 @@ extension Func1DeferExtension<T, R> on Func1<T, R> {
   Func1<T, R> asDeferred() => DeferExtension1(this);
 }
 
-/// Extension to add defer capability to Func2 classes.
+/// Adds defer capability to [Func2] classes.
+///
+/// Provides the [asDeferred] method to convert any [Func2] into a deferred
+/// version that delays execution until the returned future is awaited.
+/// Enables lazy evaluation patterns for two-parameter functions.
+///
+/// Example:
+/// ```dart
+/// final deferred = myFunc.asDeferred();
+/// final promise = deferred('arg1', 42); // Not executed yet
+/// await promise; // Executes now
+/// ```
 extension Func2DeferExtension<T1, T2, R> on Func2<T1, T2, R> {
-  /// Defers execution until the result is awaited.
+  /// Converts function to deferred version with lazy evaluation.
+  ///
+  /// Returns a [DeferExtension2] wrapper that delays execution until the
+  /// returned future is awaited. The original function remains unchanged.
+  /// Calling the deferred version with arguments creates a promise without
+  /// starting execution.
   ///
   /// Example:
   /// ```dart
