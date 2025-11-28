@@ -8,3 +8,8 @@ pubspec.lock
 
 requirements.md
 CLAUDE.md
+
+# Coverage
+coverage/
+*.lcov
+*.info
