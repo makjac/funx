@@ -3,36 +3,59 @@ import 'dart:async';
 import 'package:funx/src/core/func.dart';
 import 'package:funx/src/reliability/backoff.dart';
 
-/// Extension on [Func] that adds retry capabilities.
+/// Applies automatic retry with backoff to no-parameter functions.
 ///
-/// Automatically retries the function when it throws an exception,
-/// with configurable backoff strategies and retry conditions.
+/// Wraps [Func] to automatically retry on exceptions with
+/// configurable backoff strategies and retry conditions. The
+/// [maxAttempts] parameter limits total execution attempts. The
+/// [backoff] parameter controls delay between retries. The
+/// [retryIf] predicate filters which exceptions trigger retry. The
+/// [onRetry] callback enables monitoring retry attempts. Defaults
+/// to exponential backoff with 100ms initial delay. This pattern
+/// handles transient failures gracefully with progressive backoff.
 ///
 /// Example:
 /// ```dart
-/// final unreliableFunc = Func(() async {
-///   if (Random().nextBool()) throw Exception('Random failure');
+/// final unreliable = Func(() async {
+///   if (Random().nextBool()) throw Exception('Random fail');
 ///   return 'Success';
 /// });
 ///
-/// final withRetry = unreliableFunc.retry(
+/// final withRetry = unreliable.retry(
 ///   maxAttempts: 3,
-///   backoff: ExponentialBackoff(initialDelay: Duration(milliseconds: 100)),
+///   backoff: ExponentialBackoff(
+///     initialDelay: Duration(milliseconds: 100),
+///   ),
+///   onRetry: (attempt, e) => print('Retry $attempt: $e'),
 /// );
-///
-/// final result = await withRetry(); // Retries up to 3 times
 /// ```
 class RetryExtension<R> extends Func<R> {
-  /// Creates a retry wrapper around the given [_inner] function.
+  /// Creates retry wrapper for no-parameter function.
   ///
-  /// - [maxAttempts]: Maximum number of attempts (including the initial call).
-  ///   Must be at least 1. Defaults to 3.
-  /// - [backoff]: Strategy for calculating delays between retries.
-  ///   Defaults to [ExponentialBackoff] with 100ms initial delay.
-  /// - [retryIf]: Optional predicate to determine if an exception should
-  ///   trigger a retry. If not provided, all exceptions trigger retries.
-  /// - [onRetry]: Optional callback invoked before each retry attempt.
-  ///   Receives the attempt number and the exception that triggered the retry.
+  /// The [_inner] parameter is function to wrap. The [maxAttempts]
+  /// parameter (defaults to 3) sets maximum execution attempts
+  /// including initial call. Must be at least 1. The optional
+  /// [backoff] parameter (defaults to exponential backoff with 100ms
+  /// initial delay) controls retry delays. The optional [retryIf]
+  /// predicate determines which exceptions trigger retry (defaults
+  /// to all exceptions). The optional [onRetry] callback is invoked
+  /// before each retry with attempt number and exception.
+  ///
+  /// Throws:
+  /// - [AssertionError] if maxAttempts is less than 1
+  ///
+  /// Example:
+  /// ```dart
+  /// final withRetry = RetryExtension(
+  ///   myFunc,
+  ///   maxAttempts: 5,
+  ///   backoff: LinearBackoff(
+  ///     initialDelay: Duration(seconds: 1),
+  ///     increment: Duration(seconds: 1),
+  ///   ),
+  ///   retryIf: (e) => e is NetworkException,
+  /// );
+  /// ```
   RetryExtension(
     this._inner, {
     this.maxAttempts = 3,
@@ -49,16 +72,30 @@ class RetryExtension<R> extends Func<R> {
 
   final Func<R> _inner;
 
-  /// Maximum number of attempts (including the initial call).
+  /// Maximum number of execution attempts including initial call.
+  ///
+  /// Function is attempted this many times total before giving up.
+  /// Must be at least 1.
   final int maxAttempts;
 
-  /// Strategy for calculating delays between retries.
+  /// Strategy calculating delays between retry attempts.
+  ///
+  /// Controls backoff timing between retries. Defaults to
+  /// exponential backoff with 100ms initial delay.
   final BackoffStrategy backoff;
 
-  /// Optional predicate to determine if an exception should trigger a retry.
+  /// Predicate determining which exceptions trigger retry.
+  ///
+  /// When null, all exceptions trigger retry. When provided, only
+  /// exceptions passing predicate trigger retry; others are
+  /// rethrown immediately.
   final bool Function(Object error)? retryIf;
 
-  /// Optional callback invoked before each retry attempt.
+  /// Callback invoked before each retry attempt.
+  ///
+  /// Receives 1-based attempt number and exception that triggered
+  /// retry. Useful for logging, metrics, or monitoring retry
+  /// patterns.
   final void Function(int attempt, Object error)? onRetry;
 
   @override
@@ -103,13 +140,40 @@ class RetryExtension<R> extends Func<R> {
   }
 }
 
-/// Extension on [Func1] that adds retry capabilities.
+/// Applies automatic retry with backoff to one-parameter functions.
 ///
-/// See [RetryExtension] for details.
+/// Wraps [Func1] to automatically retry on exceptions with
+/// configurable backoff strategies and retry conditions. The
+/// [maxAttempts] parameter limits total execution attempts. The
+/// [backoff] parameter controls delay between retries. The
+/// [retryIf] predicate filters which exceptions trigger retry. The
+/// [onRetry] callback enables monitoring retry attempts. Defaults
+/// to exponential backoff with 100ms initial delay. This pattern
+/// handles transient failures gracefully with progressive backoff.
+///
+/// Example:
+/// ```dart
+/// final fetch = Func1<String, Data>((id) async {
+///   return await api.fetch(id);
+/// }).retry(
+///   maxAttempts: 3,
+///   retryIf: (e) => e is TimeoutException,
+/// );
+/// ```
 class RetryExtension1<T, R> extends Func1<T, R> {
-  /// Creates a retry wrapper around the given [_inner] function.
+  /// Creates retry wrapper for one-parameter function.
   ///
-  /// See [RetryExtension] for parameter documentation.
+  /// The [_inner] parameter is function to wrap. See
+  /// [RetryExtension] constructor for parameter documentation.
+  ///
+  /// Example:
+  /// ```dart
+  /// final withRetry = RetryExtension1(
+  ///   myFunc,
+  ///   maxAttempts: 5,
+  ///   backoff: ConstantBackoff(Duration(seconds: 2)),
+  /// );
+  /// ```
   RetryExtension1(
     this._inner, {
     this.maxAttempts = 3,
@@ -126,16 +190,16 @@ class RetryExtension1<T, R> extends Func1<T, R> {
 
   final Func1<T, R> _inner;
 
-  /// Maximum number of attempts (including the initial call).
+  /// Maximum number of execution attempts including initial call.
   final int maxAttempts;
 
-  /// Strategy for calculating delays between retries.
+  /// Strategy calculating delays between retry attempts.
   final BackoffStrategy backoff;
 
-  /// Optional predicate to determine if an exception should trigger a retry.
+  /// Predicate determining which exceptions trigger retry.
   final bool Function(Object error)? retryIf;
 
-  /// Optional callback invoked before each retry attempt.
+  /// Callback invoked before each retry attempt.
   final void Function(int attempt, Object error)? onRetry;
 
   @override
@@ -180,13 +244,42 @@ class RetryExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// Extension on [Func2] that adds retry capabilities.
+/// Applies automatic retry with backoff to two-parameter functions.
 ///
-/// See [RetryExtension] for details.
+/// Wraps [Func2] to automatically retry on exceptions with
+/// configurable backoff strategies and retry conditions. The
+/// [maxAttempts] parameter limits total execution attempts. The
+/// [backoff] parameter controls delay between retries. The
+/// [retryIf] predicate filters which exceptions trigger retry. The
+/// [onRetry] callback enables monitoring retry attempts. Defaults
+/// to exponential backoff with 100ms initial delay. This pattern
+/// handles transient failures gracefully with progressive backoff.
+///
+/// Example:
+/// ```dart
+/// final update = Func2<String, Data, void>((id, data) async {
+///   await db.update(id, data);
+/// }).retry(
+///   maxAttempts: 3,
+///   retryIf: (e) => e is DatabaseException,
+/// );
+/// ```
 class RetryExtension2<T1, T2, R> extends Func2<T1, T2, R> {
-  /// Creates a retry wrapper around the given [_inner] function.
+  /// Creates retry wrapper for two-parameter function.
   ///
-  /// See [RetryExtension] for parameter documentation.
+  /// The [_inner] parameter is function to wrap. See
+  /// [RetryExtension] constructor for parameter documentation.
+  ///
+  /// Example:
+  /// ```dart
+  /// final withRetry = RetryExtension2(
+  ///   myFunc,
+  ///   maxAttempts: 5,
+  ///   backoff: FibonacciBackoff(
+  ///     baseDelay: Duration(milliseconds: 100),
+  ///   ),
+  /// );
+  /// ```
   RetryExtension2(
     this._inner, {
     this.maxAttempts = 3,
@@ -203,16 +296,16 @@ class RetryExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 
   final Func2<T1, T2, R> _inner;
 
-  /// Maximum number of attempts (including the initial call).
+  /// Maximum number of execution attempts including initial call.
   final int maxAttempts;
 
-  /// Strategy for calculating delays between retries.
+  /// Strategy calculating delays between retry attempts.
   final BackoffStrategy backoff;
 
-  /// Optional predicate to determine if an exception should trigger a retry.
+  /// Predicate determining which exceptions trigger retry.
   final bool Function(Object error)? retryIf;
 
-  /// Optional callback invoked before each retry attempt.
+  /// Callback invoked before each retry attempt.
   final void Function(int attempt, Object error)? onRetry;
 
   @override
