@@ -270,6 +270,7 @@ class DecompressBytesExtension extends Func<Uint8List> {
   }
 }
 
+/// Compresses string input before passing to the function.
 extension Func1CompressExtension<R> on Func1<String, R> {
   /// Compresses string input before passing to the function.
   ///
@@ -298,6 +299,7 @@ extension Func1CompressExtension<R> on Func1<String, R> {
   );
 }
 
+/// Compresses byte input before passing to the function.
 extension Func1CompressBytesExtension<R> on Func1<Uint8List, R> {
   /// Compresses byte input before passing to the function.
   ///
@@ -320,6 +322,7 @@ extension Func1CompressBytesExtension<R> on Func1<Uint8List, R> {
   );
 }
 
+/// Decompresses string result after function execution.
 extension FuncDecompressExtension on Func<String> {
   /// Decompresses string result after function execution.
   ///
@@ -334,6 +337,7 @@ extension FuncDecompressExtension on Func<String> {
   }) => DecompressExtension(this, algorithm: algorithm);
 }
 
+/// Decompresses byte result after function execution.
 extension FuncDecompressBytesExtension on Func<Uint8List> {
   /// Decompresses byte result after function execution.
   ///
