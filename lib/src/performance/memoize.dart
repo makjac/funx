@@ -19,8 +19,13 @@ enum EvictionPolicy {
 class _CacheEntry<R> {
   _CacheEntry(this.result, this.timestamp, this.accessCount);
 
+  /// The cached result value.
   R result;
+
+  /// Timestamp when the entry was created or last accessed.
   DateTime timestamp;
+
+  /// Number of times this entry has been accessed.
   int accessCount;
 }
 
@@ -322,6 +327,7 @@ class MemoizeExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   }
 }
 
+/// Extension methods for adding memoization to functions with no arguments.
 extension FuncMemoizeExtension<R> on Func<R> {
   /// Creates a memoized version of this function that caches results.
   ///
@@ -350,6 +356,7 @@ extension FuncMemoizeExtension<R> on Func<R> {
   );
 }
 
+/// Extension methods for adding memoization to functions with one argument.
 extension Func1MemoizeExtension<T, R> on Func1<T, R> {
   /// Creates a memoized version of this function that caches results.
   ///
@@ -377,6 +384,7 @@ extension Func1MemoizeExtension<T, R> on Func1<T, R> {
   );
 }
 
+/// Extension methods for adding memoization to functions with two arguments.
 extension Func2MemoizeExtension<T1, T2, R> on Func2<T1, T2, R> {
   /// Creates a memoized version of this function that caches results.
   ///
