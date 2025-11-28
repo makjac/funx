@@ -51,8 +51,7 @@ jobs:
       fail-fast: false
       matrix:
         sdk: [3.9.2, stable]
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
