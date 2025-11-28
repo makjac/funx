@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// Extension on [Func] that executes the function only once and caches the
-/// result.
+/// Executes a function only once and caches the result permanently.
 ///
-/// The function is executed on the first call, and all subsequent calls
-/// return the cached result without re-executing the function.
+/// The wrapped function executes on the first call, and all subsequent
+/// calls return the cached result without re-execution. If the first
+/// execution throws an error, the error is cached and re-thrown on
+/// subsequent calls unless a [resetOn] predicate allows retry. This
+/// pattern is ideal for initialization logic, singleton creation, or
+/// expensive one-time computations that should never repeat.
 ///
 /// Example:
 /// ```dart
@@ -20,10 +23,21 @@ import 'package:funx/src/core/func.dart';
 /// await initApp(); // Returns cached result
 /// ```
 class OnceExtension<R> extends Func<R> {
-  /// Creates a once wrapper around the given [_inner] function.
+  /// Creates a once wrapper around the given function.
   ///
-  /// The [resetOn] parameter allows specifying a predicate to determine
-  /// if the cache should be reset on error, allowing retry on specific errors.
+  /// The [_inner] function executes only on the first call. The optional
+  /// [resetOn] parameter accepts a predicate function that determines
+  /// whether the cache should be reset when an error occurs, allowing
+  /// retry for specific error types. If [resetOn] returns true for an
+  /// error, the cache is not set and the function can execute again.
+  ///
+  /// Example:
+  /// ```dart
+  /// final api = OnceExtension(
+  ///   fetchData,
+  ///   resetOn: (error) => error is NetworkException,
+  /// );
+  /// ```
   OnceExtension(
     this._inner, {
     this.resetOn,
@@ -72,6 +86,18 @@ class OnceExtension<R> extends Func<R> {
   }
 
   /// Resets the cached result, allowing the function to execute again.
+  ///
+  /// Clears both cached results and cached errors. The next call will
+  /// execute the wrapped function as if it were the first call. Use
+  /// this when you need to re-initialize or re-compute after the
+  /// initial execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// await onceFunc(); // Executes
+  /// onceFunc.reset(); // Clears cache
+  /// await onceFunc(); // Executes again
+  /// ```
   void reset() {
     _executed = false;
     _cachedResult = null;
@@ -79,14 +105,36 @@ class OnceExtension<R> extends Func<R> {
   }
 }
 
-/// Extension on [Func1] that executes the function only once per unique
-/// argument.
+/// Executes a function only once per unique argument value.
 ///
-/// See [OnceExtension] for details.
+/// Caches results per argument, ensuring each unique input is processed
+/// only once. Subsequent calls with the same argument return the cached
+/// result without re-execution. Errors are also cached per argument.
+/// The [resetOn] predicate can selectively allow retry for specific
+/// errors. Ideal for lookup operations, data fetching, or transformations
+/// that should never repeat for the same input.
+///
+/// Example:
+/// ```dart
+/// final getUser = Func1((String id) => api.getUser(id)).once();
+///
+/// await getUser('user1'); // Executes
+/// await getUser('user1'); // Returns cached
+/// await getUser('user2'); // Executes (different arg)
+/// ```
 class OnceExtension1<T, R> extends Func1<T, R> {
-  /// Creates a once wrapper around the given [_inner] function.
+  /// Creates a once wrapper for a single-argument function.
   ///
-  /// See [OnceExtension] for parameter documentation.
+  /// The [_inner] function executes only once per unique argument. The
+  /// [resetOn] parameter allows retry on specific errors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final loader = OnceExtension1(
+  ///   loadResource,
+  ///   resetOn: (error) => error is TimeoutException,
+  /// );
+  /// ```
   OnceExtension1(
     this._inner, {
     this.resetOn,
@@ -131,7 +179,17 @@ class OnceExtension1<T, R> extends Func1<T, R> {
     }
   }
 
-  /// Resets the cache for a specific argument.
+  /// Resets the cache for a specific argument or all arguments.
+  ///
+  /// If [arg] is provided, clears cache only for that argument. If [arg]
+  /// is null, clears the entire cache. The next call with a cleared
+  /// argument will execute the function again.
+  ///
+  /// Example:
+  /// ```dart
+  /// onceFunc.reset('user1'); // Clear only user1
+  /// onceFunc.reset(); // Clear all cached entries
+  /// ```
   void reset([T? arg]) {
     if (arg != null) {
       _cache.remove(arg);
@@ -141,14 +199,36 @@ class OnceExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// Extension on [Func2] that executes the function only once per unique
-/// argument pair.
+/// Executes a function only once per unique argument pair.
 ///
-/// See [OnceExtension] for details.
+/// Caches results per argument pair, ensuring each unique combination
+/// is processed only once. Subsequent calls with the same argument pair
+/// return the cached result. Errors are cached per argument pair. The
+/// [resetOn] predicate allows selective retry. Useful for computations
+/// or lookups based on multiple parameters that should never repeat for
+/// the same input combination.
+///
+/// Example:
+/// ```dart
+/// final compute = Func2((int a, int b) => a * b).once();
+///
+/// await compute(3, 4); // Executes
+/// await compute(3, 4); // Returns cached
+/// await compute(5, 6); // Executes (different args)
+/// ```
 class OnceExtension2<T1, T2, R> extends Func2<T1, T2, R> {
-  /// Creates a once wrapper around the given [_inner] function.
+  /// Creates a once wrapper for a two-argument function.
   ///
-  /// See [OnceExtension] for parameter documentation.
+  /// The [_inner] function executes only once per unique argument pair.
+  /// The [resetOn] parameter allows retry on specific errors.
+  ///
+  /// Example:
+  /// ```dart
+  /// final calc = OnceExtension2(
+  ///   expensiveCalc,
+  ///   resetOn: (error) => error is CalculationException,
+  /// );
+  /// ```
   OnceExtension2(
     this._inner, {
     this.resetOn,
@@ -195,7 +275,17 @@ class OnceExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     }
   }
 
-  /// Resets the cache for specific arguments or all if no arguments provided.
+  /// Resets cache for specific arguments or all if no arguments provided.
+  ///
+  /// If both [arg1] and [arg2] are provided, clears cache only for that
+  /// pair. If either is null, clears the entire cache. The next call
+  /// with cleared arguments will execute the function again.
+  ///
+  /// Example:
+  /// ```dart
+  /// onceFunc.reset(3, 4); // Clear only (3, 4) pair
+  /// onceFunc.reset(); // Clear all cached entries
+  /// ```
   void reset([T1? arg1, T2? arg2]) {
     if (arg1 != null && arg2 != null) {
       _cache.remove(_ArgPair(arg1, arg2));
@@ -209,7 +299,10 @@ class OnceExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 class _CachedResult<R> {
   _CachedResult({this.result, this.error});
 
+  /// The cached result value if execution succeeded.
   final R? result;
+
+  /// The cached error if execution failed.
   final Object? error;
 }
 
@@ -217,7 +310,10 @@ class _CachedResult<R> {
 class _ArgPair<T1, T2> {
   _ArgPair(this.arg1, this.arg2);
 
+  /// The first argument of the pair.
   final T1 arg1;
+
+  /// The second argument of the pair.
   final T2 arg2;
 
   @override
@@ -232,6 +328,7 @@ class _ArgPair<T1, T2> {
   int get hashCode => Object.hash(arg1, arg2);
 }
 
+/// Extension methods for adding once behavior to functions with no arguments.
 extension FuncOnceExtension<R> on Func<R> {
   /// Creates a version of this function that executes only once.
   ///
@@ -252,6 +349,7 @@ extension FuncOnceExtension<R> on Func<R> {
       OnceExtension(this, resetOn: resetOn);
 }
 
+/// Extension methods for adding once behavior to functions with one argument.
 extension Func1OnceExtension<T, R> on Func1<T, R> {
   /// Creates a version of this function that executes only once per argument.
   ///
@@ -266,6 +364,7 @@ extension Func1OnceExtension<T, R> on Func1<T, R> {
       OnceExtension1(this, resetOn: resetOn);
 }
 
+/// Extension methods for adding once behavior to functions with two arguments.
 extension Func2OnceExtension<T1, T2, R> on Func2<T1, T2, R> {
   /// Creates a version of this function that executes only once per argument
   /// pair.
