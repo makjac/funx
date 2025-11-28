@@ -5,22 +5,36 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// A read-write lock allowing multiple readers or one writer.
+/// Read-write lock for concurrent reads and exclusive writes.
+///
+/// Allows multiple simultaneous readers or one exclusive writer,
+/// optimizing for read-heavy workloads. Readers acquire via
+/// [acquireRead] or [readLock], writers via [acquireWrite] or
+/// [writeLock]. The [writerPriority] flag determines whether waiting
+/// writers block new readers. The [readerCount] and [isWriting]
+/// getters provide lock state. This pattern is essential for
+/// shared-state scenarios where reads vastly outnumber writes.
 ///
 /// Example:
 /// ```dart
-/// final rwLock = RWLock();
+/// final rwLock = RWLock(writerPriority: true);
+/// final cache = <String, Data>{};
 ///
 /// await rwLock.readLock(() async {
-///   // Read operation - multiple allowed
+///   return cache[key];
 /// });
 ///
 /// await rwLock.writeLock(() async {
-///   // Write operation - exclusive
+///   cache[key] = newData;
 /// });
 /// ```
 class RWLock {
-  /// Creates a read-write lock.
+  /// Creates a read-write lock with optional writer priority.
+  ///
+  /// The optional [writerPriority] flag (defaults to false) determines
+  /// whether waiting writers block new readers. When true, new readers
+  /// wait if writers are queued. When false, readers proceed unless a
+  /// write is active.
   ///
   /// Example:
   /// ```dart
@@ -31,6 +45,10 @@ class RWLock {
   });
 
   /// Whether writers have priority over readers.
+  ///
+  /// When true, waiting writers block new readers from acquiring the
+  /// lock. When false, readers can acquire the lock even when writers
+  /// are waiting, as long as no write is active.
   final bool writerPriority;
 
   int _readers = 0;
@@ -38,13 +56,22 @@ class RWLock {
   final _readQueue = <Completer<void>>[];
   final _writeQueue = <Completer<void>>[];
 
-  /// Acquires a read lock.
+  /// Acquires a read lock, blocking if necessary.
+  ///
+  /// Waits until no write is active and (if [writerPriority] is true)
+  /// no writers are waiting. Multiple readers can hold the lock
+  /// simultaneously. The optional [timeout] limits wait duration,
+  /// throwing [TimeoutException] if exceeded. Must be paired with
+  /// [releaseRead].
+  ///
+  /// Throws:
+  /// - [TimeoutException] when timeout expires before lock acquisition
   ///
   /// Example:
   /// ```dart
-  /// await rwLock.acquireRead();
+  /// await rwLock.acquireRead(timeout: Duration(seconds: 5));
   /// try {
-  ///   // Read operation
+  ///   final data = await database.read();
   /// } finally {
   ///   rwLock.releaseRead();
   /// }
@@ -62,13 +89,22 @@ class RWLock {
     _readers++;
   }
 
-  /// Acquires a write lock.
+  /// Acquires a write lock, blocking if necessary.
+  ///
+  /// Waits until no write is active and no readers hold the lock.
+  /// Only one writer can hold the lock at a time, with exclusive
+  /// access. The optional [timeout] limits wait duration, throwing
+  /// [TimeoutException] if exceeded. Must be paired with
+  /// [releaseWrite].
+  ///
+  /// Throws:
+  /// - [TimeoutException] when timeout expires before lock acquisition
   ///
   /// Example:
   /// ```dart
-  /// await rwLock.acquireWrite();
+  /// await rwLock.acquireWrite(timeout: Duration(seconds: 10));
   /// try {
-  ///   // Write operation
+  ///   await database.write(data);
   /// } finally {
   ///   rwLock.releaseWrite();
   /// }
@@ -88,9 +124,17 @@ class RWLock {
 
   /// Releases a read lock.
   ///
+  /// Decrements the reader count. If no readers remain, processes
+  /// waiting writers. Must be called after [acquireRead].
+  ///
   /// Example:
   /// ```dart
-  /// rwLock.releaseRead();
+  /// await rwLock.acquireRead();
+  /// try {
+  ///   processData();
+  /// } finally {
+  ///   rwLock.releaseRead();
+  /// }
   /// ```
   void releaseRead() {
     _readers--;
@@ -99,20 +143,35 @@ class RWLock {
 
   /// Releases a write lock.
   ///
+  /// Marks the lock as not writing and processes waiting readers or
+  /// writers. Must be called after [acquireWrite].
+  ///
   /// Example:
   /// ```dart
-  /// rwLock.releaseWrite();
+  /// await rwLock.acquireWrite();
+  /// try {
+  ///   updateData();
+  /// } finally {
+  ///   rwLock.releaseWrite();
+  /// }
   /// ```
   void releaseWrite() {
     _isWriting = false;
     _processQueues();
   }
 
-  /// Executes a function with a read lock.
+  /// Executes an action within automatic read lock management.
+  ///
+  /// Acquires a read lock, executes the [action] function, and
+  /// guarantees lock release via finally block. Multiple concurrent
+  /// reads are allowed. Preferred over manual [acquireRead] and
+  /// [releaseRead].
+  ///
+  /// Returns the result produced by [action].
   ///
   /// Example:
   /// ```dart
-  /// await rwLock.readLock(() async {
+  /// final data = await rwLock.readLock(() async {
   ///   return await database.read();
   /// });
   /// ```
@@ -125,7 +184,13 @@ class RWLock {
     }
   }
 
-  /// Executes a function with a write lock.
+  /// Executes an action within automatic write lock management.
+  ///
+  /// Acquires a write lock, executes the [action] function, and
+  /// guarantees lock release via finally block. Provides exclusive
+  /// access. Preferred over manual [acquireWrite] and [releaseWrite].
+  ///
+  /// Returns the result produced by [action].
   ///
   /// Example:
   /// ```dart
@@ -158,39 +223,58 @@ class RWLock {
     }
   }
 
-  /// Number of current readers.
+  /// Number of current active readers.
+  ///
+  /// Returns the count of readers currently holding read locks. Zero
+  /// when no reads are active.
   ///
   /// Example:
   /// ```dart
-  /// print('Readers: ${rwLock.readerCount}');
+  /// print('Active readers: ${rwLock.readerCount}');
   /// ```
   int get readerCount => _readers;
 
   /// Whether a write lock is currently held.
   ///
+  /// Returns true if a writer holds exclusive access, false otherwise.
+  ///
   /// Example:
   /// ```dart
   /// if (rwLock.isWriting) {
-  ///   print('Write lock held');
+  ///   print('Exclusive write in progress');
   /// }
   /// ```
   bool get isWriting => _isWriting;
 }
 
-/// Applies read lock to a [Func].
+/// Applies read lock to no-parameter functions.
+///
+/// Wraps a [Func] to execute with automatic read lock acquisition
+/// and release. Multiple concurrent executions are allowed. The
+/// optional [_timeout] limits lock acquisition wait time. The
+/// [rwLock] getter provides access to the underlying lock. This
+/// pattern is essential for concurrent read access to shared state.
 ///
 /// Example:
 /// ```dart
 /// final rwLock = RWLock();
 /// final fetch = Func(() async => await db.read())
-///   .readLock(rwLock);
+///   .readLock(rwLock, timeout: Duration(seconds: 5));
 /// ```
 class ReadLockExtension<R> extends Func<R> {
-  /// Creates a read lock extension.
+  /// Creates a read lock extension for a no-parameter function.
+  ///
+  /// The [_inner] parameter is the function to wrap. The [_rwLock]
+  /// parameter provides the read-write lock. The optional [_timeout]
+  /// limits lock acquisition wait time.
   ///
   /// Example:
   /// ```dart
-  /// final readFunc = ReadLockExtension(myFunc, rwLock, null);
+  /// final readFunc = ReadLockExtension(
+  ///   myFunc,
+  ///   rwLock,
+  ///   Duration(seconds: 3),
+  /// );
   /// ```
   ReadLockExtension(
     this._inner,
@@ -221,20 +305,34 @@ class ReadLockExtension<R> extends Func<R> {
   RWLock get rwLock => _rwLock;
 }
 
-/// Applies write lock to a [Func].
+/// Applies write lock to no-parameter functions.
+///
+/// Wraps a [Func] to execute with automatic exclusive write lock
+/// acquisition and release. Only one execution allowed at a time.
+/// The optional [_timeout] limits lock acquisition wait time. The
+/// [rwLock] getter provides access to the underlying lock. This
+/// pattern is essential for exclusive write access to shared state.
 ///
 /// Example:
 /// ```dart
 /// final rwLock = RWLock();
 /// final save = Func(() async => await db.write())
-///   .writeLock(rwLock);
+///   .writeLock(rwLock, timeout: Duration(seconds: 10));
 /// ```
 class WriteLockExtension<R> extends Func<R> {
-  /// Creates a write lock extension.
+  /// Creates a write lock extension for a no-parameter function.
+  ///
+  /// The [_inner] parameter is the function to wrap. The [_rwLock]
+  /// parameter provides the read-write lock. The optional [_timeout]
+  /// limits lock acquisition wait time.
   ///
   /// Example:
   /// ```dart
-  /// final writeFunc = WriteLockExtension(myFunc, rwLock, null);
+  /// final writeFunc = WriteLockExtension(
+  ///   myFunc,
+  ///   rwLock,
+  ///   Duration(seconds: 5),
+  /// );
   /// ```
   WriteLockExtension(
     this._inner,
