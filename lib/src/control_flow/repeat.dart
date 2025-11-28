@@ -5,10 +5,15 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// Repeats a [Func] execution with control options.
+/// Repeats function execution with customizable control options.
 ///
-/// Executes the function multiple times with optional delays and
-/// stop conditions.
+/// Executes a no-parameter function multiple times with optional
+/// delays between iterations and customizable stop conditions. The
+/// [times] parameter limits iterations, [interval] adds delays,
+/// [until] provides early termination based on results, and
+/// [onIteration] enables monitoring. This pattern is essential for
+/// polling, retrying operations, batch processing, or periodic tasks.
+/// Returns the result of the last execution.
 ///
 /// Example:
 /// ```dart
@@ -17,15 +22,19 @@ import 'package:funx/src/core/func.dart';
 ///     times: 10,
 ///     interval: Duration(seconds: 5),
 ///     until: (result) => result.isComplete,
+///     onIteration: (i, r) => print('Attempt $i: $r'),
 ///   );
 /// ```
 class RepeatExtension<R> extends Func<R> {
-  /// Creates a repeat wrapper for a function.
+  /// Creates a repeat wrapper for a no-parameter function.
   ///
-  /// [times] is the maximum number of iterations (null for infinite).
-  /// [interval] is the delay between iterations.
-  /// [until] stops when this predicate returns true.
-  /// [onIteration] is called after each iteration.
+  /// The [_inner] parameter is the function to wrap. The optional
+  /// [times] parameter limits the maximum number of iterations; null
+  /// means infinite repetition. The optional [interval] parameter adds
+  /// a delay between iterations. The optional [until] predicate
+  /// receives each result and stops iteration when it returns true.
+  /// The optional [onIteration] callback is invoked after each
+  /// iteration with the iteration number and result.
   ///
   /// Example:
   /// ```dart
@@ -34,6 +43,7 @@ class RepeatExtension<R> extends Func<R> {
   ///   times: 5,
   ///   interval: Duration(seconds: 1),
   ///   until: (result) => result.isComplete,
+  ///   onIteration: (i, r) => log('Iteration $i'),
   /// );
   /// ```
   RepeatExtension(
@@ -46,16 +56,34 @@ class RepeatExtension<R> extends Func<R> {
 
   final Func<R> _inner;
 
-  /// Maximum number of iterations (null for infinite).
+  /// Maximum number of iterations to execute.
+  ///
+  /// When null, iterations continue indefinitely until [until]
+  /// condition is met. When set to a positive integer, iteration
+  /// stops after that many executions.
   final int? times;
 
-  /// Delay between iterations.
+  /// Delay duration between consecutive iterations.
+  ///
+  /// When set, the function waits for this duration after each
+  /// iteration before starting the next one. The delay is not applied
+  /// after the final iteration. When null, iterations execute
+  /// immediately without delay.
   final Duration? interval;
 
-  /// Stop condition predicate.
+  /// Predicate that determines when to stop iterating.
+  ///
+  /// Receives the result of each iteration and returns true to stop
+  /// or false to continue. Checked after each iteration. When this
+  /// returns true, iteration stops immediately even if [times] has
+  /// not been reached.
   final bool Function(R result)? until;
 
-  /// Callback after each iteration.
+  /// Callback invoked after each iteration completes.
+  ///
+  /// Receives the iteration number (1-based) and the result. Useful
+  /// for logging, monitoring progress, or collecting intermediate
+  /// results. Invoked before checking the [until] condition.
   final void Function(int iteration, R result)? onIteration;
 
   @override
@@ -84,13 +112,20 @@ class RepeatExtension<R> extends Func<R> {
   }
 }
 
-/// Repeats a [Func1] execution with control options.
+/// Repeats one-parameter function execution with control options.
 ///
-/// Executes the function multiple times with the same argument.
+/// Executes a single-parameter function multiple times with the same
+/// argument, providing optional delays between iterations and
+/// customizable stop conditions. The [times] parameter limits
+/// iterations, [interval] adds delays, [until] provides early
+/// termination based on results, and [onIteration] enables
+/// monitoring. This pattern is essential for retrying operations with
+/// the same input, polling endpoints, or batch processing. Returns
+/// the result of the last execution.
 ///
 /// Example:
 /// ```dart
-/// final retry = Func1<String, Response>((url) async => await fetch(url))
+/// final retry = Func1<String, Response>((url) async => fetch(url))
 ///   .repeat(
 ///     times: 3,
 ///     interval: Duration(seconds: 2),
@@ -98,12 +133,15 @@ class RepeatExtension<R> extends Func<R> {
 ///   );
 /// ```
 class RepeatExtension1<T, R> extends Func1<T, R> {
-  /// Creates a repeat wrapper for a single-parameter function.
+  /// Creates a repeat wrapper for a one-parameter function.
   ///
-  /// [times] is the maximum number of iterations (null for infinite).
-  /// [interval] is the delay between iterations.
-  /// [until] stops when this predicate returns true.
-  /// [onIteration] is called after each iteration.
+  /// The [_inner] parameter is the function to wrap. The optional
+  /// [times] parameter limits the maximum number of iterations; null
+  /// means infinite repetition. The optional [interval] parameter adds
+  /// a delay between iterations. The optional [until] predicate
+  /// receives each result and stops iteration when it returns true.
+  /// The optional [onIteration] callback is invoked after each
+  /// iteration with the iteration number and result.
   ///
   /// Example:
   /// ```dart
@@ -111,6 +149,7 @@ class RepeatExtension1<T, R> extends Func1<T, R> {
   ///   myFunc,
   ///   times: 10,
   ///   until: (result) => result.isValid,
+  ///   onIteration: (i, r) => log('Iteration $i'),
   /// );
   /// ```
   RepeatExtension1(
@@ -123,16 +162,34 @@ class RepeatExtension1<T, R> extends Func1<T, R> {
 
   final Func1<T, R> _inner;
 
-  /// Maximum number of iterations (null for infinite).
+  /// Maximum number of iterations to execute.
+  ///
+  /// When null, iterations continue indefinitely until [until]
+  /// condition is met. When set to a positive integer, iteration
+  /// stops after that many executions.
   final int? times;
 
-  /// Delay between iterations.
+  /// Delay duration between consecutive iterations.
+  ///
+  /// When set, the function waits for this duration after each
+  /// iteration before starting the next one. The delay is not applied
+  /// after the final iteration. When null, iterations execute
+  /// immediately without delay.
   final Duration? interval;
 
-  /// Stop condition predicate.
+  /// Predicate that determines when to stop iterating.
+  ///
+  /// Receives the result of each iteration and returns true to stop
+  /// or false to continue. Checked after each iteration. When this
+  /// returns true, iteration stops immediately even if [times] has
+  /// not been reached.
   final bool Function(R result)? until;
 
-  /// Callback after each iteration.
+  /// Callback invoked after each iteration completes.
+  ///
+  /// Receives the iteration number (1-based) and the result. Useful
+  /// for logging, monitoring progress, or collecting intermediate
+  /// results. Invoked before checking the [until] condition.
   final void Function(int iteration, R result)? onIteration;
 
   @override
@@ -161,9 +218,16 @@ class RepeatExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// Repeats a [Func2] execution with control options.
+/// Repeats two-parameter function execution with control options.
 ///
-/// Executes the function multiple times with the same arguments.
+/// Executes a two-parameter function multiple times with the same
+/// arguments, providing optional delays between iterations and
+/// customizable stop conditions. The [times] parameter limits
+/// iterations, [interval] adds delays, [until] provides early
+/// termination based on results, and [onIteration] enables
+/// monitoring. This pattern is essential for retrying operations with
+/// the same inputs, polling with parameters, or batch processing.
+/// Returns the result of the last execution.
 ///
 /// Example:
 /// ```dart
@@ -178,10 +242,13 @@ class RepeatExtension1<T, R> extends Func1<T, R> {
 class RepeatExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a repeat wrapper for a two-parameter function.
   ///
-  /// [times] is the maximum number of iterations (null for infinite).
-  /// [interval] is the delay between iterations.
-  /// [until] stops when this predicate returns true.
-  /// [onIteration] is called after each iteration.
+  /// The [_inner] parameter is the function to wrap. The optional
+  /// [times] parameter limits the maximum number of iterations; null
+  /// means infinite repetition. The optional [interval] parameter adds
+  /// a delay between iterations. The optional [until] predicate
+  /// receives each result and stops iteration when it returns true.
+  /// The optional [onIteration] callback is invoked after each
+  /// iteration with the iteration number and result.
   ///
   /// Example:
   /// ```dart
@@ -201,16 +268,34 @@ class RepeatExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 
   final Func2<T1, T2, R> _inner;
 
-  /// Maximum number of iterations (null for infinite).
+  /// Maximum number of iterations to execute.
+  ///
+  /// When null, iterations continue indefinitely until [until]
+  /// condition is met. When set to a positive integer, iteration
+  /// stops after that many executions.
   final int? times;
 
-  /// Delay between iterations.
+  /// Delay duration between consecutive iterations.
+  ///
+  /// When set, the function waits for this duration after each
+  /// iteration before starting the next one. The delay is not applied
+  /// after the final iteration. When null, iterations execute
+  /// immediately without delay.
   final Duration? interval;
 
-  /// Stop condition predicate.
+  /// Predicate that determines when to stop iterating.
+  ///
+  /// Receives the result of each iteration and returns true to stop
+  /// or false to continue. Checked after each iteration. When this
+  /// returns true, iteration stops immediately even if [times] has
+  /// not been reached.
   final bool Function(R result)? until;
 
-  /// Callback after each iteration.
+  /// Callback invoked after each iteration completes.
+  ///
+  /// Receives the iteration number (1-based) and the result. Useful
+  /// for logging, monitoring progress, or collecting intermediate
+  /// results. Invoked before checking the [until] condition.
   final void Function(int iteration, R result)? onIteration;
 
   @override
