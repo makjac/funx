@@ -6,7 +6,24 @@ import 'dart:async';
 import 'package:funx/src/core/func.dart';
 import 'package:funx/src/core/types.dart';
 
-/// Throttles a [Func] to execute at most once per [Duration].
+/// Limits function execution rate to at most once per duration.
+///
+/// Throttling prevents excessive function calls by enforcing a minimum
+/// time interval between executions. The [_inner] function executes at
+/// most once per [_duration] regardless of how many times it's called.
+/// The [_mode] determines execution timing: [ThrottleMode.leading]
+/// executes immediately on first call then blocks subsequent calls,
+/// [ThrottleMode.trailing] schedules execution at end of throttle window,
+/// [ThrottleMode.both] executes on both edges. Tracks last execution time
+/// to enforce throttle window.
+///
+/// Returns a [Future] of type [R] from the executed function. For leading
+/// mode, returns immediately or throws [StateError] if in throttle window.
+/// For trailing mode, returns after scheduled execution completes.
+///
+/// Throws:
+/// - [StateError] when called during active throttle window in leading
+/// mode
 ///
 /// Example:
 /// ```dart
@@ -22,6 +39,11 @@ import 'package:funx/src/core/types.dart';
 class ThrottleExtension<R> extends Func<R> {
   /// Creates a throttled function wrapper.
   ///
+  /// Wraps [_inner] function with throttle behavior using [_duration] to
+  /// enforce minimum interval between executions and [_mode] to control
+  /// execution timing. The wrapper maintains internal state tracking last
+  /// execution time and pending trailing executions.
+  ///
   /// Example:
   /// ```dart
   /// final throttled = ThrottleExtension(
@@ -36,13 +58,25 @@ class ThrottleExtension<R> extends Func<R> {
     this._mode,
   ) : super(() => throw UnimplementedError());
 
+  /// The wrapped function to execute with throttle behavior.
   final Func<R> _inner;
+
+  /// The minimum duration between executions.
   final Duration _duration;
+
+  /// The timing mode controlling when execution occurs.
   final ThrottleMode _mode;
 
+  /// Timer for scheduling trailing execution.
   Timer? _timer;
+
+  /// Timestamp of last successful execution.
   DateTime? _lastExecutionTime;
+
+  /// Completer for pending trailing execution result.
   Completer<R>? _trailingCompleter;
+
+  /// Flag indicating whether trailing execution is pending.
   bool _hasPendingTrailing = false;
 
   @override
@@ -112,7 +146,13 @@ class ThrottleExtension<R> extends Func<R> {
     return _trailingCompleter!.future;
   }
 
-  /// Resets the throttle state, allowing immediate execution on next call.
+  /// Resets throttle state to allow immediate execution on next call.
+  ///
+  /// Clears last execution timestamp, cancels pending trailing execution, and
+  /// resets all internal state. After reset, the next call will execute
+  /// immediately regardless of previous throttle window. Useful for manually
+  /// clearing throttle constraints when needed. Safe to call even when no
+  /// execution is pending.
   ///
   /// Example:
   /// ```dart
@@ -129,7 +169,24 @@ class ThrottleExtension<R> extends Func<R> {
   }
 }
 
-/// Throttles a [Func1] with one parameter.
+/// Limits execution rate of single-parameter function to at most once per
+/// duration.
+///
+/// Throttling prevents excessive calls to [_inner] function accepting
+/// parameter [T] by enforcing minimum time interval between executions.
+/// Executes at most once per [_duration] regardless of call frequency. The
+/// [_mode] determines timing: [ThrottleMode.leading] executes immediately
+/// then blocks, [ThrottleMode.trailing] schedules at window end,
+/// [ThrottleMode.both] executes on both edges. Tracks last execution time
+/// to enforce window.
+///
+/// Returns a [Future] of type [R] from the executed function. For leading
+/// mode, returns immediately or throws [StateError] if in throttle window.
+/// For trailing mode, returns after scheduled execution completes.
+///
+/// Throws:
+/// - [StateError] when called during active throttle window in leading
+/// mode
 ///
 /// Example:
 /// ```dart
@@ -138,7 +195,13 @@ class ThrottleExtension<R> extends Func<R> {
 /// }).throttle(Duration(milliseconds: 1000));
 /// ```
 class ThrottleExtension1<T, R> extends Func1<T, R> {
-  /// Creates a throttled function wrapper for single-parameter functions.
+  /// Creates a throttled wrapper for single-parameter functions.
+  ///
+  /// Wraps [_inner] function accepting parameter [T] with throttle
+  /// behavior using [_duration] to enforce minimum interval and [_mode] to
+  /// control timing. The wrapper maintains internal state tracking last
+  /// execution time and pending trailing executions across calls with
+  /// different arguments.
   ///
   /// Example:
   /// ```dart
@@ -154,13 +217,25 @@ class ThrottleExtension1<T, R> extends Func1<T, R> {
     this._mode,
   ) : super((arg) => throw UnimplementedError());
 
+  /// The wrapped function to execute with throttle behavior.
   final Func1<T, R> _inner;
+
+  /// The minimum duration between executions.
   final Duration _duration;
+
+  /// The timing mode controlling when execution occurs.
   final ThrottleMode _mode;
 
+  /// Timer for scheduling trailing execution.
   Timer? _timer;
+
+  /// Timestamp of last successful execution.
   DateTime? _lastExecutionTime;
+
+  /// Completer for pending trailing execution result.
   Completer<R>? _trailingCompleter;
+
+  /// Flag indicating whether trailing execution is pending.
   bool _hasPendingTrailing = false;
 
   @override
@@ -228,7 +303,13 @@ class ThrottleExtension1<T, R> extends Func1<T, R> {
     return _trailingCompleter!.future;
   }
 
-  /// Resets the throttle state.
+  /// Resets throttle state to allow immediate execution on next call.
+  ///
+  /// Clears last execution timestamp, cancels pending trailing execution, and
+  /// resets all internal state. After reset, the next call with any argument
+  /// will execute immediately regardless of previous throttle window. Useful
+  /// for manually clearing throttle constraints. Safe to call even when no
+  /// execution is pending.
   ///
   /// Example:
   /// ```dart
@@ -244,7 +325,24 @@ class ThrottleExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// Throttles a [Func2] with two parameters.
+/// Limits execution rate of two-parameter function to at most once per
+/// duration.
+///
+/// Throttling prevents excessive calls to [_inner] function accepting
+/// parameters [T1] and [T2] by enforcing minimum time interval between
+/// executions. Executes at most once per [_duration] regardless of call
+/// frequency. The [_mode] determines timing: [ThrottleMode.leading]
+/// executes immediately then blocks, [ThrottleMode.trailing] schedules at
+/// window end, [ThrottleMode.both] executes on both edges. Tracks last
+/// execution time to enforce window.
+///
+/// Returns a [Future] of type [R] from the executed function. For leading
+/// mode, returns immediately or throws [StateError] if in throttle window.
+/// For trailing mode, returns after scheduled execution completes.
+///
+/// Throws:
+/// - [StateError] when called during active throttle window in leading
+/// mode
 ///
 /// Example:
 /// ```dart
@@ -253,7 +351,13 @@ class ThrottleExtension1<T, R> extends Func1<T, R> {
 /// }).throttle(Duration(milliseconds: 1000));
 /// ```
 class ThrottleExtension2<T1, T2, R> extends Func2<T1, T2, R> {
-  /// Creates a throttled function wrapper for two-parameter functions.
+  /// Creates a throttled wrapper for two-parameter functions.
+  ///
+  /// Wraps [_inner] function accepting parameters [T1] and [T2] with
+  /// throttle behavior using [_duration] to enforce minimum interval and
+  /// [_mode] to control timing. The wrapper maintains internal state
+  /// tracking last execution time and pending trailing executions across
+  /// calls with different argument combinations.
   ///
   /// Example:
   /// ```dart
@@ -269,13 +373,25 @@ class ThrottleExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     this._mode,
   ) : super((arg1, arg2) => throw UnimplementedError());
 
+  /// The wrapped function to execute with throttle behavior.
   final Func2<T1, T2, R> _inner;
+
+  /// The minimum duration between executions.
   final Duration _duration;
+
+  /// The timing mode controlling when execution occurs.
   final ThrottleMode _mode;
 
+  /// Timer for scheduling trailing execution.
   Timer? _timer;
+
+  /// Timestamp of last successful execution.
   DateTime? _lastExecutionTime;
+
+  /// Completer for pending trailing execution result.
   Completer<R>? _trailingCompleter;
+
+  /// Flag indicating whether trailing execution is pending.
   bool _hasPendingTrailing = false;
 
   @override
@@ -343,7 +459,13 @@ class ThrottleExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     return _trailingCompleter!.future;
   }
 
-  /// Resets the throttle state.
+  /// Resets throttle state to allow immediate execution on next call.
+  ///
+  /// Clears last execution timestamp, cancels pending trailing execution, and
+  /// resets all internal state. After reset, the next call with any arguments
+  /// will execute immediately regardless of previous throttle window. Useful
+  /// for manually clearing throttle constraints. Safe to call even when no
+  /// execution is pending.
   ///
   /// Example:
   /// ```dart
