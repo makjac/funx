@@ -5,11 +5,20 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// Races multiple functions - the first one to complete wins.
+/// Races multiple functions - first to complete wins.
 ///
-/// Executes all competitor functions in parallel and returns the result
-/// of the first one to complete. Other functions continue execution but
-/// their results are ignored.
+/// Executes [_inner] function and all [competitors] in parallel,
+/// returning the result of the first one to complete. Other
+/// functions continue execution but their results are ignored.
+/// The optional [onWin] callback receives notification when a
+/// competitor wins. The optional [onLose] callback receives
+/// notification for each losing function.
+///
+/// Returns a [Future] of type [R] from the first function to
+/// complete successfully.
+///
+/// Throws:
+/// - First exception encountered if all functions fail
 ///
 /// Example:
 /// ```dart
@@ -26,12 +35,13 @@ import 'package:funx/src/core/func.dart';
 /// final response = await fastest('https://api.example.com');
 /// ```
 class RaceExtension1<T, R> extends Func1<T, R> {
-  /// Creates a race wrapper for a single-parameter function.
+  /// Creates a race wrapper for single-parameter function.
   ///
-  /// [_inner] is the primary function to race.
-  /// [competitors] are the alternative functions to race against.
-  /// [onWin] is called when a competitor wins with (index, result).
-  /// [onLose] is called for each losing function with (index, result).
+  /// Wraps [_inner] function to race against [competitors]. The
+  /// [competitors] parameter provides alternative functions to
+  /// race against. The optional [onWin] callback is invoked when a
+  /// competitor wins with index and result. The optional [onLose]
+  /// callback is invoked for each losing function.
   ///
   /// Example:
   /// ```dart
@@ -50,7 +60,10 @@ class RaceExtension1<T, R> extends Func1<T, R> {
 
   final Func1<T, R> _inner;
 
-  /// Alternative functions to race against.
+  /// Alternative functions to race against primary function.
+  ///
+  /// These functions run concurrently with [_inner]. The first to
+  /// complete wins the race.
   final List<Func1<T, R>> competitors;
 
   /// Callback when a competitor wins.
@@ -131,25 +144,37 @@ class RaceExtension1<T, R> extends Func1<T, R> {
 
 /// Races multiple two-parameter functions.
 ///
-/// Same as [RaceExtension1] but for functions with two parameters.
+/// Executes [_inner] function and all [competitors] in parallel,
+/// returning the result of the first one to complete. Accepts two
+/// parameters [T1] and [T2] passed to all functions. Other
+/// functions continue execution but their results are ignored.
+///
+/// Returns a [Future] of type [R] from the first function to
+/// complete successfully.
+///
+/// Throws:
+/// - First exception encountered if all functions fail
 ///
 /// Example:
 /// ```dart
-/// final fastest = Func2<String, int, Data>((url, timeout) async {
-///   return await primaryApi.fetch(url, timeout);
-/// }).race(
+/// final fastest = Func2<String, int, Data>(
+///   (url, timeout) async {
+///     return await primaryApi.fetch(url, timeout);
+///   },
+/// ).race(
 ///   competitors: [
 ///     (url, timeout) async => await backupApi.fetch(url, timeout),
 ///   ],
 /// );
 /// ```
 class RaceExtension2<T1, T2, R> extends Func2<T1, T2, R> {
-  /// Creates a race wrapper for a two-parameter function.
+  /// Creates a race wrapper for two-parameter function.
   ///
-  /// [_inner] is the primary function to race.
-  /// [competitors] are the alternative functions to race against.
-  /// [onWin] is called when a competitor wins.
-  /// [onLose] is called for each losing function.
+  /// Wraps [_inner] function to race against [competitors]. The
+  /// [competitors] parameter provides alternative functions to
+  /// race against. The optional [onWin] callback is invoked when a
+  /// competitor wins. The optional [onLose] callback is invoked
+  /// for each losing function.
   ///
   /// Example:
   /// ```dart
@@ -167,13 +192,23 @@ class RaceExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 
   final Func2<T1, T2, R> _inner;
 
-  /// Alternative functions to race against.
+  /// Alternative functions to race against primary function.
+  ///
+  /// These functions run concurrently with [_inner]. The first to
+  /// complete wins the race.
   final List<Func2<T1, T2, R>> competitors;
 
-  /// Callback when a competitor wins.
+  /// Optional callback invoked when a competitor wins the race.
+  ///
+  /// Receives the competitor index (0-based in [competitors] list)
+  /// and its result. Not called if [_inner] wins.
   final void Function(int index, R result)? onWin;
 
-  /// Callback for each losing function.
+  /// Optional callback invoked for each losing function.
+  ///
+  /// Receives the function index and its result when it completes
+  /// after another function has already won. Called
+  /// asynchronously after winner is determined.
   final void Function(int index, R result)? onLose;
 
   @override
