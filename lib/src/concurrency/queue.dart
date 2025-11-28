@@ -16,19 +16,38 @@ class _QueuedTask<T, R> {
   final int priority;
 }
 
-/// A function execution queue with configurable concurrency.
+/// Execution queue with configurable concurrency and ordering.
+///
+/// Manages function execution with controlled parallelism and
+/// ordering strategies. Tasks enqueue via [enqueue] and execute
+/// according to [concurrency] limit and [mode] ordering (FIFO, LIFO,
+/// or priority). The optional [priorityFn] determines task priority
+/// in priority mode. The optional [maxQueueSize] limits queue length.
+/// The optional [onQueueChange] callback tracks queue size changes.
+/// This pattern is essential for rate limiting, ordered processing,
+/// or priority-based task execution.
 ///
 /// Example:
 /// ```dart
 /// final queue = FunctionQueue<Task, Result>(
 ///   concurrency: 2,
-///   mode: QueueMode.fifo,
+///   mode: QueueMode.priority,
+///   priorityFn: (task) => task.priority,
+///   maxQueueSize: 100,
+///   onQueueChange: (size) => print('Queue: $size'),
 /// );
 ///
 /// final result = await queue.enqueue(task, (t) => t.execute());
 /// ```
 class FunctionQueue<T, R> {
-  /// Creates a function queue.
+  /// Creates a function execution queue with specified configuration.
+  ///
+  /// The [concurrency] parameter sets the maximum number of
+  /// simultaneous executions. The [mode] parameter determines task
+  /// ordering (FIFO, LIFO, or priority). The optional [priorityFn]
+  /// calculates task priority for priority mode. The optional
+  /// [maxQueueSize] limits queue capacity. The optional
+  /// [onQueueChange] callback is invoked when queue size changes.
   ///
   /// Example:
   /// ```dart
@@ -36,6 +55,8 @@ class FunctionQueue<T, R> {
   ///   concurrency: 3,
   ///   mode: QueueMode.priority,
   ///   priorityFn: (n) => n,
+  ///   maxQueueSize: 50,
+  ///   onQueueChange: (size) => logger.info('Queue: $size'),
   /// );
   /// ```
   FunctionQueue({
@@ -46,19 +67,34 @@ class FunctionQueue<T, R> {
     this.onQueueChange,
   });
 
-  /// Maximum number of concurrent executions.
+  /// Maximum number of concurrent task executions.
+  ///
+  /// Limits how many tasks can execute simultaneously. Remaining
+  /// tasks wait in the queue.
   final int concurrency;
 
-  /// Queue ordering mode.
+  /// Queue ordering strategy.
+  ///
+  /// Determines task execution order: FIFO (first-in-first-out),
+  /// LIFO (last-in-first-out), or priority-based ordering.
   final QueueMode mode;
 
-  /// Priority function for priority mode.
+  /// Optional function to calculate task priority.
+  ///
+  /// Required for priority mode. Returns higher values for higher
+  /// priority tasks. Ignored in FIFO and LIFO modes.
   final PriorityFunction<T>? priorityFn;
 
-  /// Maximum queue size (null for unlimited).
+  /// Optional maximum queue capacity.
+  ///
+  /// When set, [enqueue] throws [StateError] if queue is full. When
+  /// null, queue has unlimited capacity.
   final int? maxQueueSize;
 
-  /// Callback when queue size changes.
+  /// Optional callback invoked when queue size changes.
+  ///
+  /// Called after tasks are enqueued or dequeued. Receives the new
+  /// queue length.
   final QueueChangeCallback? onQueueChange;
 
   int _running = 0;
@@ -66,9 +102,27 @@ class FunctionQueue<T, R> {
 
   /// Enqueues a task for execution.
   ///
+  /// Adds the task with [arg] and [fn] to the queue. If concurrency
+  /// limit allows, executes immediately. Otherwise, waits in queue
+  /// according to [mode] ordering. Priority is calculated via
+  /// [priorityFn] if in priority mode. Throws [StateError] if queue
+  /// is at [maxQueueSize].
+  ///
+  /// Returns a [Future] that completes with the task result.
+  ///
+  /// Throws:
+  /// - [StateError] when queue is full
+  ///
   /// Example:
   /// ```dart
-  /// final result = await queue.enqueue(data, (d) => process(d));
+  /// try {
+  ///   final result = await queue.enqueue(
+  ///     data,
+  ///     (d) async => await process(d),
+  ///   );
+  /// } catch (e) {
+  ///   print('Queue full or task failed: $e');
+  /// }
   /// ```
   Future<R> enqueue(T arg, AsyncFunction1<T, R> fn) async {
     if (maxQueueSize != null && _queue.length >= maxQueueSize!) {
@@ -136,42 +190,71 @@ class FunctionQueue<T, R> {
     }
   }
 
-  /// Current queue length.
+  /// Current number of tasks waiting in the queue.
+  ///
+  /// Returns the count of tasks waiting to execute. Does not include
+  /// currently running tasks.
   ///
   /// Example:
   /// ```dart
-  /// print('Queued: ${queue.queueLength}');
+  /// print('Queued tasks: ${queue.queueLength}');
+  /// if (queue.queueLength > 50) {
+  ///   print('Queue is getting full');
+  /// }
   /// ```
   int get queueLength => _queue.length;
 
-  /// Number of currently running tasks.
+  /// Number of tasks currently executing.
+  ///
+  /// Returns the count of tasks that are actively running. Maximum
+  /// value equals [concurrency].
   ///
   /// Example:
   /// ```dart
-  /// print('Running: ${queue.runningTasks}');
+  /// print('Running: ${queue.runningTasks}/${queue.concurrency}');
   /// ```
   int get runningTasks => _running;
 }
 
-/// Applies queue mechanism to a [Func1].
+/// Applies queue mechanism to one-parameter functions.
+///
+/// Wraps a [Func1] to execute through a function queue with
+/// controlled concurrency and ordering. Each function call enqueues
+/// for execution according to [_mode] strategy. The [_concurrency]
+/// limits simultaneous executions. The optional [_priorityFn]
+/// calculates priority in priority mode. The [queueLength] and
+/// [runningTasks] getters provide queue state. This pattern is
+/// essential for rate limiting, ordered processing, or priority-based
+/// execution.
 ///
 /// Example:
 /// ```dart
-/// final process = Func1<Task, Result>((task) async => await task.execute())
-///   .queue(concurrency: 2, mode: QueueMode.fifo);
+/// final process = Func1<Task, Result>((task) async {
+///   return await task.execute();
+/// }).queue(
+///   concurrency: 2,
+///   mode: QueueMode.fifo,
+///   maxQueueSize: 100,
+/// );
 /// ```
 class QueueExtension1<T, R> extends Func1<T, R> {
-  /// Creates a queue extension for a single-parameter function.
+  /// Creates a queue extension for a one-parameter function.
+  ///
+  /// The [_inner] parameter is the function to wrap. The [_mode]
+  /// parameter sets ordering strategy. The [_concurrency] parameter
+  /// limits simultaneous executions. The optional [_priorityFn]
+  /// calculates priority. The optional [_onQueueChange] tracks queue
+  /// size. The optional [_maxQueueSize] limits capacity.
   ///
   /// Example:
   /// ```dart
   /// final queued = QueueExtension1(
   ///   myFunc,
-  ///   QueueMode.fifo,
-  ///   1,
-  ///   null,
-  ///   null,
-  ///   null,
+  ///   QueueMode.priority,
+  ///   2,
+  ///   (task) => task.priority,
+  ///   (size) => print('Queue: $size'),
+  ///   50,
   /// );
   /// ```
   QueueExtension1(
@@ -222,24 +305,41 @@ class QueueExtension1<T, R> extends Func1<T, R> {
   int get runningTasks => _queue.runningTasks;
 }
 
-/// Applies queue mechanism to a [Func2].
+/// Applies queue mechanism to two-parameter functions.
+///
+/// Wraps a [Func2] to execute through a function queue with
+/// controlled concurrency and ordering. Each function call enqueues
+/// for execution according to [_mode] strategy. The [_concurrency]
+/// limits simultaneous executions. The [queueLength] and
+/// [runningTasks] getters provide queue state. This pattern is
+/// essential for rate limiting, ordered processing, or controlled
+/// parallel execution.
 ///
 /// Example:
 /// ```dart
-/// final merge = Func2<String, String, String>((a, b) async => a + b)
-///   .queue(concurrency: 1);
+/// final merge = Func2<String, String, String>((a, b) async {
+///   return await combine(a, b);
+/// }).queue(
+///   concurrency: 1,
+///   mode: QueueMode.fifo,
+/// );
 /// ```
 class QueueExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a queue extension for a two-parameter function.
+  ///
+  /// The [_inner] parameter is the function to wrap. The [_mode]
+  /// parameter sets ordering strategy. The [_concurrency] parameter
+  /// limits simultaneous executions. The optional [_onQueueChange]
+  /// tracks queue size. The optional [_maxQueueSize] limits capacity.
   ///
   /// Example:
   /// ```dart
   /// final queued = QueueExtension2(
   ///   myFunc,
-  ///   QueueMode.fifo,
-  ///   1,
-  ///   null,
-  ///   null,
+  ///   QueueMode.lifo,
+  ///   3,
+  ///   (size) => print('Queue: $size'),
+  ///   100,
   /// );
   /// ```
   QueueExtension2(
