@@ -2,10 +2,14 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// A function that batches multiple calls together and executes them as a group
+/// Batches multiple function calls for efficient grouped execution.
 ///
-/// Calls are accumulated until either [maxSize] is reached or [maxWait]
-/// duration elapses, then all accumulated calls are executed together.
+/// Accumulates individual calls and processes them together when either
+/// the maximum batch size is reached or the maximum wait time elapses.
+/// This pattern improves performance by reducing overhead of individual
+/// operations, particularly useful for database operations, API calls,
+/// or any scenario where bulk processing is more efficient. Each call
+/// receives its individual result while benefiting from batch execution.
 ///
 /// Example:
 /// ```dart
@@ -19,17 +23,29 @@ import 'package:funx/src/core/func.dart';
 ///   maxWait: Duration(seconds: 5),
 /// );
 ///
-/// // These calls accumulate:
-/// await batchedInsert('item1');
-/// await batchedInsert('item2');
-/// await batchedInsert('item3');
-/// // After maxWait or maxSize reached, all items processed together
+/// await batchedInsert('item1'); // Accumulated
+/// await batchedInsert('item2'); // Accumulated
+/// await batchedInsert('item3'); // Accumulated
+/// // After maxWait or maxSize, all items processed together
 /// ```
 class BatchExtension<T, R> extends Func1<T, R> {
-  /// Creates a batch extension with the given configuration.
+  /// Creates a batch wrapper for the given function.
   ///
-  /// The [executor] processes accumulated items when batch is triggered.
-  /// The [maxSize] and [maxWait] control when batches are executed.
+  /// The [_inner] function is called for each item to produce individual
+  /// results. The [executor] processes all accumulated items as a batch
+  /// when triggered. The [maxSize] parameter sets the maximum number of
+  /// items before automatic execution. The [maxWait] parameter sets the
+  /// maximum time to wait before execution regardless of batch size.
+  ///
+  /// Example:
+  /// ```dart
+  /// final batched = BatchExtension(
+  ///   processItem,
+  ///   executor: batchProcessor,
+  ///   maxSize: 50,
+  ///   maxWait: Duration(seconds: 2),
+  /// );
+  /// ```
   BatchExtension(
     this._inner, {
     required this.executor,
@@ -103,10 +119,36 @@ class BatchExtension<T, R> extends Func1<T, R> {
     return completer.future;
   }
 
-  /// Flushes any pending items immediately.
+  /// Immediately executes all pending items in the batch.
+  ///
+  /// Forces execution of accumulated items without waiting for maxSize
+  /// or maxWait conditions. Useful when you need to ensure all pending
+  /// operations complete before a critical point in your application.
+  ///
+  /// Returns a [Future] that completes when batch execution finishes.
+  ///
+  /// Example:
+  /// ```dart
+  /// await batchedOperation('item1');
+  /// await batchedOperation('item2');
+  /// await batchedOperation.flush(); // Process now
+  /// ```
   Future<void> flush() => _executeBatch();
 
-  /// Cancels pending batch and clears accumulated items.
+  /// Cancels the pending batch and clears all accumulated items.
+  ///
+  /// Stops the wait timer and completes all pending calls with a
+  /// [StateError]. This is useful when you need to abort a batch
+  /// operation, such as during application shutdown or when cancelling
+  /// a long-running process.
+  ///
+  /// All pending futures will complete with error.
+  ///
+  /// Example:
+  /// ```dart
+  /// await batchedOperation('item1');
+  /// batchedOperation.cancel(); // Aborts pending batch
+  /// ```
   void cancel() {
     _timer?.cancel();
     _timer = null;
@@ -121,9 +163,12 @@ class BatchExtension<T, R> extends Func1<T, R> {
   }
 }
 
-/// A function that batches multiple calls with two arguments together.
+/// Batches multiple two-argument function calls for grouped execution.
 ///
-/// Similar to [BatchExtension] but for functions with two parameters.
+/// Extends batching functionality to functions with two parameters.
+/// Accumulates argument pairs and processes them together when batch
+/// conditions are met. Each call receives its individual result while
+/// benefiting from efficient bulk processing.
 ///
 /// Example:
 /// ```dart
@@ -140,10 +185,22 @@ class BatchExtension<T, R> extends Func1<T, R> {
 /// );
 /// ```
 class BatchExtension2<T1, T2, R> extends Func2<T1, T2, R> {
-  /// Creates a batch extension for two-argument functions.
+  /// Creates a batch wrapper for a two-argument function.
   ///
-  /// The [executor] processes accumulated argument pairs when triggered.
-  /// The [maxSize] and [maxWait] control when batches are executed.
+  /// The [_inner] function processes each argument pair to produce
+  /// individual results. The [executor] handles batched execution of
+  /// all accumulated pairs. The [maxSize] sets maximum items before
+  /// automatic execution. The [maxWait] sets maximum wait time.
+  ///
+  /// Example:
+  /// ```dart
+  /// final batched = BatchExtension2(
+  ///   processArgs,
+  ///   executor: batchProcessor,
+  ///   maxSize: 30,
+  ///   maxWait: Duration(seconds: 1),
+  /// );
+  /// ```
   BatchExtension2(
     this._inner, {
     required this.executor,
@@ -217,10 +274,29 @@ class BatchExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     return completer.future;
   }
 
-  /// Flushes any pending items immediately.
+  /// Immediately executes all pending argument pairs in the batch.
+  ///
+  /// Forces execution of accumulated items without waiting for batch
+  /// conditions. Returns a [Future] that completes when execution
+  /// finishes.
+  ///
+  /// Example:
+  /// ```dart
+  /// await batched(1, 2);
+  /// await batched.flush();
+  /// ```
   Future<void> flush() => _executeBatch();
 
-  /// Cancels pending batch and clears accumulated items.
+  /// Cancels the pending batch and clears accumulated argument pairs.
+  ///
+  /// Stops the wait timer and completes all pending calls with a
+  /// [StateError]. All pending futures will complete with error.
+  ///
+  /// Example:
+  /// ```dart
+  /// await batched(1, 2);
+  /// batched.cancel();
+  /// ```
   void cancel() {
     _timer?.cancel();
     _timer = null;
@@ -234,7 +310,7 @@ class BatchExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   }
 }
 
-/// Extension methods on [Func1] for batching functionality.
+/// Extension methods for adding batch functionality to functions.
 extension Func1BatchExtension<T, R> on Func1<T, R> {
   /// Creates a batched version of this function that accumulates calls
   /// and executes them together.
