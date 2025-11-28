@@ -43,10 +43,17 @@ class MergeExtension1<T, R> extends Func1<T, R> {
     required this.combiner,
   }) : super((arg) => throw UnimplementedError());
 
-  /// List of source functions to execute.
+  /// List of source functions to execute in parallel.
+  ///
+  /// All functions receive the same argument and execute concurrently.
+  /// Results are collected in the same order as the source functions.
   final List<Func1<T, dynamic>> sources;
 
-  /// Function to combine all results.
+  /// Function that combines all results into a single value.
+  ///
+  /// Receives a list of results in the same order as [sources]. The
+  /// combiner can aggregate, transform, or merge the results in any
+  /// way needed to produce the final result of type [R].
   final R Function(List<dynamic> results) combiner;
 
   @override
@@ -95,10 +102,18 @@ class MergeExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     required this.combiner,
   }) : super((arg1, arg2) => throw UnimplementedError());
 
-  /// List of source functions to execute.
+  /// List of source functions to execute in parallel.
+  ///
+  /// All functions receive the same two arguments and execute
+  /// concurrently. Results are collected in the same order as the
+  /// source functions.
   final List<Func2<T1, T2, dynamic>> sources;
 
-  /// Function to combine all results.
+  /// Function that combines all results into a single value.
+  ///
+  /// Receives a list of results in the same order as [sources]. The
+  /// combiner can aggregate, transform, or merge the results in any
+  /// way needed to produce the final result of type [R].
   final R Function(List<dynamic> results) combiner;
 
   @override
