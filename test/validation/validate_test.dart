@@ -97,14 +97,15 @@ void main() {
 
     test('does not execute function when validation fails', () async {
       var executed = false;
-      final func = funx.Func1<String, String>((email) async {
-        executed = true;
-        return email;
-      }).validate(
-        validators: [
-          (email) => email.contains('@') ? null : 'Invalid email',
-        ],
-      );
+      final func =
+          funx.Func1<String, String>((email) async {
+            executed = true;
+            return email;
+          }).validate(
+            validators: [
+              (email) => email.contains('@') ? null : 'Invalid email',
+            ],
+          );
 
       try {
         await func('bad');
@@ -118,29 +119,33 @@ void main() {
 
   group('ValidateExtension2', () {
     test('passes when all validators succeed', () async {
-      final func = funx
-          .Func2<String, String, String>((title, content) async => title)
-          .validate(
-        validators: [
-          (title, content) => title.isNotEmpty ? null : 'Title required',
-          (title, content) => content.length >= 10 ? null : 'Content too short',
-        ],
-      );
+      final func =
+          funx.Func2<String, String, String>(
+            (title, content) async => title,
+          ).validate(
+            validators: [
+              (title, content) => title.isNotEmpty ? null : 'Title required',
+              (title, content) =>
+                  content.length >= 10 ? null : 'Content too short',
+            ],
+          );
 
       final result = await func('Test', 'Some long content here');
       expect(result, 'Test');
     });
 
     test('fails fast on first validation error', () async {
-      final func = funx
-          .Func2<String, String, String>((title, content) async => title)
-          .validate(
-        validators: [
-          (title, content) => title.isNotEmpty ? null : 'Title required',
-          (title, content) => content.length >= 10 ? null : 'Content too short',
-        ],
-        mode: ValidationMode.failFast,
-      );
+      final func =
+          funx.Func2<String, String, String>(
+            (title, content) async => title,
+          ).validate(
+            validators: [
+              (title, content) => title.isNotEmpty ? null : 'Title required',
+              (title, content) =>
+                  content.length >= 10 ? null : 'Content too short',
+            ],
+            mode: ValidationMode.failFast,
+          );
 
       try {
         await func('', 'short');
@@ -152,15 +157,17 @@ void main() {
     });
 
     test('aggregates all validation errors', () async {
-      final func = funx
-          .Func2<String, String, String>((title, content) async => title)
-          .validate(
-        validators: [
-          (title, content) => title.isNotEmpty ? null : 'Title required',
-          (title, content) => content.length >= 10 ? null : 'Content too short',
-        ],
-        mode: ValidationMode.aggregate,
-      );
+      final func =
+          funx.Func2<String, String, String>(
+            (title, content) async => title,
+          ).validate(
+            validators: [
+              (title, content) => title.isNotEmpty ? null : 'Title required',
+              (title, content) =>
+                  content.length >= 10 ? null : 'Content too short',
+            ],
+            mode: ValidationMode.aggregate,
+          );
 
       try {
         await func('', 'short');
@@ -174,14 +181,15 @@ void main() {
 
     test('invokes onValidationError callback', () async {
       List<String>? capturedErrors;
-      final func = funx
-          .Func2<String, String, String>((title, content) async => title)
-          .validate(
-        validators: [
-          (title, content) => title.isNotEmpty ? null : 'Title required',
-        ],
-        onValidationError: (errors) => capturedErrors = errors,
-      );
+      final func =
+          funx.Func2<String, String, String>(
+            (title, content) async => title,
+          ).validate(
+            validators: [
+              (title, content) => title.isNotEmpty ? null : 'Title required',
+            ],
+            onValidationError: (errors) => capturedErrors = errors,
+          );
 
       try {
         await func('', 'content');

@@ -1,6 +1,6 @@
 ![header][header_image_url]
 
-[![pub package][pub_package_badge]][pub_package_url] [![pub likes][pub_likes_badge]][pub_likes_link] [![style: very good analysis][very_good_analysis_badge]][very_good_analysis_url] [![License: MIT][license_badge]][license_badge_link]
+[![CI][ci_bagge]][ci_url] [![codecov][codecov_badge]][codecov_url] [![pub package][pub_package_badge]][pub_package_url] [![pub likes][pub_likes_badge]][pub_likes_link] [![style: very good analysis][very_good_analysis_badge]][very_good_analysis_url] [![License: MIT][license_badge]][license_badge_link]
 
 # Funx
 
@@ -737,6 +737,12 @@ MIT License - see [LICENSE](LICENSE) file for details.
 <!-- end:excluded_rules_table -->
 
 <!-- badges -->
+
+[ci_bagge]: https://github.com/makjac/funx/workflows/CI/badge.svg
+[ci_url]: https://github.com/makjac/funx/actions
+
+[codecov_badge]: https://codecov.io/gh/makjac/funx/branch/main/graph/badge.svg
+[codecov_url]: https://codecov.io/gh/makjac/funx
 
 [pub_package_badge]: https://img.shields.io/pub/v/funx.svg
 [pub_package_url]: https://pub.dev/packages/funx
