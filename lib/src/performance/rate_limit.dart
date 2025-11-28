@@ -482,6 +482,7 @@ class RateLimitExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   }
 }
 
+/// Extension methods for adding rate limiting to functions with no arguments.
 extension FuncRateLimitExtension<R> on Func<R> {
   /// Creates a rate-limited version of this function.
   ///
@@ -510,6 +511,7 @@ extension FuncRateLimitExtension<R> on Func<R> {
   );
 }
 
+/// Extension methods for adding rate limiting to functions with one argument.
 extension Func1RateLimitExtension<T, R> on Func1<T, R> {
   /// Creates a rate-limited version of this function.
   ///
@@ -532,6 +534,7 @@ extension Func1RateLimitExtension<T, R> on Func1<T, R> {
   );
 }
 
+/// Extension methods for adding rate limiting to functions with two arguments.
 extension Func2RateLimitExtension<T1, T2, R> on Func2<T1, T2, R> {
   /// Creates a rate-limited version of this function.
   ///
