@@ -5,7 +5,12 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 
-/// Exception thrown when no case matches and no default provided.
+/// Exception thrown when no case matches and no default is provided.
+///
+/// Indicates that the selector value did not match any defined case
+/// in the switch and no defaultCase was provided. The [value]
+/// stores the selector value that failed to match, useful for
+/// debugging and error reporting.
 ///
 /// Example:
 /// ```dart
@@ -16,21 +21,38 @@ import 'package:funx/src/core/func.dart';
 /// }
 /// ```
 class SwitchException implements Exception {
-  /// Creates a switch exception.
+  /// Creates a switch exception with the unmatched selector value.
   ///
-  /// [value] is the selector value that didn't match any case.
+  /// The [value] parameter stores the selector value that did not
+  /// match any case in the switch statement. This helps identify which
+  /// input caused the failure.
+  ///
+  /// Example:
+  /// ```dart
+  /// throw SwitchException('unsupported_type');
+  /// ```
   SwitchException(this.value);
 
-  /// The selector value that didn't match.
+  /// The selector value that did not match any case.
+  ///
+  /// Stores the value returned by the selector function that failed
+  /// to match any key in the cases map and had no default case.
   final Object? value;
 
   @override
   String toString() => 'SwitchException: No matching case for value: $value';
 }
 
-/// Switches between multiple [Func1] implementations based on selector.
+/// Switches between multiple function implementations dynamically.
 ///
-/// Dynamically selects which function implementation to execute.
+/// Provides runtime function selection for single-parameter functions
+/// based on a [selector] that evaluates the argument. The [selector]
+/// returns a value that is matched against keys in the [cases] map to
+/// determine which function implementation to execute. If no match is
+/// found, executes the optional [defaultCase] or throws
+/// [SwitchException]. This pattern enables polymorphic behavior,
+/// strategy pattern implementation, or routing based on input
+/// characteristics.
 ///
 /// Example:
 /// ```dart
@@ -44,11 +66,14 @@ class SwitchException implements Exception {
 /// );
 /// ```
 class SwitchExtension1<T, R> extends Func1<T, R> {
-  /// Creates a switch wrapper for a function.
+  /// Creates a switch wrapper for a one-parameter function.
   ///
-  /// [selector] determines which case to execute.
-  /// [cases] maps selector values to function implementations.
-  /// [defaultCase] is executed when no case matches.
+  /// The [selector] function receives the argument and returns a value
+  /// used to look up the implementation in [cases]. The [cases] map
+  /// contains selector values as keys and function implementations as
+  /// values. The optional [defaultCase] provides a fallback when no
+  /// case matches. If no match is found and no [defaultCase] is
+  /// provided, throws [SwitchException].
   ///
   /// Example:
   /// ```dart
@@ -64,13 +89,25 @@ class SwitchExtension1<T, R> extends Func1<T, R> {
     this.defaultCase,
   }) : super((arg) => throw UnimplementedError());
 
-  /// Function to determine which case to execute.
+  /// Function that determines which case implementation to execute.
+  ///
+  /// Receives the argument and returns a value that is matched against
+  /// the keys in [cases]. The returned value can be any type that
+  /// implements equality.
   final Object? Function(T arg) selector;
 
-  /// Map of selector values to implementations.
+  /// Map of selector values to function implementations.
+  ///
+  /// Keys are possible values returned by [selector]. Values are
+  /// function implementations to execute when the key matches. Uses
+  /// equality comparison to match selector results with keys.
   final Map<Object?, Func1<T, R>> cases;
 
-  /// Optional default implementation.
+  /// Optional default implementation when no case matches.
+  ///
+  /// Executed when the [selector] returns a value that is not found
+  /// in [cases]. If not provided and no match is found, throws
+  /// [SwitchException].
   final Func1<T, R>? defaultCase;
 
   @override
@@ -92,9 +129,16 @@ class SwitchExtension1<T, R> extends Func1<T, R> {
   }
 }
 
-/// Switches between multiple [Func2] implementations based on selector.
+/// Switches between multiple two-parameter function implementations.
 ///
-/// Dynamically selects which function implementation to execute.
+/// Provides runtime function selection for two-parameter functions
+/// based on a [selector] that evaluates both arguments. The
+/// [selector] returns a value that is matched against keys in the
+/// [cases] map to determine which function implementation to execute.
+/// If no match is found, executes the optional [defaultCase] or
+/// throws [SwitchException]. This pattern enables polymorphic
+/// behavior, strategy pattern implementation, or routing based on
+/// input characteristics and relationships.
 ///
 /// Example:
 /// ```dart
@@ -109,9 +153,12 @@ class SwitchExtension1<T, R> extends Func1<T, R> {
 class SwitchExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a switch wrapper for a two-parameter function.
   ///
-  /// [selector] determines which case to execute based on arguments.
-  /// [cases] maps selector values to function implementations.
-  /// [defaultCase] is executed when no case matches.
+  /// The [selector] function receives both arguments and returns a
+  /// value used to look up the implementation in [cases]. The [cases]
+  /// map contains selector values as keys and function implementations
+  /// as values. The optional [defaultCase] provides a fallback when no
+  /// case matches. If no match is found and no [defaultCase] is
+  /// provided, throws [SwitchException].
   ///
   /// Example:
   /// ```dart
@@ -129,13 +176,25 @@ class SwitchExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     this.defaultCase,
   }) : super((arg1, arg2) => throw UnimplementedError());
 
-  /// Function to determine which case to execute.
+  /// Function that determines which case implementation to execute.
+  ///
+  /// Receives both arguments and returns a value that is matched
+  /// against the keys in [cases]. The returned value can be any type
+  /// that implements equality.
   final Object? Function(T1 arg1, T2 arg2) selector;
 
-  /// Map of selector values to implementations.
+  /// Map of selector values to function implementations.
+  ///
+  /// Keys are possible values returned by [selector]. Values are
+  /// function implementations to execute when the key matches. Uses
+  /// equality comparison to match selector results with keys.
   final Map<Object?, Func2<T1, T2, R>> cases;
 
-  /// Optional default implementation.
+  /// Optional default implementation when no case matches.
+  ///
+  /// Executed when the [selector] returns a value that is not found
+  /// in [cases]. If not provided and no match is found, throws
+  /// [SwitchException].
   final Func2<T1, T2, R>? defaultCase;
 
   @override
