@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable test
+
 import 'package:funx/funx.dart';
 import 'package:test/test.dart' hide Func1, Func2;
 
@@ -218,6 +220,219 @@ void main() {
       expect(elapsed.inMilliseconds, greaterThanOrEqualTo(150));
 
       func.dispose();
+    });
+
+    test('queue fills up and processes calls', () async {
+      var callCount = 0;
+      final func =
+          Func(() async {
+                return ++callCount;
+              }).rateLimit(
+                maxCalls: 2,
+                window: const Duration(milliseconds: 100),
+                strategy: RateLimitStrategy.leakyBucket,
+              )
+              as RateLimitExtension<int>;
+
+      // Start multiple calls
+      final futures = [func(), func(), func(), func()];
+
+      await Future.wait(futures);
+
+      expect(callCount, equals(4));
+
+      func.dispose();
+    });
+  });
+
+  group('RateLimitExtension1 - Different Strategies', () {
+    test('token bucket with Func1', () async {
+      var callCount = 0;
+      final func =
+          Func1((int x) async {
+            callCount++;
+            return x;
+          }).rateLimit(
+            maxCalls: 2,
+            window: const Duration(milliseconds: 200),
+            strategy: RateLimitStrategy.tokenBucket,
+          );
+
+      await Future.wait([func(1), func(2)]);
+      expect(callCount, equals(2));
+    });
+
+    test('leaky bucket with Func1', () async {
+      var callCount = 0;
+      final func =
+          Func1((String s) async {
+                callCount++;
+                return s;
+              }).rateLimit(
+                maxCalls: 3,
+                window: const Duration(milliseconds: 300),
+                strategy: RateLimitStrategy.leakyBucket,
+              )
+              as RateLimitExtension1<String, String>;
+
+      final futures = [func('a'), func('b'), func('c')];
+      await Future.wait(futures);
+
+      expect(callCount, equals(3));
+      func.dispose();
+    });
+
+    test('sliding window with Func1', () async {
+      var callCount = 0;
+      final func =
+          Func1((int x) async {
+            callCount++;
+            return x;
+          }).rateLimit(
+            maxCalls: 2,
+            window: const Duration(milliseconds: 200),
+            strategy: RateLimitStrategy.slidingWindow,
+          );
+
+      await func(1);
+      await func(2);
+
+      expect(callCount, equals(2));
+    });
+
+    test('fixed window with Func1', () async {
+      var callCount = 0;
+      final func =
+          Func1((int x) async {
+            callCount++;
+            return x;
+          }).rateLimit(
+            maxCalls: 2,
+            window: const Duration(milliseconds: 200),
+            strategy: RateLimitStrategy.fixedWindow,
+          );
+
+      await func(1);
+      await func(2);
+
+      expect(callCount, equals(2));
+    });
+
+    test('reset works for Func1', () async {
+      final func =
+          Func1((int x) async => x).rateLimit(
+                maxCalls: 1,
+                window: const Duration(seconds: 10),
+              )
+              as RateLimitExtension1<int, int>;
+
+      await func(1);
+      func.reset();
+      await func(2);
+
+      // Should work without delay due to reset
+    });
+  });
+
+  group('RateLimitExtension2 - Different Strategies', () {
+    test('token bucket with Func2', () async {
+      var callCount = 0;
+      final func =
+          Func2((int a, int b) async {
+            callCount++;
+            return a + b;
+          }).rateLimit(
+            maxCalls: 2,
+            window: const Duration(milliseconds: 200),
+            strategy: RateLimitStrategy.tokenBucket,
+          );
+
+      await Future.wait([func(1, 2), func(3, 4)]);
+      expect(callCount, equals(2));
+    });
+
+    test('leaky bucket with Func2', () async {
+      var callCount = 0;
+      final func =
+          Func2((int a, int b) async {
+                callCount++;
+                return a + b;
+              }).rateLimit(
+                maxCalls: 3,
+                window: const Duration(milliseconds: 300),
+                strategy: RateLimitStrategy.leakyBucket,
+              )
+              as RateLimitExtension2<int, int, int>;
+
+      final futures = [func(1, 1), func(2, 2), func(3, 3)];
+      await Future.wait(futures);
+
+      expect(callCount, equals(3));
+      func.dispose();
+    });
+
+    test('sliding window with Func2', () async {
+      var callCount = 0;
+      final func =
+          Func2((int a, int b) async {
+            callCount++;
+            return a + b;
+          }).rateLimit(
+            maxCalls: 2,
+            window: const Duration(milliseconds: 200),
+            strategy: RateLimitStrategy.slidingWindow,
+          );
+
+      await func(1, 2);
+      await func(3, 4);
+
+      expect(callCount, equals(2));
+    });
+
+    test('fixed window with Func2', () async {
+      var callCount = 0;
+      final func =
+          Func2((int a, int b) async {
+            callCount++;
+            return a + b;
+          }).rateLimit(
+            maxCalls: 2,
+            window: const Duration(milliseconds: 200),
+            strategy: RateLimitStrategy.fixedWindow,
+          );
+
+      await func(1, 2);
+      await func(3, 4);
+
+      expect(callCount, equals(2));
+    });
+
+    test('reset works for Func2', () async {
+      final func =
+          Func2((int a, int b) async => a + b).rateLimit(
+                maxCalls: 1,
+                window: const Duration(seconds: 10),
+              )
+              as RateLimitExtension2<int, int, int>;
+
+      await func(1, 2);
+      func.reset();
+      await func(3, 4);
+
+      // Should work without delay due to reset
+    });
+
+    test('dispose works for Func2', () async {
+      final func =
+          Func2((int a, int b) async => a + b).rateLimit(
+                  maxCalls: 3,
+                  window: const Duration(milliseconds: 300),
+                  strategy: RateLimitStrategy.leakyBucket,
+                )
+                as RateLimitExtension2<int, int, int>
+            ..dispose();
+
+      // No exceptions should occur on dispose
     });
   });
 }

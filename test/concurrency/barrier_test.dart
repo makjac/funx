@@ -1,3 +1,7 @@
+// ignore_for_file: inference_failure_on_untyped_parameter test
+
+import 'dart:async';
+
 import 'package:funx/src/concurrency/barrier.dart';
 import 'package:funx/src/core/func.dart' as funx;
 import 'package:test/test.dart';
@@ -54,6 +58,106 @@ void main() {
 
       expect(barrier.arrivedCount, equals(0));
     });
+
+    test('non-cyclic barrier becomes broken after first use', () async {
+      final barrier = Barrier(parties: 2);
+
+      await Future.wait([
+        barrier.await_(),
+        barrier.await_(),
+      ]);
+
+      expect(barrier.isBroken, isTrue);
+      expect(barrier.await_, throwsStateError);
+    });
+
+    test('reset() clears broken state', () async {
+      final barrier = Barrier(parties: 2);
+
+      await Future.wait([
+        barrier.await_(),
+        barrier.await_(),
+      ]);
+
+      expect(barrier.isBroken, isTrue);
+
+      barrier.reset();
+
+      expect(barrier.isBroken, isFalse);
+      expect(barrier.arrivedCount, equals(0));
+
+      // Should work after reset
+      await Future.wait([
+        barrier.await_(),
+        barrier.await_(),
+      ]);
+
+      expect(barrier.arrivedCount, equals(2));
+    });
+
+    test('executes barrierAction when all parties arrive', () async {
+      var actionExecuted = false;
+      final barrier = Barrier(
+        parties: 3,
+        barrierAction: () async {
+          actionExecuted = true;
+        },
+      );
+
+      await Future.wait([
+        barrier.await_(),
+        barrier.await_(),
+        barrier.await_(),
+      ]);
+
+      expect(actionExecuted, isTrue);
+    });
+
+    test('timeout breaks barrier and calls onTimeout', () async {
+      var timeoutCalled = false;
+      final barrier = Barrier(
+        parties: 3,
+        timeout: const Duration(milliseconds: 100),
+        onTimeout: () {
+          timeoutCalled = true;
+        },
+      );
+
+      // Only 2 parties arrive, barrier should timeout
+      final future1 = barrier.await_();
+      final future2 = barrier.await_();
+
+      await expectLater(future1, throwsA(isA<TimeoutException>()));
+      await expectLater(future2, throwsA(isA<TimeoutException>()));
+
+      expect(timeoutCalled, isTrue);
+      expect(barrier.isBroken, isTrue);
+      expect(barrier.arrivedCount, equals(0));
+    });
+
+    test('timeout completes waiting parties with error', () async {
+      final barrier = Barrier(
+        parties: 3,
+        timeout: const Duration(milliseconds: 100),
+      );
+
+      var error1Caught = false;
+      var error2Caught = false;
+
+      final future1 = barrier.await_().catchError((e) {
+        error1Caught = e is TimeoutException;
+      });
+
+      final future2 = barrier.await_().catchError((e) {
+        error2Caught = e is TimeoutException;
+      });
+
+      await Future.wait([future1, future2]);
+
+      expect(error1Caught, isTrue);
+      expect(error2Caught, isTrue);
+      expect(barrier.isBroken, isTrue);
+    });
   });
 
   group('BarrierExtension', () {
@@ -80,6 +184,14 @@ void main() {
 
       expect(results.length, equals(3));
     });
+
+    test('provides access to barrier instance', () async {
+      final barrier = Barrier(parties: 2);
+      final wrapped = funx.Func(() async => 42).barrier(barrier);
+
+      expect((wrapped as BarrierExtension).instance, equals(barrier));
+      expect((wrapped as BarrierExtension).instance.parties, equals(2));
+    });
   });
 
   group('BarrierExtension1', () {
@@ -97,6 +209,13 @@ void main() {
 
       expect(results, equals([10, 20]));
     });
+
+    test('provides access to barrier instance', () async {
+      final barrier = Barrier(parties: 2);
+      final wrapped = funx.Func1<int, int>((n) async => n).barrier(barrier);
+
+      expect((wrapped as BarrierExtension1).instance, equals(barrier));
+    });
   });
 
   group('BarrierExtension2', () {
@@ -113,6 +232,15 @@ void main() {
       ]);
 
       expect(results, equals([3, 7]));
+    });
+
+    test('provides access to barrier instance', () async {
+      final barrier = Barrier(parties: 2);
+      final wrapped = funx.Func2<int, int, int>(
+        (a, b) async => a + b,
+      ).barrier(barrier);
+
+      expect((wrapped as BarrierExtension2).instance, equals(barrier));
     });
   });
 }

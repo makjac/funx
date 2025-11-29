@@ -56,6 +56,58 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 10));
       expect(callbackCalled, isTrue);
     });
+
+    test('isComplete returns correct status', () async {
+      final latch = CountdownLatch(count: 2);
+
+      expect(latch.isComplete, isFalse);
+
+      latch.countDown();
+      expect(latch.isComplete, isFalse);
+
+      latch.countDown();
+      expect(latch.isComplete, isTrue);
+    });
+
+    test('await_ returns immediately when already complete', () async {
+      final latch = CountdownLatch(count: 1)..countDown();
+
+      expect(latch.isComplete, isTrue);
+
+      final result = await latch.await_();
+      expect(result, isTrue);
+    });
+
+    test('await_ respects timeout', () async {
+      final latch = CountdownLatch(count: 2)..countDown();
+
+      final result = await latch.await_(
+        timeout: const Duration(milliseconds: 100),
+      );
+
+      expect(result, isFalse); // Should timeout
+      expect(latch.count, equals(1));
+    });
+
+    test('throws StateError when counting down below zero', () async {
+      final latch = CountdownLatch(count: 1)..countDown();
+
+      expect(latch.countDown.call, throwsStateError);
+    });
+
+    test('await_ with timeout returns true when completed', () async {
+      final latch = CountdownLatch(count: 1);
+
+      final awaitFuture = latch.await_(
+        timeout: const Duration(milliseconds: 200),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      latch.countDown();
+
+      final result = await awaitFuture;
+      expect(result, isTrue);
+    });
   });
 
   group('CountdownLatchExtension', () {
@@ -75,6 +127,13 @@ void main() {
       await func();
       expect(latch.count, equals(0));
     });
+
+    test('provides access to latch instance', () async {
+      final latch = CountdownLatch(count: 2);
+      final wrapped = funx.Func(() async => 42).countdownLatch(latch);
+
+      expect((wrapped as CountdownLatchExtension).latch, equals(latch));
+    });
   });
 
   group('CountdownLatchExtension1', () {
@@ -91,6 +150,15 @@ void main() {
       await func(10);
       expect(latch.count, equals(0));
     });
+
+    test('provides access to latch instance', () async {
+      final latch = CountdownLatch(count: 2);
+      final wrapped = funx.Func1<int, int>(
+        (n) async => n * 2,
+      ).countdownLatch(latch);
+
+      expect((wrapped as CountdownLatchExtension1).latch, equals(latch));
+    });
   });
 
   group('CountdownLatchExtension2', () {
@@ -106,6 +174,15 @@ void main() {
 
       await func(3, 4);
       expect(latch.count, equals(0));
+    });
+
+    test('provides access to latch instance', () async {
+      final latch = CountdownLatch(count: 2);
+      final wrapped = funx.Func2<int, int, int>(
+        (a, b) async => a + b,
+      ).countdownLatch(latch);
+
+      expect((wrapped as CountdownLatchExtension2).latch, equals(latch));
     });
   });
 }

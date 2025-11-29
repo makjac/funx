@@ -207,6 +207,97 @@ void main() {
       expect(metrics.errorCount, 1);
       expect(metrics.successRate, 0.5);
     });
+
+    test('calls onMetricsUpdate callback', () async {
+      obs.Metrics? updated;
+
+      final func =
+          funx.Func1<int, int>((n) async {
+            return n * 2;
+          }).monitorObservability(
+            onMetricsUpdate: (metrics) {
+              updated = metrics;
+            },
+          );
+
+      await func(5);
+
+      expect(updated, isNotNull);
+      expect(updated!.executionCount, 1);
+    });
+
+    test('resets metrics correctly', () async {
+      final func = funx.Func1<int, int>((n) async {
+        return n * 2;
+      }).monitorObservability();
+
+      final ext = func as obs.MonitorExtension1<int, int>;
+
+      await func(5);
+      await func(10);
+      expect(ext.getMetrics().executionCount, 2);
+
+      ext.resetMetrics();
+      expect(ext.getMetrics().executionCount, 0);
+      expect(ext.getMetrics().errorCount, 0);
+      expect(ext.getMetrics().totalDuration, Duration.zero);
+      expect(ext.getMetrics().lastDuration, isNull);
+      expect(ext.getMetrics().lastError, isNull);
+      expect(ext.getMetrics().lastExecutionTime, isNull);
+    });
+
+    test('tracks execution duration for Func1', () async {
+      final func = funx.Func1<int, int>((n) async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return n * 2;
+      }).monitorObservability();
+
+      final ext = func as obs.MonitorExtension1<int, int>;
+
+      await func(5);
+
+      final metrics = ext.getMetrics();
+      expect(metrics.lastDuration, isNotNull);
+      expect(metrics.lastDuration!.inMilliseconds, greaterThanOrEqualTo(40));
+      expect(metrics.totalDuration, metrics.lastDuration);
+    });
+
+    test('tracks last error for Func1', () async {
+      final func = funx.Func1<int, int>((n) async {
+        throw Exception('Func1 error');
+      }).monitorObservability();
+
+      final ext = func as obs.MonitorExtension1<int, int>;
+
+      try {
+        await func(5);
+      } catch (_) {}
+
+      final metrics = ext.getMetrics();
+      expect(metrics.lastError, isA<Exception>());
+      expect(metrics.lastError.toString(), contains('Func1 error'));
+    });
+
+    test('calls onMetricsUpdate on error for Func1', () async {
+      obs.Metrics? updated;
+
+      final func =
+          funx.Func1<int, int>((n) async {
+            throw Exception('error');
+          }).monitorObservability(
+            onMetricsUpdate: (metrics) {
+              updated = metrics;
+            },
+          );
+
+      try {
+        await func(5);
+      } catch (_) {}
+
+      expect(updated, isNotNull);
+      expect(updated!.executionCount, 1);
+      expect(updated!.errorCount, 1);
+    });
   });
 
   group('MonitorExtension2', () {
@@ -223,6 +314,116 @@ void main() {
       final metrics = ext.getMetrics();
       expect(metrics.executionCount, 2);
       expect(metrics.successRate, 1.0);
+    });
+
+    test('calls onMetricsUpdate callback', () async {
+      obs.Metrics? updated;
+
+      final func =
+          funx.Func2<int, int, int>((a, b) async {
+            return a + b;
+          }).monitorObservability(
+            onMetricsUpdate: (metrics) {
+              updated = metrics;
+            },
+          );
+
+      await func(5, 10);
+
+      expect(updated, isNotNull);
+      expect(updated!.executionCount, 1);
+    });
+
+    test('resets metrics correctly', () async {
+      final func = funx.Func2<int, int, int>((a, b) async {
+        return a + b;
+      }).monitorObservability();
+
+      final ext = func as obs.MonitorExtension2<int, int, int>;
+
+      await func(5, 10);
+      await func(3, 7);
+      expect(ext.getMetrics().executionCount, 2);
+
+      ext.resetMetrics();
+      expect(ext.getMetrics().executionCount, 0);
+      expect(ext.getMetrics().errorCount, 0);
+      expect(ext.getMetrics().totalDuration, Duration.zero);
+      expect(ext.getMetrics().lastDuration, isNull);
+      expect(ext.getMetrics().lastError, isNull);
+      expect(ext.getMetrics().lastExecutionTime, isNull);
+    });
+
+    test('tracks execution duration for Func2', () async {
+      final func = funx.Func2<int, int, int>((a, b) async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return a + b;
+      }).monitorObservability();
+
+      final ext = func as obs.MonitorExtension2<int, int, int>;
+
+      await func(5, 10);
+
+      final metrics = ext.getMetrics();
+      expect(metrics.lastDuration, isNotNull);
+      expect(metrics.lastDuration!.inMilliseconds, greaterThanOrEqualTo(40));
+      expect(metrics.totalDuration, metrics.lastDuration);
+    });
+
+    test('tracks last error for Func2', () async {
+      final func = funx.Func2<int, int, int>((a, b) async {
+        throw Exception('Func2 error');
+      }).monitorObservability();
+
+      final ext = func as obs.MonitorExtension2<int, int, int>;
+
+      try {
+        await func(5, 10);
+      } catch (_) {}
+
+      final metrics = ext.getMetrics();
+      expect(metrics.lastError, isA<Exception>());
+      expect(metrics.lastError.toString(), contains('Func2 error'));
+    });
+
+    test('tracks errors correctly for Func2', () async {
+      final func = funx.Func2<int, int, int>((a, b) async {
+        if (a < 0) throw Exception('negative');
+        return a + b;
+      }).monitorObservability();
+
+      final ext = func as obs.MonitorExtension2<int, int, int>;
+
+      await func(5, 10);
+      try {
+        await func(-1, 5);
+      } catch (_) {}
+
+      final metrics = ext.getMetrics();
+      expect(metrics.executionCount, 2);
+      expect(metrics.errorCount, 1);
+      expect(metrics.successRate, 0.5);
+    });
+
+    test('calls onMetricsUpdate on error for Func2', () async {
+      obs.Metrics? updated;
+
+      final func =
+          funx.Func2<int, int, int>((a, b) async {
+            throw Exception('error');
+          }).monitorObservability(
+            onMetricsUpdate: (metrics) {
+              updated = metrics;
+            },
+          );
+
+      try {
+        await func(5, 10);
+      } catch (_) {}
+
+      expect(updated, isNotNull);
+      expect(updated!.executionCount, 1);
+      expect(updated!.errorCount, 1);
     });
   });
 

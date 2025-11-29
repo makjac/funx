@@ -106,6 +106,42 @@ void main() {
       expect(timeoutOccurred, isTrue);
       rwLock.releaseRead();
     });
+
+    test('readLock and writeLock helper methods', () async {
+      final rwLock = RWLock();
+
+      final readResult = await rwLock.readLock(() async {
+        return 'read-data';
+      });
+
+      expect(readResult, equals('read-data'));
+      expect(rwLock.readerCount, equals(0));
+
+      final writeResult = await rwLock.writeLock(() async {
+        return 'write-data';
+      });
+
+      expect(writeResult, equals('write-data'));
+      expect(rwLock.isWriting, isFalse);
+    });
+
+    test('tracks readerCount', () async {
+      final rwLock = RWLock();
+
+      expect(rwLock.readerCount, equals(0));
+
+      await rwLock.acquireRead();
+      expect(rwLock.readerCount, equals(1));
+
+      await rwLock.acquireRead();
+      expect(rwLock.readerCount, equals(2));
+
+      rwLock.releaseRead();
+      expect(rwLock.readerCount, equals(1));
+
+      rwLock.releaseRead();
+      expect(rwLock.readerCount, equals(0));
+    });
   });
 
   group('ReadLockExtension', () {
@@ -132,6 +168,13 @@ void main() {
 
       expect(maxConcurrent, greaterThan(1));
     });
+
+    test('provides access to rwLock instance', () async {
+      final rwLock = RWLock();
+      final wrapped = funx.Func(() async => 'data').readLock(rwLock);
+
+      expect((wrapped as ReadLockExtension).rwLock, equals(rwLock));
+    });
   });
 
   group('ReadLockExtension1', () {
@@ -151,6 +194,15 @@ void main() {
 
       expect(results.length, equals(3));
     });
+
+    test('provides access to rwLock instance', () async {
+      final rwLock = RWLock();
+      final wrapped = funx.Func1<int, String>(
+        (n) async => 'data-$n',
+      ).readLock(rwLock);
+
+      expect((wrapped as ReadLockExtension1).rwLock, equals(rwLock));
+    });
   });
 
   group('ReadLockExtension2', () {
@@ -169,6 +221,15 @@ void main() {
       ]);
 
       expect(results, equals([3, 7, 11]));
+    });
+
+    test('provides access to rwLock instance', () async {
+      final rwLock = RWLock();
+      final wrapped = funx.Func2<int, int, int>(
+        (a, b) async => a + b,
+      ).readLock(rwLock);
+
+      expect((wrapped as ReadLockExtension2).rwLock, equals(rwLock));
     });
   });
 
@@ -191,6 +252,13 @@ void main() {
 
       expect(executionOrder, equals([1, 2, 3]));
     });
+
+    test('provides access to rwLock instance', () async {
+      final rwLock = RWLock();
+      final wrapped = funx.Func(() async => 'data').writeLock(rwLock);
+
+      expect((wrapped as WriteLockExtension).rwLock, equals(rwLock));
+    });
   });
 
   group('WriteLockExtension1', () {
@@ -210,6 +278,15 @@ void main() {
       await func(3);
 
       expect(executionOrder, equals([1, 2, 3]));
+    });
+
+    test('provides access to rwLock instance', () async {
+      final rwLock = RWLock();
+      final wrapped = funx.Func1<int, int>(
+        (n) async => n * 2,
+      ).writeLock(rwLock);
+
+      expect((wrapped as WriteLockExtension1).rwLock, equals(rwLock));
     });
   });
 
@@ -231,6 +308,15 @@ void main() {
       await func(5, 6);
 
       expect(results, equals([3, 7, 11]));
+    });
+
+    test('provides access to rwLock instance', () async {
+      final rwLock = RWLock();
+      final wrapped = funx.Func2<int, int, int>(
+        (a, b) async => a + b,
+      ).writeLock(rwLock);
+
+      expect((wrapped as WriteLockExtension2).rwLock, equals(rwLock));
     });
   });
 

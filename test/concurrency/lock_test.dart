@@ -162,6 +162,46 @@ void main() {
 
       await future1;
     });
+
+    test('provides access to isLocked property', () async {
+      final func = funx.Func(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return 42;
+      }).lock();
+
+      final wrapped = func as LockExtension;
+      expect(wrapped.isLocked, isFalse);
+
+      final future = func();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(wrapped.isLocked, isTrue);
+
+      await future;
+      expect(wrapped.isLocked, isFalse);
+    });
+
+    test(
+      'handles timeout without throwing when throwOnTimeout is false',
+      () async {
+        final func =
+            funx.Func(() async {
+              await Future<void>.delayed(const Duration(milliseconds: 100));
+              return 42;
+            }).lock(
+              timeout: const Duration(milliseconds: 50),
+              throwOnTimeout: false,
+            );
+
+        final future1 = func();
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        // Second call should not throw even on timeout
+        final result = await func();
+        expect(result, equals(42));
+
+        await future1;
+      },
+    );
   });
 
   group('LockExtension1', () {
@@ -200,10 +240,46 @@ void main() {
       final future1 = func(1);
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
+      expect(blockedCount, equals(0));
+
+      await func(2);
+      expect(blockedCount, equals(1));
+
+      await future1;
+    });
+
+    test('provides access to isLocked property', () async {
+      final func = funx.Func1<int, int>((n) async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return n * 2;
+      }).lock();
+
+      final wrapped = func as LockExtension1;
+      expect(wrapped.isLocked, isFalse);
+
+      final future = func(5);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(wrapped.isLocked, isTrue);
+
+      await future;
+      expect(wrapped.isLocked, isFalse);
+    });
+
+    test('handles timeout without throwing', () async {
+      final func =
+          funx.Func1<int, int>((n) async {
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+            return n * 2;
+          }).lock(
+            timeout: const Duration(milliseconds: 50),
+            throwOnTimeout: false,
+          );
+
+      final future1 = func(1);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
       await func(2);
       await future1;
-
-      expect(blockedCount, equals(1));
     });
   });
 
@@ -244,6 +320,23 @@ void main() {
       expect(func(3, 4), throwsA(isA<TimeoutException>()));
 
       await future1;
+    });
+
+    test('provides access to isLocked property', () async {
+      final func = funx.Func2<int, int, int>((a, b) async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return a + b;
+      }).lock();
+
+      final wrapped = func as LockExtension2;
+      expect(wrapped.isLocked, isFalse);
+
+      final future = func(1, 2);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(wrapped.isLocked, isTrue);
+
+      await future;
+      expect(wrapped.isLocked, isFalse);
     });
   });
 

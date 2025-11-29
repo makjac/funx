@@ -1,5 +1,5 @@
 name: funx
-description: A starting point for Dart libraries or applications.
+description: A comprehensive functional programming library for Dart with 46+ utilities for error handling, concurrency, performance optimization, and reliability patterns. Zero dependencies.
 version: 1.0.0
 repository: https://github.com/makjac/funx
 

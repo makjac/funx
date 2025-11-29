@@ -167,5 +167,126 @@ void main() {
 
       expect(results, equals([3, 7, 11]));
     });
+
+    test('flush() works for Func2', () async {
+      var batchCount = 0;
+      final executor = Func1((List<(int, int)> pairs) async {
+        batchCount++;
+      });
+
+      final batched =
+          Func2((int a, int b) async => a + b).batch(
+                executor: executor,
+                maxSize: 10,
+                maxWait: const Duration(seconds: 10),
+              )
+              as BatchExtension2<int, int, int>;
+
+      unawaited(batched(1, 2));
+      await batched.flush();
+
+      expect(batchCount, equals(1));
+    });
+
+    test('cancel() works for Func2', () async {
+      var batchCount = 0;
+      final executor = Func1((List<(int, int)> pairs) async {
+        batchCount++;
+      });
+
+      final batched =
+          Func2((int a, int b) async => a + b).batch(
+                executor: executor,
+                maxSize: 10,
+                maxWait: const Duration(seconds: 10),
+              )
+              as BatchExtension2<int, int, int>;
+
+      final future = batched(1, 2);
+      batched.cancel();
+
+      await expectLater(future, throwsStateError);
+      expect(batchCount, equals(0));
+    });
+  });
+
+  group('BatchExtension - Error handling', () {
+    test('handles individual item errors', () async {
+      final executor = Func1((List<int> items) async {});
+
+      final batched =
+          Func1((int x) async {
+            if (x == 2) throw Exception('Error for 2');
+            return x * 2;
+          }).batch(
+            executor: executor,
+            maxSize: 3,
+            maxWait: const Duration(seconds: 1),
+          );
+
+      final futures = [
+        batched(1),
+        batched(2),
+        batched(3),
+      ];
+
+      final results = await Future.wait(
+        futures.map((f) => f.catchError((e) => -1)),
+      );
+
+      expect(results[0], equals(2));
+      expect(results[1], equals(-1)); // Error
+      expect(results[2], equals(6));
+    });
+
+    test('fails all if batch executor fails', () async {
+      final executor = Func1((List<int> items) async {
+        throw Exception('Batch failed');
+      });
+
+      final batched = Func1((int x) async => x * 2).batch(
+        executor: executor,
+        maxSize: 3,
+        maxWait: const Duration(seconds: 1),
+      );
+
+      final futures = [
+        batched(1),
+        batched(2),
+        batched(3),
+      ];
+
+      for (final future in futures) {
+        await expectLater(future, throwsException);
+      }
+    });
+
+    test('handles individual item errors for Func2', () async {
+      final executor = Func1((List<(int, int)> pairs) async {});
+
+      final batched =
+          Func2((int a, int b) async {
+            if (a == 2) throw Exception('Error for 2');
+            return a + b;
+          }).batch(
+            executor: executor,
+            maxSize: 3,
+            maxWait: const Duration(seconds: 1),
+          );
+
+      final futures = [
+        batched(1, 10),
+        batched(2, 20),
+        batched(3, 30),
+      ];
+
+      final results = await Future.wait(
+        futures.map((f) => f.catchError((e) => -1)),
+      );
+
+      expect(results[0], equals(11));
+      expect(results[1], equals(-1)); // Error
+      expect(results[2], equals(33));
+    });
   });
 }

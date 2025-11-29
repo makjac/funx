@@ -1,6 +1,5 @@
 ## 1.0.0
 
-- Initial stable release
 - Complete implementation of all functional programming utilities
 - Categories: error handling, concurrency, performance, reliability, timing, transformation, validation, observability, orchestration, state management, control flow
 - Comprehensive test coverage

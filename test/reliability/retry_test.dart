@@ -142,6 +142,17 @@ void main() {
         greaterThanOrEqualTo(180),
       ); // Should be ~2x first delay
     });
+
+    test('works with maxAttempts=1', () async {
+      var attempts = 0;
+      final func = funx.Func<String>(() async {
+        attempts++;
+        throw Exception('Failed');
+      }).retry(maxAttempts: 1);
+
+      await expectLater(func(), throwsException);
+      expect(attempts, equals(1));
+    });
   });
 
   group('RetryExtension1', () {
@@ -159,6 +170,63 @@ void main() {
       expect(result, equals('value: 42'));
       expect(attempts, equals(2));
     });
+
+    test('respects retryIf for Func1', () async {
+      var attempts = 0;
+      final func =
+          funx.Func1<int, String>((value) async {
+            attempts++;
+            throw StateError('Should not retry');
+          }).retry(
+            maxAttempts: 3,
+            retryIf: (error) => error is FormatException,
+          );
+
+      await expectLater(func(42), throwsStateError);
+      expect(attempts, equals(1));
+    });
+
+    test('uses backoff for Func1', () async {
+      var attempts = 0;
+      final timestamps = <DateTime>[];
+
+      final func =
+          funx.Func1<int, String>((value) async {
+            attempts++;
+            timestamps.add(DateTime.now());
+            if (attempts < 3) {
+              throw Exception('Failed');
+            }
+            return 'success';
+          }).retry(
+            maxAttempts: 3,
+            backoff: const ConstantBackoff(Duration(milliseconds: 50)),
+          );
+
+      await func(42);
+      expect(timestamps.length, equals(3));
+    });
+
+    test('calls onRetry for Func1', () async {
+      var attempts = 0;
+      final retryCallbacks = <int>[];
+
+      final func =
+          funx.Func1<int, String>((value) async {
+            attempts++;
+            if (attempts < 3) {
+              throw Exception('Failed');
+            }
+            return 'success';
+          }).retry(
+            maxAttempts: 3,
+            backoff: const ConstantBackoff(Duration(milliseconds: 10)),
+            onRetry: (attempt, error) => retryCallbacks.add(attempt),
+          );
+
+      await func(42);
+      expect(retryCallbacks, equals([1, 2]));
+    });
   });
 
   group('RetryExtension2', () {
@@ -175,6 +243,70 @@ void main() {
       final result = await func(42, 'answer');
       expect(result, equals('answer: 42'));
       expect(attempts, equals(2));
+    });
+
+    test('respects retryIf for Func2', () async {
+      var attempts = 0;
+      final func =
+          funx.Func2<int, String, String>((n, str) async {
+            attempts++;
+            throw ArgumentError('Should not retry');
+          }).retry(
+            maxAttempts: 3,
+            retryIf: (error) => error is StateError,
+          );
+
+      await expectLater(func(42, 'test'), throwsArgumentError);
+      expect(attempts, equals(1));
+    });
+
+    test('calls onRetry for Func2', () async {
+      var attempts = 0;
+      final retryCallbacks = <int>[];
+
+      final func =
+          funx.Func2<int, String, String>((n, str) async {
+            attempts++;
+            if (attempts < 3) {
+              throw Exception('Failed');
+            }
+            return 'success';
+          }).retry(
+            maxAttempts: 3,
+            backoff: const ConstantBackoff(Duration(milliseconds: 10)),
+            onRetry: (attempt, error) => retryCallbacks.add(attempt),
+          );
+
+      await func(42, 'test');
+      expect(retryCallbacks, equals([1, 2]));
+    });
+
+    test('uses backoff for Func2', () async {
+      var attempts = 0;
+      final timestamps = <DateTime>[];
+
+      final func =
+          funx.Func2<int, String, String>((n, str) async {
+            attempts++;
+            timestamps.add(DateTime.now());
+            if (attempts < 3) {
+              throw Exception('Failed');
+            }
+            return 'success';
+          }).retry(
+            maxAttempts: 3,
+            backoff: const ConstantBackoff(Duration(milliseconds: 50)),
+          );
+
+      await func(42, 'test');
+      expect(timestamps.length, equals(3));
+
+      // Check that delays were applied
+      final delay1 = timestamps[1].difference(timestamps[0]);
+      final delay2 = timestamps[2].difference(timestamps[1]);
+
+      expect(delay1.inMilliseconds, greaterThanOrEqualTo(40));
+      expect(delay2.inMilliseconds, greaterThanOrEqualTo(40));
     });
   });
 }

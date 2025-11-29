@@ -202,6 +202,61 @@ void main() {
 
       expect(callCount, equals(3)); // (3,4), (5,6), (3,4) again
     });
+
+    test('respects TTL for Func2', () async {
+      var callCount = 0;
+
+      final func =
+          Func2((int a, int b) async {
+                return ++callCount;
+              }).cacheAside(
+                ttl: const Duration(milliseconds: 100),
+              )
+              as CacheAsideExtension2<int, int, int>;
+
+      await func(3, 4);
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      await func(3, 4);
+
+      expect(callCount, equals(2)); // Expired and reloaded
+    });
+
+    test('backgroundRefresh works for Func2', () async {
+      var callCount = 0;
+
+      final func =
+          Func2((int a, int b) async {
+                return ++callCount;
+              }).cacheAside(
+                ttl: const Duration(milliseconds: 100),
+                refreshStrategy: RefreshStrategy.backgroundRefresh,
+              )
+              as CacheAsideExtension2<int, int, int>;
+
+      final result1 = await func(3, 4);
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      final result2 = await func(3, 4);
+
+      expect(result1, equals(1));
+      expect(result2, equals(1)); // Returns stale value
+    });
+
+    test('clearCache removes all entries for Func2', () async {
+      var callCount = 0;
+
+      final func =
+          Func2((int a, int b) async {
+                return ++callCount;
+              }).cacheAside()
+              as CacheAsideExtension2<int, int, int>;
+
+      await func(3, 4);
+      await func(5, 6);
+      func.clearCache();
+      await func(3, 4);
+
+      expect(callCount, equals(3));
+    });
   });
 
   group('InMemoryCache', () {
