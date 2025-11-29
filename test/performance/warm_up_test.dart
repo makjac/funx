@@ -80,6 +80,22 @@ void main() {
       await func();
       expect(callCount, equals(1)); // Called on first call
     });
+
+    test('returns cached result after first call', () async {
+      var callCount = 0;
+      final func = Func(() async {
+        callCount++;
+        return 42;
+      }).warmUp(trigger: WarmUpTrigger.onFirstCall);
+
+      final result1 = await func();
+      expect(result1, equals(42));
+      expect(callCount, equals(1));
+
+      final result2 = await func();
+      expect(result2, equals(42));
+      expect(callCount, equals(1)); // Still 1, uses cache
+    });
   });
 
   group('WarmUpExtension - manual trigger', () {
@@ -97,6 +113,43 @@ void main() {
 
       await func();
       expect(callCount, equals(1)); // Called on actual call only
+    });
+
+    test('triggerWarmUp() manually warms up the function', () async {
+      var callCount = 0;
+      final func =
+          Func(() async {
+                callCount++;
+                return 42;
+              }).warmUp(trigger: WarmUpTrigger.manual)
+              as WarmUpExtension<int>;
+
+      await func.triggerWarmUp();
+      expect(callCount, equals(1));
+
+      final result = await func();
+      expect(result, equals(42));
+      expect(callCount, equals(1)); // Uses cached result
+    });
+
+    test('handles errors during warm-up gracefully', () async {
+      var callCount = 0;
+      final func =
+          Func(() async {
+                callCount++;
+                if (callCount == 1) {
+                  throw Exception('Warm-up failed');
+                }
+                return 42;
+              }).warmUp(trigger: WarmUpTrigger.onInit)
+              as WarmUpExtension<int>;
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Warm-up failed, should execute normally on call
+      final result = await func();
+      expect(result, equals(42));
+      expect(callCount, equals(2));
     });
   });
 
@@ -138,6 +191,67 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(callCount, equals(3));
+    });
+
+    test('warmUpWith handles errors gracefully', () async {
+      var callCount = 0;
+      final func =
+          Func1((int x) async {
+                callCount++;
+                if (callCount == 1) {
+                  throw Exception('Error');
+                }
+                return x * 2;
+              }).warmUp(trigger: WarmUpTrigger.manual)
+              as WarmUpExtension1<int, int>;
+
+      await func.warmUpWith(5);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Error was swallowed, normal call should work
+      final result = await func(5);
+      expect(result, equals(10));
+    });
+
+    test('keepFresh refreshes cached values periodically', () async {
+      var callCount = 0;
+      final func =
+          Func1((int x) async {
+                callCount++;
+                return x * callCount;
+              }).warmUp(
+                trigger: WarmUpTrigger.manual,
+                keepFresh: const Duration(milliseconds: 100),
+              )
+              as WarmUpExtension1<int, int>;
+
+      await func.warmUpWith(5);
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      expect(callCount, greaterThan(1)); // Refreshed
+      func.dispose();
+    });
+
+    test('dispose stops refresh timers', () async {
+      var callCount = 0;
+      final func =
+          Func1((int x) async {
+                callCount++;
+                return x * 2;
+              }).warmUp(
+                trigger: WarmUpTrigger.manual,
+                keepFresh: const Duration(milliseconds: 50),
+              )
+              as WarmUpExtension1<int, int>;
+
+      await func.warmUpWith(5);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      final countBeforeDispose = callCount;
+
+      func.dispose();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(callCount, equals(countBeforeDispose));
     });
 
     test('onFirstCall warms up with first argument', () async {
@@ -201,6 +315,48 @@ void main() {
       expect(callCount, greaterThan(initialCount)); // Refreshed
 
       func.dispose();
+    });
+
+    test('warmUpWith handles errors gracefully', () async {
+      var callCount = 0;
+      final func =
+          Func2((int a, int b) async {
+                callCount++;
+                if (callCount == 1) {
+                  throw Exception('Error');
+                }
+                return a + b;
+              }).warmUp(trigger: WarmUpTrigger.manual)
+              as WarmUpExtension2<int, int, int>;
+
+      await func.warmUpWith(3, 4);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Error was swallowed, normal call should work
+      final result = await func(3, 4);
+      expect(result, equals(7));
+    });
+
+    test('dispose stops all refresh timers', () async {
+      var callCount = 0;
+      final func =
+          Func2((int a, int b) async {
+                callCount++;
+                return a + b;
+              }).warmUp(
+                trigger: WarmUpTrigger.manual,
+                keepFresh: const Duration(milliseconds: 50),
+              )
+              as WarmUpExtension2<int, int, int>;
+
+      await func.warmUpWith(3, 4);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      final countBeforeDispose = callCount;
+
+      func.dispose();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(callCount, equals(countBeforeDispose));
     });
   });
 }
