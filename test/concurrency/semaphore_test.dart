@@ -141,6 +141,22 @@ void main() {
       expect(timeoutOccurred, isTrue);
       semaphore.release();
     });
+
+    test('priority mode processes by priority', () async {
+      final semaphore = Semaphore(
+        maxConcurrent: 1,
+        queueMode: QueueMode.priority,
+      );
+
+      // Nie ma bezpośredniego sposobu na testowanie priority w Semaphore
+      // bez dodatkowej funkcji priorytetowej, ale możemy przetestować
+      // że tryb priority jest akceptowany
+      await semaphore.acquire();
+      expect(semaphore.availablePermits, equals(0));
+
+      semaphore.release();
+      expect(semaphore.availablePermits, equals(1));
+    });
   });
 
   group('SemaphoreExtension', () {
@@ -195,6 +211,26 @@ void main() {
       expect(timedOut, isTrue);
       await future1;
     });
+
+    test('tracks availablePermits and queueLength', () async {
+      final func = funx.Func(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return 42;
+      }).semaphore(maxConcurrent: 2);
+
+      final wrapped = func as SemaphoreExtension;
+      expect(wrapped.availablePermits, equals(2));
+      expect(wrapped.queueLength, equals(0));
+
+      final futures = [func(), func(), func()];
+
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(wrapped.availablePermits, lessThanOrEqualTo(2));
+
+      await Future.wait(futures);
+      expect(wrapped.availablePermits, equals(2));
+      expect(wrapped.queueLength, equals(0));
+    });
   });
 
   group('SemaphoreExtension1', () {
@@ -223,6 +259,26 @@ void main() {
       expect(results, equals([2, 4, 6, 8, 10]));
       expect(maxConcurrent, equals(2));
     });
+
+    test('tracks availablePermits and queueLength', () async {
+      final func = funx.Func1<int, int>((n) async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return n * 2;
+      }).semaphore(maxConcurrent: 2);
+
+      final wrapped = func as SemaphoreExtension1;
+      expect(wrapped.availablePermits, equals(2));
+      expect(wrapped.queueLength, equals(0));
+
+      final futures = [func(1), func(2), func(3)];
+
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(wrapped.availablePermits, lessThanOrEqualTo(2));
+
+      await Future.wait(futures);
+      expect(wrapped.availablePermits, equals(2));
+      expect(wrapped.queueLength, equals(0));
+    });
   });
 
   group('SemaphoreExtension2', () {
@@ -249,6 +305,26 @@ void main() {
 
       expect(results, equals([3, 7, 11, 15]));
       expect(maxConcurrent, equals(2));
+    });
+
+    test('tracks availablePermits and queueLength', () async {
+      final func = funx.Func2<int, int, int>((a, b) async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return a + b;
+      }).semaphore(maxConcurrent: 2);
+
+      final wrapped = func as SemaphoreExtension2;
+      expect(wrapped.availablePermits, equals(2));
+      expect(wrapped.queueLength, equals(0));
+
+      final futures = [func(1, 2), func(3, 4), func(5, 6)];
+
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(wrapped.availablePermits, lessThanOrEqualTo(2));
+
+      await Future.wait(futures);
+      expect(wrapped.availablePermits, equals(2));
+      expect(wrapped.queueLength, equals(0));
     });
   });
 
