@@ -338,8 +338,7 @@ void main() {
           interval: const Duration(milliseconds: 50),
         );
 
-        final subscription = func.start();
-        subscription.cancel();
+        final subscription = func.start()..cancel();
 
         expect(subscription.isRunning, isFalse);
 
@@ -365,8 +364,9 @@ void main() {
 
         await Future<void>.delayed(const Duration(milliseconds: 40));
 
-        subscription.pause();
-        subscription.pause(); // Second pause should be safe
+        subscription
+          ..pause()
+          ..pause(); // Second pause should be safe
 
         expect(subscription.isPaused, isTrue);
 
@@ -746,8 +746,7 @@ void main() {
 
       final func =
           funx.Func(() async {
-            executeCount++;
-            return executeCount;
+            return ++executeCount;
           }).schedule(
             at: pastTime,
             onMissed: funx.MissedExecutionPolicy.catchUp,
@@ -835,8 +834,7 @@ void main() {
 
       final func = funx.ScheduleExtensionSync(
         funx.FuncSync(() {
-          executeCount++;
-          return executeCount;
+          return ++executeCount;
         }),
         mode: funx.ScheduleMode.recurring,
         interval: const Duration(milliseconds: 25),
@@ -887,8 +885,7 @@ void main() {
 
       final func = funx.ScheduleExtension(
         funx.Func(() async {
-          executeCount++;
-          return executeCount;
+          return ++executeCount;
         }),
         mode: funx.ScheduleMode.recurring,
         interval: const Duration(milliseconds: 50),
@@ -951,8 +948,7 @@ void main() {
 
       final func = funx.ScheduleExtensionSync(
         funx.FuncSync(() {
-          executeCount++;
-          return executeCount;
+          return ++executeCount;
         }),
         mode: funx.ScheduleMode.recurring,
         interval: const Duration(milliseconds: 50),
@@ -1224,7 +1220,7 @@ void main() {
             executeCount++;
           }).scheduleCustom(
             scheduler: (DateTime? lastExec) {
-              return DateTime.now().add(Duration(milliseconds: 50));
+              return DateTime.now().add(const Duration(milliseconds: 50));
             },
             maxIterations: 2,
           );
@@ -1429,7 +1425,7 @@ void main() {
             return ++executeCount;
           }).scheduleCustom(
             scheduler: (DateTime? lastExec) {
-              return DateTime.now().add(Duration(milliseconds: 40));
+              return DateTime.now().add(const Duration(milliseconds: 40));
             },
             maxIterations: 3,
           );
