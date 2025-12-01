@@ -399,3 +399,149 @@ typedef TimeoutCallback = void Function();
 /// await monitor.waitWhile(() => buffer.isEmpty);
 /// ```
 typedef ConditionPredicate = bool Function();
+
+/// Scheduling modes controlling execution timing patterns.
+///
+/// Determines when and how scheduled function executes. [once]
+/// executes single time at specified moment. [recurring] executes
+/// repeatedly at fixed intervals. [custom] uses custom scheduling logic.
+///
+/// Example:
+/// ```dart
+/// final task = Func(() async => await cleanup())
+///   .schedule(
+///     mode: ScheduleMode.recurring,
+///     interval: Duration(hours: 1),
+///   );
+/// ```
+enum ScheduleMode {
+  /// Execute once at specified time.
+  ///
+  /// Single execution scheduled for specific DateTime. Task runs
+  /// once then completes.
+  once,
+
+  /// Execute repeatedly at fixed intervals.
+  ///
+  /// Continuous execution at regular time intervals. Runs until
+  /// explicitly stopped or condition met.
+  recurring,
+
+  /// Execute using custom scheduling function.
+  ///
+  /// User-defined logic determines next execution time. Maximum
+  /// flexibility for complex schedules.
+  custom,
+}
+
+/// Policies for handling missed scheduled executions.
+///
+/// Determines behavior when scheduled execution time passes without
+/// running. [executeImmediately] runs as soon as detected.
+/// [skip] ignores missed execution. [catchUp] executes all missed
+/// occurrences. [reschedule] schedules for next occurrence.
+///
+/// Example:
+/// ```dart
+/// final task = Func(() async => await backup())
+///   .schedule(
+///     at: scheduledTime,
+///     onMissed: MissedExecutionPolicy.executeImmediately,
+///   );
+/// ```
+enum MissedExecutionPolicy {
+  /// Execute missed task as soon as detected.
+  ///
+  /// Runs immediately when system detects missed execution. Good
+  /// for critical tasks that must execute.
+  executeImmediately,
+
+  /// Skip missed execution and wait for next schedule.
+  ///
+  /// Ignores missed execution completely. Good for non-critical
+  /// periodic tasks.
+  skip,
+
+  /// Execute all missed occurrences.
+  ///
+  /// Runs all executions that were missed. Good for tasks requiring
+  /// complete execution history.
+  catchUp,
+
+  /// Schedule for next valid occurrence.
+  ///
+  /// Recalculates next execution time based on schedule. Good for
+  /// maintaining regular intervals.
+  reschedule,
+}
+
+/// Callback invoked when scheduled execution is missed.
+///
+/// Represents notification callback executed when scheduled task
+/// fails to run at intended time. Receives scheduled DateTime and
+/// current DateTime. Used for logging, metrics, or compensating
+/// actions.
+///
+/// Example:
+/// ```dart
+/// final task = Func(() async => await backup())
+///   .schedule(
+///     at: scheduledTime,
+///     onMissedExecution: (scheduled, now) {
+///       print('Missed execution at $scheduled, now is $now');
+///     },
+///   );
+/// ```
+typedef MissedExecutionCallback =
+    void Function(
+      DateTime scheduled,
+      DateTime current,
+    );
+
+/// Callback invoked on each scheduled execution iteration.
+///
+/// Represents notification callback executed before each scheduled
+/// run. Receives iteration number starting from 1. Used for logging,
+/// metrics collection, or iteration-specific logic.
+///
+/// Example:
+/// ```dart
+/// final task = Func(() async => await poll())
+///   .scheduleRecurring(
+///     interval: Duration(minutes: 5),
+///     onTick: (iteration) => print('Poll #$iteration'),
+///   );
+/// ```
+typedef ScheduleTickCallback = void Function(int iteration);
+
+/// Callback invoked when schedule encounters error.
+///
+/// Represents error handler for scheduling failures. Receives error
+/// object and stack trace. Used for logging scheduling errors,
+/// alerts, or error recovery.
+///
+/// Example:
+/// ```dart
+/// final task = Func(() async => await sync())
+///   .schedule(
+///     interval: Duration(hours: 1),
+///     onScheduleError: (error) => logger.error('Schedule failed: $error'),
+///   );
+/// ```
+typedef ScheduleErrorCallback = void Function(Object error);
+
+/// Function calculating next scheduled execution time.
+///
+/// Represents custom scheduling logic receiving last execution time
+/// and returning next execution DateTime. Used with custom schedule
+/// mode for complex timing patterns. Enables adaptive scheduling
+/// based on execution history.
+///
+/// Example:
+/// ```dart
+/// DateTime customScheduler(DateTime? lastExecution) {
+///   final now = DateTime.now();
+///   return now.add(Duration(hours: lastExecution == null ? 1 : 2));
+/// }
+/// ```
+typedef CustomScheduleFunction = DateTime Function(DateTime? lastExecution);

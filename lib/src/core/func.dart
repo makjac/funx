@@ -175,7 +175,120 @@ class Func<R> {
     return TimeoutExtension(this, duration, onTimeout);
   }
 
-  /// Applies mutual exclusion lock to this function.
+  // Scheduling methods
+
+  /// Schedules function execution at specific time.
+  ///
+  /// Creates one-time schedule executing at [at] DateTime. Returns
+  /// [ScheduleExtension] that must be started with [ScheduleExtension.start]
+  /// method. The subscription provides lifecycle controls
+  /// (pause, resume, cancel).
+  ///
+  /// Example:
+  /// ```dart
+  /// final backup = Func(() async => await performBackup())
+  ///   .schedule(
+  ///     at: DateTime(2024, 12, 31, 23, 59),
+  ///     onMissed: MissedExecutionPolicy.executeImmediately,
+  ///   );
+  ///
+  /// final subscription = backup.start();
+  /// // Later: subscription.cancel();
+  /// ```
+  ScheduleExtension<R> schedule({
+    required DateTime at,
+    MissedExecutionPolicy onMissed = MissedExecutionPolicy.skip,
+    void Function(DateTime scheduled, DateTime current)? onMissedExecution,
+    void Function(Object error)? onScheduleError,
+  }) {
+    return ScheduleExtension<R>(
+      this,
+      mode: ScheduleMode.once,
+      at: at,
+      missedPolicy: onMissed,
+      onMissedExecution: onMissedExecution,
+      onScheduleError: onScheduleError,
+    );
+  }
+
+  /// Schedules recurring function execution at fixed intervals.
+  ///
+  /// Creates recurring schedule executing every [interval] duration.
+  /// Continues until [maxIterations] reached, [stopCondition] returns true,
+  /// or manually cancelled via subscription.
+  ///
+  /// Example:
+  /// ```dart
+  /// final healthCheck = Func(() async => await service.ping())
+  ///   .scheduleRecurring(
+  ///     interval: Duration(minutes: 5),
+  ///     maxIterations: 100,
+  ///     onTick: (iteration) => print('Check #$iteration'),
+  ///   );
+  ///
+  /// final subscription = healthCheck.start();
+  /// ```
+  ScheduleExtension<R> scheduleRecurring({
+    required Duration interval,
+    int? maxIterations,
+    bool Function(R result)? stopCondition,
+    MissedExecutionPolicy onMissed = MissedExecutionPolicy.skip,
+    void Function(DateTime scheduled, DateTime current)? onMissedExecution,
+    void Function(int iteration)? onTick,
+    void Function(Object error)? onScheduleError,
+    bool executeImmediately = false,
+  }) {
+    return ScheduleExtension<R>(
+      this,
+      mode: ScheduleMode.recurring,
+      interval: interval,
+      maxIterations: maxIterations,
+      stopCondition: stopCondition,
+      missedPolicy: onMissed,
+      onMissedExecution: onMissedExecution,
+      onTick: onTick,
+      onScheduleError: onScheduleError,
+      executeImmediately: executeImmediately,
+    );
+  }
+
+  /// Schedules function execution using custom scheduling logic.
+  ///
+  /// Provides maximum flexibility through user-defined [scheduler] function
+  /// that calculates next execution time based on last execution.
+  ///
+  /// Example:
+  /// ```dart
+  /// final adaptive = Func(() async => await process())
+  ///   .scheduleCustom(
+  ///     scheduler: (lastExec) {
+  ///       final now = DateTime.now();
+  ///       final delay = lastExec == null
+  ///         ? Duration(hours: 1)
+  ///         : Duration(hours: 2);
+  ///       return now.add(delay);
+  ///     },
+  ///   );
+  /// ```
+  ScheduleExtension<R> scheduleCustom({
+    required DateTime Function(DateTime? lastExecution) scheduler,
+    int? maxIterations,
+    bool Function(R result)? stopCondition,
+    void Function(int iteration)? onTick,
+    void Function(Object error)? onScheduleError,
+  }) {
+    return ScheduleExtension<R>(
+      this,
+      mode: ScheduleMode.custom,
+      customScheduler: scheduler,
+      maxIterations: maxIterations,
+      stopCondition: stopCondition,
+      onTick: onTick,
+      onScheduleError: onScheduleError,
+    );
+  }
+
+  // Concurrency methods
   ///
   /// Example:
   /// ```dart
@@ -810,6 +923,85 @@ class Func1<T, R> {
     FutureOr<R> Function()? onTimeout,
   }) {
     return TimeoutExtension1(this, duration, onTimeout);
+  }
+
+  // Scheduling methods
+
+  /// Schedules function execution at specific time.
+  ///
+  /// Example:
+  /// ```dart
+  /// final notify = Func1<String, void>((message) async {
+  ///   await sendNotification(message);
+  /// }).schedule(at: DateTime.now().add(Duration(hours: 1)));
+  ///
+  /// final subscription = notify.start('Hello!');
+  /// ```
+  ScheduleExtension1<T, R> schedule({
+    required DateTime at,
+    MissedExecutionPolicy onMissed = MissedExecutionPolicy.skip,
+    void Function(DateTime scheduled, DateTime current)? onMissedExecution,
+    void Function(Object error)? onScheduleError,
+  }) {
+    return ScheduleExtension1<T, R>(
+      this,
+      mode: ScheduleMode.once,
+      at: at,
+      missedPolicy: onMissed,
+      onMissedExecution: onMissedExecution,
+      onScheduleError: onScheduleError,
+    );
+  }
+
+  /// Schedules recurring execution for single-parameter function.
+  ///
+  /// Example:
+  /// ```dart
+  /// final processTask = Func1<Task, void>((task) async {
+  ///   await processor.execute(task);
+  /// }).scheduleRecurring(interval: Duration(minutes: 5));
+  /// ```
+  ScheduleExtension1<T, R> scheduleRecurring({
+    required Duration interval,
+    int? maxIterations,
+    bool Function(R result)? stopCondition,
+    MissedExecutionPolicy onMissed = MissedExecutionPolicy.skip,
+    void Function(DateTime scheduled, DateTime current)? onMissedExecution,
+    void Function(int iteration)? onTick,
+    void Function(Object error)? onScheduleError,
+    bool executeImmediately = false,
+  }) {
+    return ScheduleExtension1<T, R>(
+      this,
+      mode: ScheduleMode.recurring,
+      interval: interval,
+      maxIterations: maxIterations,
+      stopCondition: stopCondition,
+      missedPolicy: onMissed,
+      onMissedExecution: onMissedExecution,
+      onTick: onTick,
+      onScheduleError: onScheduleError,
+      executeImmediately: executeImmediately,
+    );
+  }
+
+  /// Schedules custom execution for single-parameter function.
+  ScheduleExtension1<T, R> scheduleCustom({
+    required DateTime Function(DateTime? lastExecution) scheduler,
+    int? maxIterations,
+    bool Function(R result)? stopCondition,
+    void Function(int iteration)? onTick,
+    void Function(Object error)? onScheduleError,
+  }) {
+    return ScheduleExtension1<T, R>(
+      this,
+      mode: ScheduleMode.custom,
+      customScheduler: scheduler,
+      maxIterations: maxIterations,
+      stopCondition: stopCondition,
+      onTick: onTick,
+      onScheduleError: onScheduleError,
+    );
   }
 
   /// Applies mutual exclusion lock to this function.
@@ -1619,6 +1811,76 @@ class Func2<T1, T2, R> {
     FutureOr<R> Function()? onTimeout,
   }) {
     return TimeoutExtension2(this, duration, onTimeout);
+  }
+
+  // Scheduling methods
+
+  /// Schedules two-parameter function execution at specific time.
+  ///
+  /// Example:
+  /// ```dart
+  /// final sync = Func2<String, int, void>((path, count) async {
+  ///   await syncFiles(path, count);
+  /// }).schedule(at: DateTime.now().add(Duration(hours: 1)));
+  /// ```
+  ScheduleExtension2<T1, T2, R> schedule({
+    required DateTime at,
+    MissedExecutionPolicy onMissed = MissedExecutionPolicy.skip,
+    void Function(DateTime scheduled, DateTime current)? onMissedExecution,
+    void Function(Object error)? onScheduleError,
+  }) {
+    return ScheduleExtension2<T1, T2, R>(
+      this,
+      mode: ScheduleMode.once,
+      at: at,
+      missedPolicy: onMissed,
+      onMissedExecution: onMissedExecution,
+      onScheduleError: onScheduleError,
+    );
+  }
+
+  /// Schedules recurring execution for two-parameter function.
+  ScheduleExtension2<T1, T2, R> scheduleRecurring({
+    required Duration interval,
+    int? maxIterations,
+    bool Function(R result)? stopCondition,
+    MissedExecutionPolicy onMissed = MissedExecutionPolicy.skip,
+    void Function(DateTime scheduled, DateTime current)? onMissedExecution,
+    void Function(int iteration)? onTick,
+    void Function(Object error)? onScheduleError,
+    bool executeImmediately = false,
+  }) {
+    return ScheduleExtension2<T1, T2, R>(
+      this,
+      mode: ScheduleMode.recurring,
+      interval: interval,
+      maxIterations: maxIterations,
+      stopCondition: stopCondition,
+      missedPolicy: onMissed,
+      onMissedExecution: onMissedExecution,
+      onTick: onTick,
+      onScheduleError: onScheduleError,
+      executeImmediately: executeImmediately,
+    );
+  }
+
+  /// Schedules custom execution for two-parameter function.
+  ScheduleExtension2<T1, T2, R> scheduleCustom({
+    required DateTime Function(DateTime? lastExecution) scheduler,
+    int? maxIterations,
+    bool Function(R result)? stopCondition,
+    void Function(int iteration)? onTick,
+    void Function(Object error)? onScheduleError,
+  }) {
+    return ScheduleExtension2<T1, T2, R>(
+      this,
+      mode: ScheduleMode.custom,
+      customScheduler: scheduler,
+      maxIterations: maxIterations,
+      stopCondition: stopCondition,
+      onTick: onTick,
+      onScheduleError: onScheduleError,
+    );
   }
 
   /// Applies mutual exclusion lock to this function.

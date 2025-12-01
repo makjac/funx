@@ -97,6 +97,9 @@ export 'src/reliability/fallback.dart';
 export 'src/reliability/recover.dart';
 export 'src/reliability/retry.dart';
 
+// Scheduling
+export 'src/scheduling/schedule.dart';
+
 // State
 export 'src/state/snapshot.dart';
 
