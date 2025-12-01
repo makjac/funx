@@ -545,3 +545,71 @@ typedef ScheduleErrorCallback = void Function(Object error);
 /// }
 /// ```
 typedef CustomScheduleFunction = DateTime Function(DateTime? lastExecution);
+
+/// Callback invoked when backpressure overflow occurs.
+///
+/// Called when backpressure mechanism drops or rejects items due
+/// to system overload. Enables tracking and metrics collection for
+/// backpressure events.
+///
+/// Example:
+/// ```dart
+/// void onOverflow() {
+///   metrics.increment('backpressure_overflow');
+///   logger.warn('System under backpressure');
+/// }
+/// ```
+typedef BackpressureCallback = void Function();
+
+/// Backpressure strategies for controlling execution under load.
+///
+/// Determines how system handles execution requests when consumer
+/// is slower than producer. [drop] rejects new items immediately.
+/// [dropOldest] removes oldest buffered items. [buffer] queues
+/// items up to limit. [sample] randomly accepts items. [throttle]
+/// delays execution. [error] throws exception on overflow.
+///
+/// Example:
+/// ```dart
+/// final processor = handler.backpressure(
+///   strategy: BackpressureStrategy.drop,
+///   bufferSize: 100,
+/// );
+/// ```
+enum BackpressureStrategy {
+  /// Drop new incoming items when system is overloaded.
+  ///
+  /// Rejects items immediately when concurrent execution limit is
+  /// reached. Throws StateError on dropped items.
+  drop,
+
+  /// Drop oldest buffered items to make space for new ones.
+  ///
+  /// Removes oldest items from buffer when full. Maintains most
+  /// recent items in processing queue.
+  dropOldest,
+
+  /// Buffer items up to limit, then block or error.
+  ///
+  /// Queues items until buffer capacity is reached. Throws
+  /// StateError when buffer is full.
+  buffer,
+
+  /// Randomly sample items based on sample rate.
+  ///
+  /// Accepts items probabilistically according to sample rate.
+  /// Drops items that don't pass sampling.
+  sample,
+
+  /// Slow down producer by delaying execution.
+  ///
+  /// Buffers items and processes at controlled rate. Applies
+  /// backpressure by making producer wait.
+  throttle,
+
+  /// Throw error when system is overwhelmed.
+  ///
+  /// Immediately throws StateError when concurrent limit is
+  /// reached. No buffering or dropping.
+  error,
+}

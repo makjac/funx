@@ -45,6 +45,8 @@ import 'package:funx/src/reliability/circuit_breaker.dart';
 import 'package:funx/src/reliability/fallback.dart';
 import 'package:funx/src/reliability/recover.dart';
 import 'package:funx/src/reliability/retry.dart';
+import 'package:funx/src/scheduling/backpressure.dart';
+import 'package:funx/src/scheduling/schedule.dart';
 import 'package:funx/src/state/snapshot.dart';
 import 'package:funx/src/timing/debounce.dart';
 import 'package:funx/src/timing/delay.dart';
@@ -1004,6 +1006,43 @@ class Func1<T, R> {
     );
   }
 
+  /// Applies backpressure control to manage execution rate under load.
+  ///
+  /// Controls function execution when consumer is slower than producer
+  /// using specified [strategy]. Prevents system overload through buffering,
+  /// dropping, sampling, or throttling strategies.
+  ///
+  /// Example:
+  /// ```dart
+  /// final processEvent = Func1<Event, void>((event) async {
+  ///   await heavyProcessing(event);
+  /// }).backpressure(
+  ///   strategy: BackpressureStrategy.drop,
+  ///   bufferSize: 100,
+  ///   onOverflow: () => metrics.increment('overflow'),
+  /// );
+  /// ```
+  BackpressureExtension<T, R> backpressure({
+    required BackpressureStrategy strategy,
+    int bufferSize = 100,
+    double sampleRate = 0.1,
+    int maxConcurrent = 10,
+    BackpressureCallback? onOverflow,
+    BackpressureCallback? onBufferFull,
+  }) {
+    return BackpressureExtension<T, R>(
+      this,
+      strategy: strategy,
+      bufferSize: bufferSize,
+      sampleRate: sampleRate,
+      maxConcurrent: maxConcurrent,
+      onOverflow: onOverflow,
+      onBufferFull: onBufferFull,
+    );
+  }
+
+  // Concurrency methods
+
   /// Applies mutual exclusion lock to this function.
   Func1<T, R> lock({
     Duration? timeout,
@@ -1882,6 +1921,42 @@ class Func2<T1, T2, R> {
       onScheduleError: onScheduleError,
     );
   }
+
+  /// Applies backpressure control to manage execution rate under load.
+  ///
+  /// Controls function execution for two-parameter functions when consumer
+  /// is slower than producer. Configuration and behavior identical to
+  /// [Func1.backpressure] but operates on argument pairs.
+  ///
+  /// Example:
+  /// ```dart
+  /// final write = Func2<String, int, void>((key, value) async {
+  ///   await database.write(key, value);
+  /// }).backpressure(
+  ///   strategy: BackpressureStrategy.buffer,
+  ///   maxConcurrent: 5,
+  /// );
+  /// ```
+  BackpressureExtension2<T1, T2, R> backpressure({
+    required BackpressureStrategy strategy,
+    int bufferSize = 100,
+    double sampleRate = 0.1,
+    int maxConcurrent = 10,
+    BackpressureCallback? onOverflow,
+    BackpressureCallback? onBufferFull,
+  }) {
+    return BackpressureExtension2<T1, T2, R>(
+      this,
+      strategy: strategy,
+      bufferSize: bufferSize,
+      sampleRate: sampleRate,
+      maxConcurrent: maxConcurrent,
+      onOverflow: onOverflow,
+      onBufferFull: onBufferFull,
+    );
+  }
+
+  // Concurrency methods
 
   /// Applies mutual exclusion lock to this function.
   Func2<T1, T2, R> lock({
