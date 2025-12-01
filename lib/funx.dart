@@ -3,9 +3,9 @@
 /// Zero-dependency library offering comprehensive execution control
 /// for async and sync functions. Includes timing controls, concurrency
 /// management, reliability patterns, error handling, performance
-/// optimizations, and observability features. Supports method chaining
-/// for composing multiple behaviors. Designed for building robust,
-/// resilient, and performant function pipelines.
+/// optimizations, observability features, and scheduling mechanisms.
+/// Supports method chaining for composing multiple behaviors. Designed
+/// for building robust, resilient, and performant function pipelines.
 ///
 /// Key categories:
 /// - Concurrency: barriers, bulkheads, locks, semaphores, queues
@@ -16,6 +16,7 @@
 /// - Orchestration: parallel execution, racing, sagas
 /// - Performance: batching, caching, memoization, rate limiting
 /// - Reliability: retries, backoff, circuit breakers, fallbacks
+/// - Scheduling: one-time, recurring, backpressure control
 /// - State: snapshots for state capture and restore
 /// - Timing: debounce, throttle, delay, timeout, defer
 /// - Transformation: merge, proxy, transform operations
@@ -96,6 +97,10 @@ export 'src/reliability/circuit_breaker.dart';
 export 'src/reliability/fallback.dart';
 export 'src/reliability/recover.dart';
 export 'src/reliability/retry.dart';
+
+// Scheduling
+export 'src/scheduling/backpressure.dart';
+export 'src/scheduling/schedule.dart';
 
 // State
 export 'src/state/snapshot.dart';

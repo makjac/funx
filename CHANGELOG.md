@@ -1,3 +1,42 @@
+## 1.1.0
+
+- **Scheduling**: Time-based function execution control
+  - **Schedule**: Execute functions at specific times or recurring intervals
+    - `ScheduleExtension`, `ScheduleExtension1`, `ScheduleExtension2`, `ScheduleExtensionSync` for all function types
+    - Three scheduling modes:
+      - `ScheduleMode.once`: Execute at specific DateTime
+      - `ScheduleMode.recurring`: Execute at fixed intervals
+      - `ScheduleMode.custom`: Custom scheduling logic with scheduler function
+    - Missed execution policies:
+      - `MissedExecutionPolicy.skip`: Skip missed executions
+      - `MissedExecutionPolicy.executeImmediately`: Execute immediately when missed
+      - `MissedExecutionPolicy.catchUp`: Execute all missed occurrences
+      - `MissedExecutionPolicy.reschedule`: Reschedule from current time
+    - Subscription-based lifecycle control (pause, resume, cancel)
+    - Execution tracking with iteration count and timestamps
+    - Optional `maxIterations` limit
+    - Optional `stopCondition` predicate
+    - Callbacks: `onTick`, `onMissedExecution`, `onScheduleError`
+    - `executeImmediately` option for recurring schedules
+
+- **Backpressure**: Control function execution under high load
+  - `BackpressureExtension<T, R>` for `Func1<T, R>`
+  - `BackpressureExtension2<T1, T2, R>` for `Func2<T1, T2, R>`
+  - Six backpressure strategies:
+    - `BackpressureStrategy.drop`: Reject new requests when busy
+    - `BackpressureStrategy.dropOldest`: Remove oldest buffered item for new ones
+    - `BackpressureStrategy.buffer`: Queue requests up to buffer limit
+    - `BackpressureStrategy.sample`: Probabilistic acceptance based on sample rate
+    - `BackpressureStrategy.throttle`: Queue and process sequentially
+    - `BackpressureStrategy.error`: Throw exception immediately when busy
+  - Configurable parameters:
+    - `bufferSize`: Maximum buffered items (default: 100)
+    - `maxConcurrent`: Maximum concurrent executions (default: 10)
+    - `sampleRate`: Sample acceptance rate 0.0-1.0 (default: 0.1)
+  - Callbacks: `onOverflow`, `onBufferFull`
+  - Status queries: `bufferSize`, `activeExecutions`, `isUnderPressure`
+  - Automatic buffer management and cleanup
+
 ## 1.0.0
 
 - Complete implementation of all functional programming utilities

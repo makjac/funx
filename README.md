@@ -31,6 +31,7 @@ This package is useful when building applications that require:
 ### Mechanism Categories
 
 - **Timing** (6): debounce, throttle, delay, timeout, defer, idle callback
+- **Scheduling** (2): schedule (one-time, recurring, custom), backpressure control with 6 strategies
 - **Concurrency** (8): lock, read-write lock, semaphore, queue, bulkhead, barrier, countdown latch, monitor
 - **Reliability** (5): retry, backoff strategies, circuit breaker, fallback, recovery
 - **Performance** (10): rate limiting, batching, memoization, cache-aside, compression, deduplication, sharing, once, warm-up, lazy loading
@@ -42,7 +43,7 @@ This package is useful when building applications that require:
 - **Observability** (3): tap, monitor, audit
 - **State** (1): snapshot
 
-Total: 46 mechanisms across 11 categories
+Total: 47 mechanisms across 12 categories
 
 ## Basic Usage
 
@@ -227,6 +228,120 @@ final slowOperation = Func<String>(() async {
 }).timeout(Duration(milliseconds: 50));
 
 // Throws TimeoutException
+```
+
+### Scheduling
+
+Execute functions at specific times or recurring intervals:
+
+```dart
+// One-time execution at specific time
+var executed = false;
+final backup = Func(() async {
+  executed = true;
+  return 'Backup completed';
+}).schedule(
+  at: DateTime.now().add(Duration(milliseconds: 100)),
+);
+
+final subscription = backup.start();
+
+await Future.delayed(Duration(milliseconds: 150));
+// executed == true
+
+// Recurring execution every interval
+var executionCount = 0;
+final healthCheck = Func(() async {
+  executionCount++;
+  return 'OK';
+}).scheduleRecurring(
+  interval: Duration(milliseconds: 50),
+  maxIterations: 3,
+);
+
+final subscription2 = healthCheck.start();
+
+await Future.delayed(Duration(milliseconds: 200));
+// executionCount == 3
+
+subscription2.cancel();
+
+// Custom scheduling logic
+var customCount = 0;
+final adaptive = Func(() async {
+  customCount++;
+  return customCount;
+}).scheduleCustom(
+  scheduler: (lastExecution) {
+    // Double delay after each execution
+    final delay = Duration(milliseconds: 50 * customCount);
+    return DateTime.now().add(delay);
+  },
+  maxIterations: 2,
+);
+
+final subscription3 = adaptive.start();
+await Future.delayed(Duration(milliseconds: 200));
+// customCount == 2
+```
+
+### Backpressure
+
+Control execution rate when consumer is slower than producer:
+
+```dart
+// Drop strategy - reject new requests when busy
+var processedCount = 0;
+final processor = Func1<int, void>((value) async {
+  processedCount++;
+  await Future.delayed(Duration(milliseconds: 50));
+}).backpressure(
+  strategy: BackpressureStrategy.drop,
+  maxConcurrent: 1,
+);
+
+processor(1); // Accepted
+processor(2); // Dropped (busy)
+processor(3); // Dropped (busy)
+
+await Future.delayed(Duration(milliseconds: 100));
+// processedCount == 1
+
+// Buffer strategy - queue up to buffer size
+var bufferProcessed = 0;
+final buffered = Func1<int, void>((value) async {
+  bufferProcessed++;
+  await Future.delayed(Duration(milliseconds: 20));
+}).backpressure(
+  strategy: BackpressureStrategy.buffer,
+  maxConcurrent: 1,
+  bufferSize: 3,
+);
+
+buffered(1); // Processing
+buffered(2); // Buffered
+buffered(3); // Buffered
+buffered(4); // Buffered
+
+await Future.delayed(Duration(milliseconds: 100));
+// bufferProcessed == 4 (all processed from buffer)
+
+// Sample strategy - probabilistic acceptance
+var sampledCount = 0;
+final sampled = Func1<int, void>((value) async {
+  sampledCount++;
+}).backpressure(
+  strategy: BackpressureStrategy.sample,
+  sampleRate: 0.5, // Accept ~50% of requests
+  maxConcurrent: 10,
+);
+
+for (var i = 0; i < 100; i++) {
+  sampled(i);
+}
+
+await Future.delayed(Duration(milliseconds: 100));
+// sampledCount ≈ 50 (probabilistic)
 ```
 
 ### Concurrency
@@ -761,6 +876,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 [header_image_url]: https://raw.githubusercontent.com/makjac/images/refs/heads/main/funx/banner.png
 
 <!--
-Version: 1.0.0
-Last Updated: 2024-11-26
+Version: 1.1.0
+Last Updated: 2024-12-01
 -->
