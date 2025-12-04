@@ -1,4 +1,4 @@
-## 1.2.0
+## 1.2.1
 
 - **Priority Queue**: Priority-based execution ordering
   - `PriorityQueueExtension<T, R>` for `Func1<T, R>`
