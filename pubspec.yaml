@@ -1,6 +1,6 @@
 name: funx
 description: Composable function decorators for advanced execution control and reliability.
-version: 1.2.0
+version: 1.2.1
 repository: https://github.com/makjac/funx
 
 environment:
