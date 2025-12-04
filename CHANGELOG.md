@@ -1,3 +1,24 @@
+## 1.2.1
+
+- **Priority Queue**: Priority-based execution ordering
+  - `PriorityQueueExtension<T, R>` for `Func1<T, R>`
+  - `PriorityQueueExtension2<T1, T2, R>` for `Func2<T1, T2, R>`
+  - Priority extraction via `priorityFn` function
+  - Configurable parameters:
+    - `maxQueueSize`: Queue capacity limit (default: 1000)
+    - `maxConcurrent`: Parallel execution limit (default: 1)
+    - `starvationPrevention`: Auto-boost waiting items (default: true)
+  - Four queue overflow policies:
+    - `QueueFullPolicy.dropLowestPriority`: Remove lowest priority item
+    - `QueueFullPolicy.dropNew`: Reject incoming item
+    - `QueueFullPolicy.error`: Throw StateError
+    - `QueueFullPolicy.waitForSpace`: Block until capacity available
+  - Starvation prevention with 5-second threshold
+  - Callbacks: `onItemDropped`, `onStarvationPrevention`
+  - Status queries: `queueLength`, `activeCount`
+  - Support for integer, fractional, and negative priorities
+  - Automatic priority-based sorting (highest first)
+
 ## 1.1.0
 
 - **Scheduling**: Time-based function execution control
