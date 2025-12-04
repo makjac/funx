@@ -34,7 +34,7 @@ This package is useful when building applications that require:
 - **Scheduling** (2): schedule (one-time, recurring, custom), backpressure control with 6 strategies
 - **Concurrency** (8): lock, read-write lock, semaphore, queue, bulkhead, barrier, countdown latch, monitor
 - **Reliability** (5): retry, backoff strategies, circuit breaker, fallback, recovery
-- **Performance** (10): rate limiting, batching, memoization, cache-aside, compression, deduplication, sharing, once, warm-up, lazy loading
+- **Performance** (11): rate limiting, batching, memoization, cache-aside, compression, deduplication, sharing, once, warm-up, lazy loading, priority queue
 - **Error Handling** (2): catch, default value
 - **Validation** (2): guard, validate
 - **Transformation** (3): proxy, transform, merge
@@ -43,7 +43,7 @@ This package is useful when building applications that require:
 - **Observability** (3): tap, monitor, audit
 - **State** (1): snapshot
 
-Total: 47 mechanisms across 12 categories
+Total: 48 mechanisms across 12 categories
 
 ## Basic Usage
 
@@ -506,6 +506,81 @@ await Future.wait([
   sharedOp(),
 ]);
 // sharedCallCount == 1 (all three calls shared one execution)
+
+// Priority Queue - execute tasks in priority order
+var executionOrder = <String>[];
+final processTask = Func1<String, String>((task) async {
+  executionOrder.add(task);
+  await Future.delayed(Duration(milliseconds: 10));
+  return 'Completed: $task';
+}).priorityQueue(
+  priorityFn: (task) => task == 'critical' ? 10 : 1,
+  maxQueueSize: 100,
+  maxConcurrent: 1,
+);
+
+// Submit tasks with different priorities
+processTask('normal-1');
+processTask('critical');
+processTask('normal-2');
+
+await Future.delayed(Duration(milliseconds: 100));
+// executionOrder == ['normal-1', 'critical', 'normal-2']
+// 'critical' executed before 'normal-2' despite being submitted later
+```
+
+### Priority Queue
+
+Manage task execution with priority-based ordering:
+
+```dart
+// Basic priority queue - higher priority executes first
+var executionOrder = <int>[];
+final processor = Func1<int, void>((taskId) async {
+  executionOrder.add(taskId);
+  await Future.delayed(Duration(milliseconds: 20));
+}).priorityQueue(
+  priorityFn: (id) => id, // Use task ID as priority
+  maxQueueSize: 100,
+  maxConcurrent: 1,
+);
+
+// Submit tasks (lower ID = lower priority)
+processor(1);
+processor(5);
+processor(3);
+
+await Future.delayed(Duration(milliseconds: 100));
+// executionOrder: [1, 5, 3] - highest priority (5) executed second
+
+// Queue overflow policies
+final dropLowest = Func1<int, String>((priority) async {
+  return 'Task: $priority';
+}).priorityQueue(
+  priorityFn: (p) => p,
+  maxQueueSize: 2,
+  maxConcurrent: 1,
+  onQueueFull: QueueFullPolicy.dropLowestPriority,
+  onItemDropped: (item) => print('Dropped: $item'),
+);
+
+// Starvation prevention - boost waiting tasks
+final withStarvation = Func1<String, String>((task) async {
+  await Future.delayed(Duration(milliseconds: 50));
+  return 'Done: $task';
+}).priorityQueue(
+  priorityFn: (t) => t == 'urgent' ? 10 : 1,
+  starvationPrevention: true, // Auto-boost long-waiting items
+  onStarvationPrevention: (task) => print('Boosted: $task'),
+);
+
+// Monitor queue state
+final monitored = Func1<int, int>((x) async => x * 2).priorityQueue(
+  priorityFn: (x) => x,
+) as PriorityQueueExtension<int, int>;
+
+print('Queue length: ${monitored.queueLength}');
+print('Active tasks: ${monitored.activeCount}');
 ```
 
 ### Error Handling
@@ -691,6 +766,37 @@ final fetchData = Func1<String, String>((id) async {
 final result = await fetchData('123');
 // result: 'Data for 123'
 // attempts: 2 (retry worked)
+```
+
+### Priority-Based Task Processing
+
+```dart
+// Process tasks by priority with queue overflow handling
+var processed = <String>[];
+final taskProcessor = Func1<(String, int), String>(
+  (task) async {
+    final (name, priority) = task;
+    processed.add(name);
+    await Future.delayed(Duration(milliseconds: 30));
+    return 'Completed: $name';
+  },
+).priorityQueue(
+  priorityFn: (task) => task.$2, // Use second element as priority
+  maxQueueSize: 5,
+  maxConcurrent: 2,
+  onQueueFull: QueueFullPolicy.dropLowestPriority,
+  starvationPrevention: true,
+);
+
+// Submit mixed priority tasks
+taskProcessor(('background-1', 1));
+taskProcessor(('critical', 10));
+taskProcessor(('normal', 5));
+taskProcessor(('background-2', 1));
+
+await Future.delayed(Duration(milliseconds: 150));
+// Critical task executed before normal priority tasks
+// Starvation prevention ensures background tasks eventually execute
 ```
 
 ## Custom Extensions

@@ -613,3 +613,90 @@ enum BackpressureStrategy {
   /// reached. No buffering or dropping.
   error,
 }
+
+/// Policies for handling priority queue overflow.
+///
+/// Determines behavior when priority queue reaches maximum capacity.
+/// [dropLowestPriority] removes item with lowest priority to make space.
+/// [dropNew] rejects new incoming item. [error] throws exception.
+/// [waitForSpace] blocks until capacity available.
+///
+/// Example:
+/// ```dart
+/// final processor = handler.priorityQueue(
+///   onQueueFull: QueueFullPolicy.dropLowestPriority,
+///   maxQueueSize: 100,
+/// );
+/// ```
+enum QueueFullPolicy {
+  /// Drop lowest priority item when queue is full.
+  ///
+  /// Removes item with lowest priority value to make space for new
+  /// item. Prioritizes higher priority items during overload.
+  dropLowestPriority,
+
+  /// Drop new incoming item when queue is full.
+  ///
+  /// Rejects new item immediately without modifying queue. Protects
+  /// already queued items.
+  dropNew,
+
+  /// Throw error when queue is full.
+  ///
+  /// Immediately throws StateError when capacity is reached. No
+  /// buffering modifications.
+  error,
+
+  /// Block until space becomes available.
+  ///
+  /// Waits for queue capacity to free up before adding item.
+  /// Applies backpressure to producer.
+  waitForSpace,
+}
+
+/// Function calculating priority value for item.
+///
+/// Represents priority calculator receiving item of type [T] and
+/// returning numeric priority value. Higher values indicate higher
+/// priority by default. Used with priority queue to determine
+/// execution order based on item characteristics.
+///
+/// Example:
+/// ```dart
+/// final processor = Func1<Task, Result>((task) async {
+///   return await task.execute();
+/// }).priorityQueue(
+///   priorityFn: (task) => task.priority,
+/// );
+/// ```
+typedef PriorityExtractor<T> = num Function(T item);
+
+/// Callback invoked when item is dropped from priority queue.
+///
+/// Called when priority queue mechanism drops item due to overflow
+/// or lower priority. Receives dropped item for logging, metrics,
+/// or compensating actions.
+///
+/// Example:
+/// ```dart
+/// void onItemDropped(Task task) {
+///   logger.warn('Dropped task: ${task.id}');
+///   metrics.increment('dropped_tasks');
+/// }
+/// ```
+typedef ItemDroppedCallback<T> = void Function(T item);
+
+/// Callback invoked when starvation prevention adjusts priorities.
+///
+/// Called when starvation prevention mechanism boosts priority of
+/// long-waiting items. Receives item whose priority was adjusted.
+/// Used for monitoring fairness and queue health.
+///
+/// Example:
+/// ```dart
+/// void onStarvationPrevention(Task task) {
+///   logger.info('Priority boosted for task: ${task.id}');
+///   metrics.increment('starvation_prevented');
+/// }
+/// ```
+typedef StarvationPreventionCallback<T> = void Function(T item);

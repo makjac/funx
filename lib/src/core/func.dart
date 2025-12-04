@@ -37,6 +37,7 @@ import 'package:funx/src/performance/deduplicate.dart';
 import 'package:funx/src/performance/lazy.dart';
 import 'package:funx/src/performance/memoize.dart';
 import 'package:funx/src/performance/once.dart';
+import 'package:funx/src/performance/priority_queue.dart';
 import 'package:funx/src/performance/rate_limit.dart';
 import 'package:funx/src/performance/share.dart';
 import 'package:funx/src/performance/warm_up.dart';
@@ -1041,6 +1042,48 @@ class Func1<T, R> {
     );
   }
 
+  // Performance methods
+
+  /// Applies priority queue mechanism for priority-based execution.
+  ///
+  /// Creates priority queue wrapper controlling execution order based
+  /// on item priorities. Higher priority items execute first unless
+  /// starvation prevention intervenes. See [PriorityQueueExtension]
+  /// for details.
+  ///
+  /// Example:
+  /// ```dart
+  /// final processTask = Func1<Task, Result>((task) async {
+  ///   return await task.execute();
+  /// }).priorityQueue(
+  ///   priorityFn: (task) => task.priority,
+  ///   maxQueueSize: 100,
+  ///   maxConcurrent: 5,
+  ///   starvationPrevention: true,
+  ///   onQueueFull: QueueFullPolicy.dropLowestPriority,
+  /// );
+  /// ```
+  PriorityQueueExtension<T, R> priorityQueue({
+    required PriorityExtractor<T> priorityFn,
+    int maxQueueSize = 1000,
+    int maxConcurrent = 1,
+    bool starvationPrevention = true,
+    QueueFullPolicy onQueueFull = QueueFullPolicy.error,
+    ItemDroppedCallback<T>? onItemDropped,
+    StarvationPreventionCallback<T>? onStarvationPrevention,
+  }) {
+    return PriorityQueueExtension<T, R>(
+      this,
+      priorityFn: priorityFn,
+      maxQueueSize: maxQueueSize,
+      maxConcurrent: maxConcurrent,
+      starvationPrevention: starvationPrevention,
+      onQueueFull: onQueueFull,
+      onItemDropped: onItemDropped,
+      onStarvationPrevention: onStarvationPrevention,
+    );
+  }
+
   // Concurrency methods
 
   /// Applies mutual exclusion lock to this function.
@@ -1953,6 +1996,46 @@ class Func2<T1, T2, R> {
       maxConcurrent: maxConcurrent,
       onOverflow: onOverflow,
       onBufferFull: onBufferFull,
+    );
+  }
+
+  // Performance methods
+
+  /// Applies priority queue mechanism for priority-based execution.
+  ///
+  /// Creates priority queue wrapper for two-parameter functions with
+  /// execution order based on argument priorities. The [priorityFn]
+  /// receives argument tuple and returns numeric priority. See
+  /// [PriorityQueueExtension2] for details.
+  ///
+  /// Example:
+  /// ```dart
+  /// final process = Func2<String, int, Result>((id, priority) async {
+  ///   return await processor.execute(id, priority);
+  /// }).priorityQueue(
+  ///   priorityFn: (args) => args.$2, // Use second argument
+  ///   maxQueueSize: 100,
+  ///   maxConcurrent: 5,
+  /// );
+  /// ```
+  PriorityQueueExtension2<T1, T2, R> priorityQueue({
+    required PriorityExtractor<(T1, T2)> priorityFn,
+    int maxQueueSize = 1000,
+    int maxConcurrent = 1,
+    bool starvationPrevention = true,
+    QueueFullPolicy onQueueFull = QueueFullPolicy.error,
+    ItemDroppedCallback<(T1, T2)>? onItemDropped,
+    StarvationPreventionCallback<(T1, T2)>? onStarvationPrevention,
+  }) {
+    return PriorityQueueExtension2<T1, T2, R>(
+      this,
+      priorityFn: priorityFn,
+      maxQueueSize: maxQueueSize,
+      maxConcurrent: maxConcurrent,
+      starvationPrevention: starvationPrevention,
+      onQueueFull: onQueueFull,
+      onItemDropped: onItemDropped,
+      onStarvationPrevention: onStarvationPrevention,
     );
   }
 

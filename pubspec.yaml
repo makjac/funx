@@ -1,6 +1,6 @@
 name: funx
-description: Function execution control library for Dart with composable decorators.
-version: 1.1.0
+description: Composable function decorators for advanced execution control and reliability.
+version: 1.2.0
 repository: https://github.com/makjac/funx
 
 environment:
