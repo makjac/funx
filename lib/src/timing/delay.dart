@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
 import 'package:funx/src/core/types.dart';
+import 'package:funx/src/timing/_timing_engine.dart';
 
 /// Adds configurable delay before and/or after function execution.
 ///
@@ -15,8 +16,8 @@ import 'package:funx/src/core/types.dart';
 /// limiting, animations, or adding breathing room between operations.
 ///
 /// Returns a [Future] of type [R] that completes after all configured delays
-/// and execution finish. The returned value is the result from [_inner].
-/// Total time is execution time plus delay(s) based on mode.
+/// and execution finish. The returned value is the result from the wrapped
+/// function. Total time is execution time plus delay(s) based on mode.
 ///
 /// Example:
 /// ```dart
@@ -42,36 +43,16 @@ class DelayExtension<R> extends Func<R> {
   /// ```
   DelayExtension(
     this._inner,
-    this._duration,
-    this._mode,
-  ) : super(() => throw UnimplementedError());
+    Duration duration,
+    DelayMode mode,
+  ) : _engine = DelayEngine<R>(duration, mode),
+      super(() => throw UnimplementedError());
 
-  /// The wrapped function to execute with delay behavior.
   final Func<R> _inner;
-
-  /// The duration to delay before and/or after execution.
-  final Duration _duration;
-
-  /// The timing mode controlling delay placement.
-  final DelayMode _mode;
+  final DelayEngine<R> _engine;
 
   @override
-  Future<R> call() async {
-    // Delay before execution
-    if (_mode == DelayMode.before || _mode == DelayMode.both) {
-      await Future<void>.delayed(_duration);
-    }
-
-    // Execute
-    final result = await _inner();
-
-    // Delay after execution
-    if (_mode == DelayMode.after || _mode == DelayMode.both) {
-      await Future<void>.delayed(_duration);
-    }
-
-    return result;
-  }
+  Future<R> call() => _engine.run(_inner.call);
 }
 
 /// Adds configurable delay before and/or after single-parameter function
@@ -84,9 +65,9 @@ class DelayExtension<R> extends Func<R> {
 /// throttling API calls or controlling execution timing.
 ///
 /// Returns a [Future] of type [R] that completes after all configured
-/// delays and execution finish. The returned value is the result from
-/// [_inner] called with the provided argument. Total time is execution
-/// time plus delay(s).
+/// delays and execution finish. The returned value is the result from the
+/// wrapped function called with the provided argument. Total time is
+/// execution time plus delay(s).
 ///
 /// Example:
 /// ```dart
@@ -112,36 +93,16 @@ class DelayExtension1<T, R> extends Func1<T, R> {
   /// ```
   DelayExtension1(
     this._inner,
-    this._duration,
-    this._mode,
-  ) : super((arg) => throw UnimplementedError());
+    Duration duration,
+    DelayMode mode,
+  ) : _engine = DelayEngine<R>(duration, mode),
+      super((arg) => throw UnimplementedError());
 
-  /// The wrapped function to execute with delay behavior.
   final Func1<T, R> _inner;
-
-  /// The duration to delay before and/or after execution.
-  final Duration _duration;
-
-  /// The timing mode controlling delay placement.
-  final DelayMode _mode;
+  final DelayEngine<R> _engine;
 
   @override
-  Future<R> call(T arg) async {
-    // Delay before execution
-    if (_mode == DelayMode.before || _mode == DelayMode.both) {
-      await Future<void>.delayed(_duration);
-    }
-
-    // Execute
-    final result = await _inner(arg);
-
-    // Delay after execution
-    if (_mode == DelayMode.after || _mode == DelayMode.both) {
-      await Future<void>.delayed(_duration);
-    }
-
-    return result;
-  }
+  Future<R> call(T arg) => _engine.run(() => _inner(arg));
 }
 
 /// Adds configurable delay before and/or after two-parameter function
@@ -155,9 +116,9 @@ class DelayExtension1<T, R> extends Func1<T, R> {
 /// timing between steps.
 ///
 /// Returns a [Future] of type [R] that completes after all configured
-/// delays and execution finish. The returned value is the result from
-/// [_inner] called with the provided arguments. Total time is execution
-/// time plus delay(s).
+/// delays and execution finish. The returned value is the result from the
+/// wrapped function called with the provided arguments. Total time is
+/// execution time plus delay(s).
 ///
 /// Example:
 /// ```dart
@@ -183,34 +144,15 @@ class DelayExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// ```
   DelayExtension2(
     this._inner,
-    this._duration,
-    this._mode,
-  ) : super((arg1, arg2) => throw UnimplementedError());
+    Duration duration,
+    DelayMode mode,
+  ) : _engine = DelayEngine<R>(duration, mode),
+      super((arg1, arg2) => throw UnimplementedError());
 
-  /// The wrapped function to execute with delay behavior.
   final Func2<T1, T2, R> _inner;
-
-  /// The duration to delay before and/or after execution.
-  final Duration _duration;
-
-  /// The timing mode controlling delay placement.
-  final DelayMode _mode;
+  final DelayEngine<R> _engine;
 
   @override
-  Future<R> call(T1 arg1, T2 arg2) async {
-    // Delay before execution
-    if (_mode == DelayMode.before || _mode == DelayMode.both) {
-      await Future<void>.delayed(_duration);
-    }
-
-    // Execute
-    final result = await _inner(arg1, arg2);
-
-    // Delay after execution
-    if (_mode == DelayMode.after || _mode == DelayMode.both) {
-      await Future<void>.delayed(_duration);
-    }
-
-    return result;
-  }
+  Future<R> call(T1 arg1, T2 arg2) =>
+      _engine.run(() => _inner(arg1, arg2));
 }

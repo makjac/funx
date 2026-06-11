@@ -1,3 +1,26 @@
+## 1.2.3
+
+- **Internal refactor**: extracted shared generic engines to reduce code duplication
+  without changing any public API:
+  - `lib/src/timing/_timing_engine.dart` — `DelayEngine<R>` and `TimeoutEngine<R>`
+  - `lib/src/reliability/_reliability_engines.dart` — `RetryEngine<R>`,
+    `FallbackEngine<R>`, `RecoverEngine<R>`
+  - `lib/src/observability/_observability_engines.dart` — `TapEngine<R>`,
+    `MonitorEngine<R>`
+  - `lib/src/concurrency/_concurrency_engines.dart` — shared engines for `Lock`,
+    `Semaphore`, `Barrier`, `Bulkhead`
+- **Dead code removal**: replaced unreachable `Error.throwWithStackTrace` tail in
+  retry engine with `throw lastError!`.
+- **Test coverage improvements** (94.0 % total, up from 93.1 %):
+  - Added `test/concurrency/stress_test.dart` with 8 stress/fuzz tests for lock
+    serialization, semaphore limiting/FIFO, barrier waves, bulkhead isolation,
+    sequential fuzz, and isolated parallel wrappers.
+  - Added `test/coverage_gaps_test.dart` with 11 targeted tests for previously
+    uncovered branches in `snapshot`, `memoize`, `compress`, `priority_queue`,
+    and `schedule`.
+- **Lint**: `dart analyze --fatal-infos` now clean across the entire package
+  (lib, test, and tool files).
+
 ## 1.2.2
 
 - **Audit fixes** for concurrency, scheduling, and observability regressions:

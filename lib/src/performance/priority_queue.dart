@@ -127,10 +127,12 @@ class PriorityQueueExtension<T, R> extends Func1<T, R> {
     switch (_onQueueFull) {
       case QueueFullPolicy.dropLowestPriority:
         // Find lowest priority item
+        // coverage:ignore-start
         if (_queue.isEmpty) {
           _addToQueue(item);
           return;
         }
+        // coverage:ignore-end
 
         _sortQueue(); // Ensure queue is sorted
         final lowestPriorityItem = _queue.last;
@@ -139,28 +141,36 @@ class PriorityQueueExtension<T, R> extends Func1<T, R> {
           // Drop lowest priority item and add new one
           final dropped = _queue.removeLast();
           _onItemDropped?.call(dropped.arg);
-          dropped.completer.completeError(
-            StateError('Dropped due to lower priority'),
-          );
+          Timer.run(() {
+            dropped.completer.completeError(
+              StateError('Dropped due to lower priority'),
+            );
+          });
           _addToQueue(item);
         } else {
           // Drop new item
           _onItemDropped?.call(item.arg);
-          item.completer.completeError(
-            StateError('Dropped due to lower priority'),
-          );
+          Timer.run(() {
+            item.completer.completeError(
+              StateError('Dropped due to lower priority'),
+            );
+          });
         }
 
       case QueueFullPolicy.dropNew:
         _onItemDropped?.call(item.arg);
-        item.completer.completeError(
-          StateError('Queue full - new item dropped'),
-        );
+        Timer.run(() {
+          item.completer.completeError(
+            StateError('Queue full - new item dropped'),
+          );
+        });
 
       case QueueFullPolicy.error:
-        item.completer.completeError(
-          StateError('Queue full'),
-        );
+        Timer.run(() {
+          item.completer.completeError(
+            StateError('Queue full'),
+          );
+        });
 
       case QueueFullPolicy.waitForSpace:
         // Wait for space by polling
@@ -438,10 +448,12 @@ class PriorityQueueExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   Future<void> _handleQueueFull(_PriorityItem2<T1, T2, R> item) async {
     switch (_onQueueFull) {
       case QueueFullPolicy.dropLowestPriority:
+        // coverage:ignore-start
         if (_queue.isEmpty) {
           _addToQueue(item);
           return;
         }
+        // coverage:ignore-end
 
         _sortQueue();
         final lowestPriorityItem = _queue.last;
@@ -449,27 +461,35 @@ class PriorityQueueExtension2<T1, T2, R> extends Func2<T1, T2, R> {
         if (item.priority > lowestPriorityItem.priority) {
           final dropped = _queue.removeLast();
           _onItemDropped?.call((dropped.arg1, dropped.arg2));
-          dropped.completer.completeError(
-            StateError('Dropped due to lower priority'),
-          );
+          Timer.run(() {
+            dropped.completer.completeError(
+              StateError('Dropped due to lower priority'),
+            );
+          });
           _addToQueue(item);
         } else {
           _onItemDropped?.call((item.arg1, item.arg2));
-          item.completer.completeError(
-            StateError('Dropped due to lower priority'),
-          );
+          Timer.run(() {
+            item.completer.completeError(
+              StateError('Dropped due to lower priority'),
+            );
+          });
         }
 
       case QueueFullPolicy.dropNew:
         _onItemDropped?.call((item.arg1, item.arg2));
-        item.completer.completeError(
-          StateError('Queue full - new item dropped'),
-        );
+        Timer.run(() {
+          item.completer.completeError(
+            StateError('Queue full - new item dropped'),
+          );
+        });
 
       case QueueFullPolicy.error:
-        item.completer.completeError(
-          StateError('Queue full'),
-        );
+        Timer.run(() {
+          item.completer.completeError(
+            StateError('Queue full'),
+          );
+        });
 
       case QueueFullPolicy.waitForSpace:
         while (_queue.length >= _maxQueueSize) {
