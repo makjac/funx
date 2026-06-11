@@ -371,7 +371,6 @@ class BackpressureExtension2<T1, T2, R> extends Func2<T1, T2, R> {
         _onOverflow?.call();
         throw StateError('Item not sampled due to backpressure');
       }
-      return _bufferItem(arg1, arg2);
     }
     return _execute(arg1, arg2);
   }
@@ -391,9 +390,10 @@ class BackpressureExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     return _execute(arg1, arg2);
   }
 
-  Future<R> _bufferItem(T1 arg1, T2 arg2) {
+  Future<R> _bufferItem(T1 arg1, T2 arg2) async {
     final item = _BufferedItem2(arg1, arg2, Completer<R>());
     _buffer.add(item);
+    await _processBuffer();
     return item.completer.future;
   }
 

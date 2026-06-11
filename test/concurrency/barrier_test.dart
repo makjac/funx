@@ -243,4 +243,39 @@ void main() {
       expect((wrapped as BarrierExtension2).instance, equals(barrier));
     });
   });
+
+  group('Edge cases', () {
+    test('reset completes pending waiters with an error', () async {
+      final barrier = Barrier(parties: 3);
+
+      final waiter = barrier.await_();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      barrier.reset();
+
+      expect(waiter, throwsA(isA<StateError>()));
+      expect(barrier.isBroken, isFalse);
+    });
+
+    test('barrierAction error breaks barrier and releases waiters', () async {
+      final barrier = Barrier(
+        parties: 2,
+        barrierAction: () async => throw Exception('action failed'),
+      );
+
+      final waiter1 = barrier.await_();
+      final waiter2 = barrier.await_();
+
+      await Future.wait([
+        expectLater(waiter1, throwsA(isA<Exception>())),
+        expectLater(waiter2, throwsA(isA<Exception>())),
+      ]);
+      expect(barrier.isBroken, isTrue);
+    });
+
+    test('rejects non-positive parties count', () {
+      expect(() => Barrier(parties: 0), throwsArgumentError);
+      expect(() => Barrier(parties: -1), throwsArgumentError);
+    });
+  });
 }

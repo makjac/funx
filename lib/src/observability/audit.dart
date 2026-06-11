@@ -214,7 +214,7 @@ class AuditExtension1<T, R> extends Func1<T, R> {
       );
 
       _addLog(log);
-      onAudit?.call(log);
+      _safeOnAudit(log);
 
       return result;
     } catch (error, stackTrace) {
@@ -229,9 +229,17 @@ class AuditExtension1<T, R> extends Func1<T, R> {
       );
 
       _addLog(log);
-      onAudit?.call(log);
+      _safeOnAudit(log);
 
       rethrow;
+    }
+  }
+
+  void _safeOnAudit(AuditLog<T, R> log) {
+    try {
+      onAudit?.call(log);
+    } catch (_) {
+      // Audit callbacks must not affect the wrapped function's result.
     }
   }
 
@@ -377,7 +385,7 @@ class AuditExtension2<T1, T2, R> extends Func2<T1, T2, R> {
       );
 
       _addLog(log);
-      onAudit?.call(log);
+      _safeOnAudit(log);
 
       return result;
     } catch (error, stackTrace) {
@@ -392,9 +400,17 @@ class AuditExtension2<T1, T2, R> extends Func2<T1, T2, R> {
       );
 
       _addLog(log);
-      onAudit?.call(log);
+      _safeOnAudit(log);
 
       rethrow;
+    }
+  }
+
+  void _safeOnAudit(AuditLog<(T1, T2), R> log) {
+    try {
+      onAudit?.call(log);
+    } catch (_) {
+      // Audit callbacks must not affect the wrapped function's result.
     }
   }
 

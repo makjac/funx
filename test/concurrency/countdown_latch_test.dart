@@ -185,4 +185,11 @@ void main() {
       expect((wrapped as CountdownLatchExtension2).latch, equals(latch));
     });
   });
+
+  group('Edge cases', () {
+    test('rejects non-positive count', () {
+      expect(() => CountdownLatch(count: 0), throwsArgumentError);
+      expect(() => CountdownLatch(count: -1), throwsArgumentError);
+    });
+  });
 }

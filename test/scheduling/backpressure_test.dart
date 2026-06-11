@@ -926,5 +926,60 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test(
+        'sample strategy for Func2 executes accepted samples instead of '
+        'buffering them indefinitely', () async {
+      final executed = <(int, int)>[];
+      final completer = Completer<void>();
+
+      final processor =
+          funx.Func2<int, int, void>((int a, int b) async {
+            executed.add((a, b));
+            await completer.future;
+          }).backpressure(
+            strategy: funx.BackpressureStrategy.sample,
+            maxConcurrent: 1,
+            sampleRate: 1,
+          );
+
+      final future1 = processor(1, 2);
+      final future2 = processor(3, 4);
+
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      // Before the fix, the accepted sample would be buffered and never
+      // processed because no active execution was in progress. Completing
+      // the first execution must allow the accepted sample to finish.
+      completer.complete();
+      await Future.wait([future1, future2]);
+
+      expect(executed, contains((3, 4)));
+    });
+
+    test('buffered Func2 items are processed when capacity frees up', () async {
+      final executed = <(int, int)>[];
+      final completer = Completer<void>();
+
+      final processor =
+          funx.Func2<int, int, void>((int a, int b) async {
+            executed.add((a, b));
+            await completer.future;
+          }).backpressure(
+            strategy: funx.BackpressureStrategy.throttle,
+            maxConcurrent: 1,
+          );
+
+      final future1 = processor(1, 2);
+      final future2 = processor(3, 4);
+
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(processor.bufferSize, equals(1));
+
+      completer.complete();
+      await Future.wait([future1, future2]);
+
+      expect(executed, equals([(1, 2), (3, 4)]));
+    });
   });
 }

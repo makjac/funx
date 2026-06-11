@@ -78,7 +78,7 @@ void main() {
       expect(results.length, 3);
     });
 
-    test('executes at least once', () async {
+    test('times zero throws because no result is produced', () async {
       var callCount = 0;
 
       final func = funx.Func<int>(() async {
@@ -90,6 +90,23 @@ void main() {
       // times: 0 means no execution, so lastResult is never initialized
       expect(repeated.call, throwsA(anything));
       expect(callCount, 0);
+    });
+
+    test('executes at least once with until condition', () async {
+      var callCount = 0;
+
+      final func = funx.Func<int>(() async {
+        return ++callCount;
+      });
+
+      final repeated = func.repeat(
+        until: (result) => result == 1,
+      );
+
+      final result = await repeated();
+
+      expect(callCount, 1);
+      expect(result, 1);
     });
 
     test('infinite loop with until condition', () async {

@@ -1,3 +1,23 @@
+## 1.2.2
+
+- **Audit fixes** for concurrency, scheduling, and observability regressions:
+  - `BackpressureExtension2`: sampled items now execute immediately instead of
+    being buffered forever; buffered `Func2` items now correctly trigger
+    `_processBuffer()`.
+  - `ScheduleExtension1/2`: nullable argument values are now supported via
+    internal `_hasArg` flags; synchronous `throw` from scheduled functions is
+    caught via `Future.sync`; `catchUp` mode now awaits each execution to avoid
+    unbounded concurrency.
+  - `AuditExtension`/`MonitorExtension`/`TapExtension`: callback exceptions no
+    longer mask the wrapped function's result or original error.
+  - `SagaExtension1/2`: added optional `onCompensationError` callback so
+    compensation failures are no longer silently swallowed.
+  - `Barrier`: a throwing `barrierAction` now completes all waiters with the
+    error and marks the barrier as broken.
+  - `Lock`: timeout no longer leaves a stale waiter in the queue; `release()`
+    is only called when the lock was actually acquired.
+  - Fixed documentation typos in `barrier`, `bulkhead`, and `lock`.
+
 ## 1.2.1
 
 - **Priority Queue**: Priority-based execution ordering

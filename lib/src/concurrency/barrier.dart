@@ -60,7 +60,11 @@ class Barrier {
     this.barrierAction,
     this.timeout,
     this.onTimeout,
-  });
+  }) {
+    if (parties <= 0) {
+      throw ArgumentError.value(parties, 'parties', 'must be positive');
+    }
+  }
 
   /// Number of parties required to release the barrier.
   ///
@@ -132,7 +136,21 @@ class Barrier {
 
     if (_arrived == parties) {
       // All parties arrived
-      await barrierAction?.call();
+      try {
+        await barrierAction?.call();
+      } catch (error, stackTrace) {
+        _broken = true;
+        for (final completer in _waiters) {
+          if (!completer.isCompleted) {
+            completer.completeError(error, stackTrace);
+          }
+        }
+        _waiters.clear();
+        if (cyclic) {
+          _arrived = 0;
+        }
+        rethrow;
+      }
 
       // Release all waiters
       for (final completer in _waiters) {
@@ -189,8 +207,17 @@ class Barrier {
   /// }
   /// ```
   void reset() {
-    _arrived = 0;
     _broken = false;
+    _arrived = 0;
+
+    // Complete any pending waiters with an error so they don't hang.
+    for (final completer in _waiters) {
+      if (!completer.isCompleted) {
+        completer.completeError(
+          StateError('Barrier was reset'),
+        );
+      }
+    }
     _waiters.clear();
   }
 
@@ -360,7 +387,7 @@ class BarrierExtension1<T, R> extends Func1<T, R> {
   Barrier get instance => _barrier;
 }
 
-/// Applies barrier synchronization to two-parameter functions.ter functions.
+/// Applies barrier synchronization to two-parameter functions.
 ///
 /// Wraps a [Func2] to automatically wait at a barrier after
 /// execution. The wrapped function executes normally with its

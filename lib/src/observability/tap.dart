@@ -63,11 +63,27 @@ class TapExtension<R> extends Func<R> {
   Future<R> call() async {
     try {
       final result = await _inner();
-      onValue?.call(result);
+      _safeOnValue(result);
       return result;
     } catch (error, stackTrace) {
-      onError?.call(error, stackTrace);
+      _safeOnError(error, stackTrace);
       rethrow;
+    }
+  }
+
+  void _safeOnValue(R value) {
+    try {
+      onValue?.call(value);
+    } catch (_) {
+      // Tap callbacks must not affect the wrapped function's result.
+    }
+  }
+
+  void _safeOnError(Object error, StackTrace stackTrace) {
+    try {
+      onError?.call(error, stackTrace);
+    } catch (_) {
+      // Tap callbacks must not affect the wrapped function's result.
     }
   }
 }
@@ -127,11 +143,27 @@ class TapExtension1<T, R> extends Func1<T, R> {
   Future<R> call(T arg) async {
     try {
       final result = await _inner(arg);
-      onValue?.call(result);
+      _safeOnValue(result);
       return result;
     } catch (error, stackTrace) {
-      onError?.call(error, stackTrace);
+      _safeOnError(error, stackTrace);
       rethrow;
+    }
+  }
+
+  void _safeOnValue(R value) {
+    try {
+      onValue?.call(value);
+    } catch (_) {
+      // Tap callbacks must not affect the wrapped function's result.
+    }
+  }
+
+  void _safeOnError(Object error, StackTrace stackTrace) {
+    try {
+      onError?.call(error, stackTrace);
+    } catch (_) {
+      // Tap callbacks must not affect the wrapped function's result.
     }
   }
 }
@@ -192,11 +224,27 @@ class TapExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   Future<R> call(T1 arg1, T2 arg2) async {
     try {
       final result = await _inner(arg1, arg2);
-      onValue?.call(result);
+      _safeOnValue(result);
       return result;
     } catch (error, stackTrace) {
-      onError?.call(error, stackTrace);
+      _safeOnError(error, stackTrace);
       rethrow;
+    }
+  }
+
+  void _safeOnValue(R value) {
+    try {
+      onValue?.call(value);
+    } catch (_) {
+      // Tap callbacks must not affect the wrapped function's result.
+    }
+  }
+
+  void _safeOnError(Object error, StackTrace stackTrace) {
+    try {
+      onError?.call(error, stackTrace);
+    } catch (_) {
+      // Tap callbacks must not affect the wrapped function's result.
     }
   }
 }

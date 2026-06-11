@@ -365,5 +365,31 @@ void main() {
       await semaphore.acquire();
       semaphore.release();
     });
+
+    test('enforces optional max queue size', () async {
+      final semaphore = Semaphore(maxConcurrent: 1, maxQueueSize: 1);
+
+      await semaphore.acquire();
+
+      // One waiter fits in the queue.
+      final waiter = semaphore.acquire();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      // A second waiter exceeds the queue limit.
+      expect(
+        semaphore.acquire,
+        throwsA(isA<StateError>()),
+      );
+
+      semaphore.release();
+      await waiter;
+    });
+
+    test('rejects non-positive max queue size', () {
+      expect(
+        () => Semaphore(maxConcurrent: 1, maxQueueSize: 0),
+        throwsArgumentError,
+      );
+    });
   });
 }

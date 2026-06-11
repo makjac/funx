@@ -47,8 +47,17 @@ class Bulkhead {
     required this.poolSize,
     required this.queueSize,
   }) {
+    if (poolSize <= 0) {
+      throw ArgumentError.value(poolSize, 'poolSize', 'must be positive');
+    }
+    if (queueSize <= 0) {
+      throw ArgumentError.value(queueSize, 'queueSize', 'must be positive');
+    }
+
     for (var i = 0; i < poolSize; i++) {
-      _semaphores.add(Semaphore(maxConcurrent: 1));
+      _semaphores.add(
+        Semaphore(maxConcurrent: 1, maxQueueSize: queueSize),
+      );
     }
   }
 
@@ -280,7 +289,7 @@ class BulkheadExtension1<T, R> extends Func1<T, R> {
   Bulkhead get instance => _bulkhead;
 }
 
-/// Applies bulkhead isolation to two-parameter functions.ter functions.
+/// Applies bulkhead isolation to two-parameter functions.
 ///
 /// Wraps a [Func2] to execute within isolated resource pools,
 /// preventing cascading failures. The function automatically executes

@@ -237,7 +237,7 @@ class MonitorExtension<R> extends Func<R> {
       _metrics.lastDuration = stopwatch.elapsed;
       _metrics.totalDuration += stopwatch.elapsed;
       _metrics.lastExecutionTime = startTime;
-      onMetricsUpdate?.call(getMetrics());
+      _safeOnMetricsUpdate();
 
       return result;
     } catch (error) {
@@ -248,9 +248,17 @@ class MonitorExtension<R> extends Func<R> {
       _metrics.totalDuration += stopwatch.elapsed;
       _metrics.lastError = error;
       _metrics.lastExecutionTime = startTime;
-      onMetricsUpdate?.call(getMetrics());
+      _safeOnMetricsUpdate();
 
       rethrow;
+    }
+  }
+
+  void _safeOnMetricsUpdate() {
+    try {
+      onMetricsUpdate?.call(getMetrics());
+    } catch (_) {
+      // Metrics callbacks must not affect the wrapped function's result.
     }
   }
 }
@@ -348,7 +356,7 @@ class MonitorExtension1<T, R> extends Func1<T, R> {
       _metrics.lastDuration = stopwatch.elapsed;
       _metrics.totalDuration += stopwatch.elapsed;
       _metrics.lastExecutionTime = startTime;
-      onMetricsUpdate?.call(getMetrics());
+      _safeOnMetricsUpdate();
 
       return result;
     } catch (error) {
@@ -359,9 +367,17 @@ class MonitorExtension1<T, R> extends Func1<T, R> {
       _metrics.totalDuration += stopwatch.elapsed;
       _metrics.lastError = error;
       _metrics.lastExecutionTime = startTime;
-      onMetricsUpdate?.call(getMetrics());
+      _safeOnMetricsUpdate();
 
       rethrow;
+    }
+  }
+
+  void _safeOnMetricsUpdate() {
+    try {
+      onMetricsUpdate?.call(getMetrics());
+    } catch (_) {
+      // Metrics callbacks must not affect the wrapped function's result.
     }
   }
 }
@@ -459,7 +475,7 @@ class MonitorExtension2<T1, T2, R> extends Func2<T1, T2, R> {
       _metrics.lastDuration = stopwatch.elapsed;
       _metrics.totalDuration += stopwatch.elapsed;
       _metrics.lastExecutionTime = startTime;
-      onMetricsUpdate?.call(getMetrics());
+      _safeOnMetricsUpdate();
 
       return result;
     } catch (error) {
@@ -470,9 +486,17 @@ class MonitorExtension2<T1, T2, R> extends Func2<T1, T2, R> {
       _metrics.totalDuration += stopwatch.elapsed;
       _metrics.lastError = error;
       _metrics.lastExecutionTime = startTime;
-      onMetricsUpdate?.call(getMetrics());
+      _safeOnMetricsUpdate();
 
       rethrow;
+    }
+  }
+
+  void _safeOnMetricsUpdate() {
+    try {
+      onMetricsUpdate?.call(getMetrics());
+    } catch (_) {
+      // Metrics callbacks must not affect the wrapped function's result.
     }
   }
 }

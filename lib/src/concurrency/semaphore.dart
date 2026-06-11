@@ -36,6 +36,10 @@ class Semaphore {
   /// The [maxConcurrent] parameter sets the maximum number of permits
   /// available. The optional [queueMode] parameter (defaults to FIFO)
   /// determines the order in which waiting operations acquire permits.
+  /// The optional [maxQueueSize] parameter limits how many operations
+  /// may wait for a permit. When the limit is reached, [acquire] throws
+  /// a [StateError] immediately. A null value (the default) means no
+  /// limit.
   ///
   /// Example:
   /// ```dart
@@ -47,7 +51,16 @@ class Semaphore {
   Semaphore({
     required this.maxConcurrent,
     this.queueMode = QueueMode.fifo,
-  });
+    this.maxQueueSize,
+  }) {
+    if (maxQueueSize != null && maxQueueSize! <= 0) {
+      throw ArgumentError.value(
+        maxQueueSize,
+        'maxQueueSize',
+        'must be positive or null',
+      );
+    }
+  }
 
   /// Maximum number of concurrent operations allowed.
   ///
@@ -61,6 +74,12 @@ class Semaphore {
   /// FIFO (first-in-first-out), LIFO (last-in-first-out), or
   /// priority-based.
   final QueueMode queueMode;
+
+  /// Optional maximum number of operations that may wait for a permit.
+  ///
+  /// When set, [acquire] throws a [StateError] if the queue is already
+  /// at capacity. Null means there is no limit.
+  final int? maxQueueSize;
 
   int _currentCount = 0;
   final _queue = <Completer<void>>[];
@@ -88,6 +107,10 @@ class Semaphore {
     if (_currentCount < maxConcurrent) {
       _currentCount++;
       return;
+    }
+
+    if (maxQueueSize != null && _queue.length >= maxQueueSize!) {
+      throw StateError('Semaphore queue is full');
     }
 
     final completer = Completer<void>();

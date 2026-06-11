@@ -29,7 +29,7 @@ import 'package:funx/src/core/types.dart';
 /// });
 /// ```
 class Lock {
-  Completer<void>? _completer;
+  final _waiters = <Completer<void>>[];
   bool _isLocked = false;
 
   /// Acquires the lock, blocking if already held.
@@ -54,22 +54,32 @@ class Lock {
   /// }
   /// ```
   Future<void> acquire({Duration? timeout}) async {
-    while (_isLocked) {
-      _completer ??= Completer<void>();
-      if (timeout != null) {
-        await _completer!.future.timeout(timeout);
-      } else {
-        await _completer!.future;
-      }
+    if (!_isLocked) {
+      _isLocked = true;
+      return;
     }
-    _isLocked = true;
+
+    final completer = Completer<void>();
+    _waiters.add(completer);
+
+    if (timeout != null) {
+      try {
+        await completer.future.timeout(timeout);
+      } on TimeoutException {
+        _waiters.remove(completer);
+        rethrow;
+      }
+    } else {
+      await completer.future;
+    }
   }
 
   /// Releases the lock, allowing waiting operations to proceed.
   ///
-  /// Marks the lock as available and signals one waiting operation to
-  /// acquire it. Must be called after [acquire] to prevent deadlocks.
-  /// Use the [synchronized] method for automatic release management.
+  /// Signals the next waiting operation to acquire the permit, or marks
+  /// the lock as available when no waiters remain. Must be called after
+  /// [acquire] to prevent deadlocks. Use the [synchronized] method for
+  /// automatic release management.
   ///
   /// Example:
   /// ```dart
@@ -81,9 +91,11 @@ class Lock {
   /// }
   /// ```
   void release() {
-    _isLocked = false;
-    _completer?.complete();
-    _completer = null;
+    if (_waiters.isNotEmpty) {
+      _waiters.removeAt(0).complete();
+    } else {
+      _isLocked = false;
+    }
   }
 
   /// Executes an action within automatic lock management.
@@ -189,13 +201,19 @@ class LockExtension<R> extends Func<R> {
       _onBlocked?.call();
     }
 
+    var acquired = false;
     try {
       await _lock.acquire(timeout: _timeout);
+      acquired = true;
     } on TimeoutException {
       if (_throwOnTimeout) {
         rethrow;
       }
       // Execute anyway if not throwing
+    }
+
+    if (!acquired) {
+      return _inner();
     }
 
     try {
@@ -276,12 +294,18 @@ class LockExtension1<T, R> extends Func1<T, R> {
       _onBlocked?.call();
     }
 
+    var acquired = false;
     try {
       await _lock.acquire(timeout: _timeout);
+      acquired = true;
     } on TimeoutException {
       if (_throwOnTimeout) {
         rethrow;
       }
+    }
+
+    if (!acquired) {
+      return _inner(arg);
     }
 
     try {
@@ -305,7 +329,7 @@ class LockExtension1<T, R> extends Func1<T, R> {
   bool get isLocked => _lock.isLocked;
 }
 
-/// Applies mutual exclusion lock to two-parameter functions.ter functions.
+/// Applies mutual exclusion lock to two-parameter functions.
 ///
 /// Wraps a [Func2] to ensure only one execution at a time through
 /// automatic lock acquisition and release. Before executing the
@@ -365,12 +389,18 @@ class LockExtension2<T1, T2, R> extends Func2<T1, T2, R> {
       _onBlocked?.call();
     }
 
+    var acquired = false;
     try {
       await _lock.acquire(timeout: _timeout);
+      acquired = true;
     } on TimeoutException {
       if (_throwOnTimeout) {
         rethrow;
       }
+    }
+
+    if (!acquired) {
+      return _inner(arg1, arg2);
     }
 
     try {
