@@ -30,7 +30,9 @@ void main() {
 
   for (final entry in uncovered.entries) {
     if (lowFiles.any((f) => entry.key.endsWith(f))) {
-      print('${entry.key}: ${entry.value.take(30).join(', ')}${entry.value.length > 30 ? ' ... (${entry.value.length} total)' : ''}');
+      print(
+        '${entry.key}: ${entry.value.take(30).join(', ')}${entry.value.length > 30 ? ' ... (${entry.value.length} total)' : ''}',
+      );
     }
   }
 }
