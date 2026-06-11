@@ -63,10 +63,11 @@ class RetryExtension<R> extends Func<R> {
     BackoffStrategy? backoff,
     this.retryIf,
     this.onRetry,
-  }) : backoff = backoff ??
-             const ExponentialBackoff(
-               initialDelay: Duration(milliseconds: 100),
-             ),
+  }) : backoff =
+           backoff ??
+           const ExponentialBackoff(
+             initialDelay: Duration(milliseconds: 100),
+           ),
        _engine = RetryEngine<R>(
          maxAttempts: maxAttempts,
          backoff: backoff,
@@ -135,10 +136,11 @@ class RetryExtension1<T, R> extends Func1<T, R> {
     BackoffStrategy? backoff,
     this.retryIf,
     this.onRetry,
-  }) : backoff = backoff ??
-             const ExponentialBackoff(
-               initialDelay: Duration(milliseconds: 100),
-             ),
+  }) : backoff =
+           backoff ??
+           const ExponentialBackoff(
+             initialDelay: Duration(milliseconds: 100),
+           ),
        _engine = RetryEngine<R>(
          maxAttempts: maxAttempts,
          backoff: backoff,
@@ -207,10 +209,11 @@ class RetryExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     BackoffStrategy? backoff,
     this.retryIf,
     this.onRetry,
-  }) : backoff = backoff ??
-             const ExponentialBackoff(
-               initialDelay: Duration(milliseconds: 100),
-             ),
+  }) : backoff =
+           backoff ??
+           const ExponentialBackoff(
+             initialDelay: Duration(milliseconds: 100),
+           ),
        _engine = RetryEngine<R>(
          maxAttempts: maxAttempts,
          backoff: backoff,
@@ -236,6 +239,5 @@ class RetryExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   final RetryEngine<R> _engine;
 
   @override
-  Future<R> call(T1 arg1, T2 arg2) =>
-      _engine.run(() => _inner(arg1, arg2));
+  Future<R> call(T1 arg1, T2 arg2) => _engine.run(() => _inner(arg1, arg2));
 }

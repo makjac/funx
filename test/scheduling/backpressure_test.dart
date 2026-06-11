@@ -927,8 +927,7 @@ void main() {
       );
     });
 
-    test(
-        'sample strategy for Func2 executes accepted samples instead of '
+    test('sample strategy for Func2 executes accepted samples instead of '
         'buffering them indefinitely', () async {
       final executed = <(int, int)>[];
       final completer = Completer<void>();

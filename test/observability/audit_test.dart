@@ -258,11 +258,12 @@ void main() {
     });
 
     test('callback error does not swallow function error', () async {
-      final func = funx.Func1<int, int>((n) async {
-        throw Exception('inner failure');
-      }).audit(
-        onAudit: (_) => throw Exception('audit callback failed'),
-      );
+      final func =
+          funx.Func1<int, int>((n) async {
+            throw Exception('inner failure');
+          }).audit(
+            onAudit: (_) => throw Exception('audit callback failed'),
+          );
 
       expect(() => func(42), throwsA(isA<Exception>()));
     });

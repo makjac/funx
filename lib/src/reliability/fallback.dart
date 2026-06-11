@@ -83,9 +83,9 @@ class FallbackExtension<R> extends Func<R> {
 
   @override
   Future<R> call() => _engine.run(
-        _inner.call,
-        _fallbackFunction?.call,
-      );
+    _inner.call,
+    _fallbackFunction?.call,
+  );
 }
 
 /// Provides fallback value or function for one-parameter functions.
@@ -160,9 +160,9 @@ class FallbackExtension1<T, R> extends Func1<T, R> {
 
   @override
   Future<R> call(T arg) => _engine.run(
-        () => _inner(arg),
-        _fallbackFunction == null ? null : () => _fallbackFunction(arg),
-      );
+    () => _inner(arg),
+    _fallbackFunction == null ? null : () => _fallbackFunction(arg),
+  );
 }
 
 /// Provides fallback value or function for two-parameter functions.
@@ -236,9 +236,7 @@ class FallbackExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 
   @override
   Future<R> call(T1 arg1, T2 arg2) => _engine.run(
-        () => _inner(arg1, arg2),
-        _fallbackFunction == null
-            ? null
-            : () => _fallbackFunction(arg1, arg2),
-      );
+    () => _inner(arg1, arg2),
+    _fallbackFunction == null ? null : () => _fallbackFunction(arg1, arg2),
+  );
 }

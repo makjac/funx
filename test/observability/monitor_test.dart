@@ -463,11 +463,12 @@ void main() {
     });
 
     test('callback error does not swallow function error', () async {
-      final func = funx.Func<int>(() async {
-        throw Exception('inner failure');
-      }).monitorObservability(
-        onMetricsUpdate: (_) => throw Exception('metrics callback failed'),
-      );
+      final func =
+          funx.Func<int>(() async {
+            throw Exception('inner failure');
+          }).monitorObservability(
+            onMetricsUpdate: (_) => throw Exception('metrics callback failed'),
+          );
 
       expect(func.call, throwsA(isA<Exception>()));
     });

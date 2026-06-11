@@ -1738,8 +1738,7 @@ class Func1<T, R> {
     required List<SagaStep<dynamic, dynamic>> steps,
     void Function(int index, dynamic result)? onCompensate,
     void Function(int index, dynamic result)? onStepComplete,
-    void Function(int index, dynamic result, Object error)?
-        onCompensationError,
+    void Function(int index, dynamic result, Object error)? onCompensationError,
   }) {
     return SagaExtension1(
       this,
@@ -2650,8 +2649,7 @@ class Func2<T1, T2, R> {
     required List<SagaStep<dynamic, dynamic>> steps,
     void Function(int index, dynamic result)? onCompensate,
     void Function(int index, dynamic result)? onStepComplete,
-    void Function(int index, dynamic result, Object error)?
-        onCompensationError,
+    void Function(int index, dynamic result, Object error)? onCompensationError,
   }) {
     return SagaExtension2(
       this,

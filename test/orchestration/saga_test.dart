@@ -251,26 +251,25 @@ void main() {
     test('reports compensation failures via onCompensationError', () async {
       final failures = <(int, Object)>[];
 
-      final saga =
-          funx.Func1<int, int>((n) async => n).saga(
-            steps: [
-              SagaStep(
-                action: funx.Func1<int, int>((prev) async => prev + 1),
-                compensation: funx.Func1<int, void>((result) async {
-                  throw Exception('compensation failed: $result');
-                }),
-              ),
-              SagaStep(
-                action: funx.Func1<int, int>((prev) async {
-                  throw Exception('step failed');
-                }),
-                compensation: funx.Func1<int, void>((result) async {}),
-              ),
-            ],
-            onCompensationError: (index, result, error) {
-              failures.add((index, error));
-            },
-          );
+      final saga = funx.Func1<int, int>((n) async => n).saga(
+        steps: [
+          SagaStep(
+            action: funx.Func1<int, int>((prev) async => prev + 1),
+            compensation: funx.Func1<int, void>((result) async {
+              throw Exception('compensation failed: $result');
+            }),
+          ),
+          SagaStep(
+            action: funx.Func1<int, int>((prev) async {
+              throw Exception('step failed');
+            }),
+            compensation: funx.Func1<int, void>((result) async {}),
+          ),
+        ],
+        onCompensationError: (index, result, error) {
+          failures.add((index, error));
+        },
+      );
 
       await expectLater(saga.call(1), throwsA(isA<Exception>()));
 

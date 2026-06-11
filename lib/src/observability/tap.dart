@@ -177,6 +177,5 @@ class TapExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   final TapEngine<R> _engine;
 
   @override
-  Future<R> call(T1 arg1, T2 arg2) =>
-      _engine.run(() => _inner(arg1, arg2));
+  Future<R> call(T1 arg1, T2 arg2) => _engine.run(() => _inner(arg1, arg2));
 }

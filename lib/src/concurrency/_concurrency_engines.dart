@@ -20,9 +20,9 @@ class LockEngine<R> {
     required Duration? timeout,
     required BlockedCallback? onBlocked,
     required bool throwOnTimeout,
-  })  : _timeout = timeout,
-        _onBlocked = onBlocked,
-        _throwOnTimeout = throwOnTimeout;
+  }) : _timeout = timeout,
+       _onBlocked = onBlocked,
+       _throwOnTimeout = throwOnTimeout;
 
   final Lock _lock = Lock();
   final Duration? _timeout;
@@ -68,12 +68,12 @@ class SemaphoreEngine<R> {
     required QueueMode queueMode,
     required WaitPositionCallback? onWaiting,
     required Duration? timeout,
-  })  : _onWaiting = onWaiting,
-        _timeout = timeout,
-        _semaphore = Semaphore(
-          maxConcurrent: maxConcurrent,
-          queueMode: queueMode,
-        );
+  }) : _onWaiting = onWaiting,
+       _timeout = timeout,
+       _semaphore = Semaphore(
+         maxConcurrent: maxConcurrent,
+         queueMode: queueMode,
+       );
 
   final Semaphore _semaphore;
   final WaitPositionCallback? _onWaiting;
@@ -127,12 +127,12 @@ class BulkheadEngine<R> {
     required int queueSize,
     required Duration? timeout,
     required ErrorCallback? onIsolationFailure,
-  })  : _timeout = timeout,
-        _onIsolationFailure = onIsolationFailure,
-        _bulkhead = Bulkhead(
-          poolSize: poolSize,
-          queueSize: queueSize,
-        );
+  }) : _timeout = timeout,
+       _onIsolationFailure = onIsolationFailure,
+       _bulkhead = Bulkhead(
+         poolSize: poolSize,
+         queueSize: queueSize,
+       );
 
   final Bulkhead _bulkhead;
   final Duration? _timeout;

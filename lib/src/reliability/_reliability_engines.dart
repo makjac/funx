@@ -16,10 +16,11 @@ class RetryEngine<R> {
     required BackoffStrategy? backoff,
     required this.retryIf,
     required this.onRetry,
-  }) : backoff = backoff ??
-             const ExponentialBackoff(
-               initialDelay: Duration(milliseconds: 100),
-             ),
+  }) : backoff =
+           backoff ??
+           const ExponentialBackoff(
+             initialDelay: Duration(milliseconds: 100),
+           ),
        assert(maxAttempts >= 1, 'maxAttempts must be at least 1');
 
   /// Maximum number of execution attempts including initial call.
@@ -152,8 +153,7 @@ class RecoverEngine<R> {
     try {
       return await invoke();
     } catch (error) {
-      if (_strategy.shouldRecover != null &&
-          !_strategy.shouldRecover!(error)) {
+      if (_strategy.shouldRecover != null && !_strategy.shouldRecover!(error)) {
         rethrow;
       }
 

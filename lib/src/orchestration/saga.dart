@@ -140,7 +140,7 @@ class SagaExtension1<T, R> extends Func1<T, R> {
   /// compensation failure so callers can log or alert on partial
   /// rollbacks.
   final void Function(int index, dynamic result, Object error)?
-      onCompensationError;
+  onCompensationError;
 
   @override
   Future<R> call(T arg) async {
@@ -275,7 +275,7 @@ class SagaExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// compensation failure so callers can log or alert on partial
   /// rollbacks.
   final void Function(int index, dynamic result, Object error)?
-      onCompensationError;
+  onCompensationError;
 
   @override
   Future<R> call(T1 arg1, T2 arg2) async {

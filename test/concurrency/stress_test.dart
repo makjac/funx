@@ -73,14 +73,15 @@ void main() {
     test('semaphore FIFO order under load', () async {
       const maxConcurrent = 2;
       final order = <int>[];
-      final func = Func1((int value) async {
-        order.add(value);
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-        return value;
-      }).semaphore(
-        maxConcurrent: maxConcurrent,
-        queueMode: QueueMode.fifo,
-      );
+      final func =
+          Func1((int value) async {
+            order.add(value);
+            await Future<void>.delayed(const Duration(milliseconds: 5));
+            return value;
+          }).semaphore(
+            maxConcurrent: maxConcurrent,
+            queueMode: QueueMode.fifo,
+          );
 
       await Future.wait(List.generate(10, func.call));
 
@@ -162,9 +163,8 @@ void main() {
             case 1:
               composed = composed.semaphore(
                 maxConcurrent: random.nextInt(4) + 1,
-                queueMode: QueueMode.values[
-                  random.nextInt(QueueMode.values.length)
-                ],
+                queueMode:
+                    QueueMode.values[random.nextInt(QueueMode.values.length)],
               );
             case 2:
               composed = composed.bulkhead(

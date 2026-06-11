@@ -1686,12 +1686,15 @@ void main() {
     test('handles nullable argument for Func1', () async {
       final values = <int?>[];
 
-      final subscription = funx.Func1<int?, void>((value) async {
-        values.add(value);
-      }).scheduleRecurring(
-        interval: const Duration(milliseconds: 30),
-        maxIterations: 2,
-      ).start(null);
+      final subscription =
+          funx.Func1<int?, void>((value) async {
+                values.add(value);
+              })
+              .scheduleRecurring(
+                interval: const Duration(milliseconds: 30),
+                maxIterations: 2,
+              )
+              .start(null);
 
       expect(subscription.isRunning, isTrue);
 
@@ -1703,12 +1706,15 @@ void main() {
     test('handles nullable arguments for Func2', () async {
       final values = <(int?, String?)>[];
 
-      final subscription = funx.Func2<int?, String?, void>((a, b) async {
-        values.add((a, b));
-      }).scheduleRecurring(
-        interval: const Duration(milliseconds: 30),
-        maxIterations: 2,
-      ).start(null, null);
+      final subscription =
+          funx.Func2<int?, String?, void>((a, b) async {
+                values.add((a, b));
+              })
+              .scheduleRecurring(
+                interval: const Duration(milliseconds: 30),
+                maxIterations: 2,
+              )
+              .start(null, null);
 
       expect(subscription.isRunning, isTrue);
 
@@ -1720,13 +1726,16 @@ void main() {
     test('catches synchronous throw from scheduled Func', () async {
       var errorCount = 0;
 
-      final subscription = funx.Func(() async {
-        throw Exception('sync failure');
-      }).scheduleRecurring(
-        interval: const Duration(milliseconds: 30),
-        maxIterations: 1,
-        onScheduleError: (_) => errorCount++,
-      ).start();
+      final subscription =
+          funx.Func(() async {
+                throw Exception('sync failure');
+              })
+              .scheduleRecurring(
+                interval: const Duration(milliseconds: 30),
+                maxIterations: 1,
+                onScheduleError: (_) => errorCount++,
+              )
+              .start();
 
       expect(subscription.isRunning, isTrue);
 

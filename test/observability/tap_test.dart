@@ -42,11 +42,12 @@ void main() {
     });
 
     test('callback error does not swallow function error', () async {
-      final func = funx.Func<int>(() async {
-        throw Exception('inner failure');
-      }).tap(
-        onError: (_, _) => throw Exception('tap callback failed'),
-      );
+      final func =
+          funx.Func<int>(() async {
+            throw Exception('inner failure');
+          }).tap(
+            onError: (_, _) => throw Exception('tap callback failed'),
+          );
 
       expect(func.call, throwsA(isA<Exception>()));
     });

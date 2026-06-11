@@ -435,13 +435,15 @@ void main() {
     });
 
     test('LockExtension does not release lock it failed to acquire', () async {
-      final locked = funx.Func1<int, int>((id) async {
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        return id;
-      }).lock(
-        timeout: const Duration(milliseconds: 10),
-        throwOnTimeout: false,
-      ) as LockExtension1<int, int>;
+      final locked =
+          funx.Func1<int, int>((id) async {
+                await Future<void>.delayed(const Duration(milliseconds: 50));
+                return id;
+              }).lock(
+                timeout: const Duration(milliseconds: 10),
+                throwOnTimeout: false,
+              )
+              as LockExtension1<int, int>;
 
       // First call acquires the lock.
       final future1 = locked(1);
