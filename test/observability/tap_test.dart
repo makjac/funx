@@ -29,9 +29,27 @@ void main() {
         throw Exception('test');
       }).tap(onError: (error, stack) => caughtError = error);
 
-      expect(func.call, throwsException);
-      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await expectLater(func.call, throwsException);
       expect(caughtError, isA<Exception>());
+    });
+
+    test('callback error does not swallow function result', () async {
+      final func = funx.Func<int>(() async => 42).tap(
+        onValue: (_) => throw Exception('tap callback failed'),
+      );
+
+      expect(await func(), equals(42));
+    });
+
+    test('callback error does not swallow function error', () async {
+      final func =
+          funx.Func<int>(() async {
+            throw Exception('inner failure');
+          }).tap(
+            onError: (_, _) => throw Exception('tap callback failed'),
+          );
+
+      expect(func.call, throwsA(isA<Exception>()));
     });
 
     test('rethrows errors', () async {

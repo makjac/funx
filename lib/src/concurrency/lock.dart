@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:funx/src/concurrency/_concurrency_engines.dart';
 import 'package:funx/src/core/func.dart';
 import 'package:funx/src/core/types.dart';
 
@@ -29,7 +30,7 @@ import 'package:funx/src/core/types.dart';
 /// });
 /// ```
 class Lock {
-  Completer<void>? _completer;
+  final _waiters = <Completer<void>>[];
   bool _isLocked = false;
 
   /// Acquires the lock, blocking if already held.
@@ -54,22 +55,32 @@ class Lock {
   /// }
   /// ```
   Future<void> acquire({Duration? timeout}) async {
-    while (_isLocked) {
-      _completer ??= Completer<void>();
-      if (timeout != null) {
-        await _completer!.future.timeout(timeout);
-      } else {
-        await _completer!.future;
-      }
+    if (!_isLocked) {
+      _isLocked = true;
+      return;
     }
-    _isLocked = true;
+
+    final completer = Completer<void>();
+    _waiters.add(completer);
+
+    if (timeout != null) {
+      try {
+        await completer.future.timeout(timeout);
+      } on TimeoutException {
+        _waiters.remove(completer);
+        rethrow;
+      }
+    } else {
+      await completer.future;
+    }
   }
 
   /// Releases the lock, allowing waiting operations to proceed.
   ///
-  /// Marks the lock as available and signals one waiting operation to
-  /// acquire it. Must be called after [acquire] to prevent deadlocks.
-  /// Use the [synchronized] method for automatic release management.
+  /// Signals the next waiting operation to acquire the permit, or marks
+  /// the lock as available when no waiters remain. Must be called after
+  /// [acquire] to prevent deadlocks. Use the [synchronized] method for
+  /// automatic release management.
   ///
   /// Example:
   /// ```dart
@@ -81,9 +92,11 @@ class Lock {
   /// }
   /// ```
   void release() {
-    _isLocked = false;
-    _completer?.complete();
-    _completer = null;
+    if (_waiters.isNotEmpty) {
+      _waiters.removeAt(0).complete();
+    } else {
+      _isLocked = false;
+    }
   }
 
   /// Executes an action within automatic lock management.
@@ -133,9 +146,9 @@ class Lock {
 /// Wraps a [Func] to ensure only one execution at a time through
 /// automatic lock acquisition and release. Before executing the
 /// wrapped function, acquires the lock and waits if necessary. The
-/// optional [_timeout] limits wait duration. The optional
-/// [_onBlocked] callback is invoked when execution finds the lock
-/// already held. The [_throwOnTimeout] flag controls timeout
+/// optional [timeout] limits wait duration. The optional
+/// [onBlocked] callback is invoked when execution finds the lock
+/// already held. The [throwOnTimeout] flag controls timeout
 /// behavior. The [isLocked] getter indicates lock status. This
 /// pattern is essential for protecting critical sections and
 /// preventing concurrent access to shared resources.
@@ -153,8 +166,8 @@ class LockExtension<R> extends Func<R> {
   /// Creates a lock extension for a no-parameter function.
   ///
   /// The [_inner] parameter is the function to wrap. The optional
-  /// [_timeout] sets the maximum wait time for lock acquisition. The
-  /// optional [_onBlocked] callback is invoked when the lock is
+  /// [timeout] sets the maximum wait time for lock acquisition. The
+  /// optional [onBlocked] callback is invoked when the lock is
   /// already held. The [throwOnTimeout] parameter determines whether
   /// to throw [TimeoutException] on timeout (true) or proceed anyway
   /// (false).
@@ -170,40 +183,21 @@ class LockExtension<R> extends Func<R> {
   /// ```
   LockExtension(
     this._inner,
-    this._timeout,
-    this._onBlocked, {
+    Duration? timeout,
+    BlockedCallback? onBlocked, {
     required bool throwOnTimeout,
-  }) : _throwOnTimeout = throwOnTimeout,
+  }) : _engine = LockEngine<R>(
+         timeout: timeout,
+         onBlocked: onBlocked,
+         throwOnTimeout: throwOnTimeout,
+       ),
        super(_inner.call);
 
   final Func<R> _inner;
-  final Duration? _timeout;
-  final BlockedCallback? _onBlocked;
-  final bool _throwOnTimeout;
-
-  final Lock _lock = Lock();
+  final LockEngine<R> _engine;
 
   @override
-  Future<R> call() async {
-    if (_lock.isLocked) {
-      _onBlocked?.call();
-    }
-
-    try {
-      await _lock.acquire(timeout: _timeout);
-    } on TimeoutException {
-      if (_throwOnTimeout) {
-        rethrow;
-      }
-      // Execute anyway if not throwing
-    }
-
-    try {
-      return await _inner();
-    } finally {
-      _lock.release();
-    }
-  }
+  Future<R> call() => _engine.run(_inner.call);
 
   /// Returns whether the lock is currently held.
   ///
@@ -213,7 +207,7 @@ class LockExtension<R> extends Func<R> {
   ///   print('Function is locked');
   /// }
   /// ```
-  bool get isLocked => _lock.isLocked;
+  bool get isLocked => _engine.isLocked;
 }
 
 /// Applies mutual exclusion lock to one-parameter functions.
@@ -221,9 +215,9 @@ class LockExtension<R> extends Func<R> {
 /// Wraps a [Func1] to ensure only one execution at a time through
 /// automatic lock acquisition and release. Before executing the
 /// wrapped function, acquires the lock and waits if necessary. The
-/// optional [_timeout] limits wait duration. The optional
-/// [_onBlocked] callback is invoked when execution finds the lock
-/// already held. The [_throwOnTimeout] flag controls timeout
+/// optional [timeout] limits wait duration. The optional
+/// [onBlocked] callback is invoked when execution finds the lock
+/// already held. The [throwOnTimeout] flag controls timeout
 /// behavior. The [isLocked] getter indicates lock status. This
 /// pattern is essential for protecting critical sections and
 /// preventing concurrent access to shared resources.
@@ -240,8 +234,8 @@ class LockExtension1<T, R> extends Func1<T, R> {
   /// Creates a lock extension for a one-parameter function.
   ///
   /// The [_inner] parameter is the function to wrap. The optional
-  /// [_timeout] sets the maximum wait time for lock acquisition. The
-  /// optional [_onBlocked] callback is invoked when the lock is
+  /// [timeout] sets the maximum wait time for lock acquisition. The
+  /// optional [onBlocked] callback is invoked when the lock is
   /// already held. The [throwOnTimeout] parameter determines whether
   /// to throw [TimeoutException] on timeout (true) or proceed anyway
   /// (false).
@@ -257,62 +251,34 @@ class LockExtension1<T, R> extends Func1<T, R> {
   /// ```
   LockExtension1(
     this._inner,
-    this._timeout,
-    this._onBlocked, {
+    Duration? timeout,
+    BlockedCallback? onBlocked, {
     required bool throwOnTimeout,
-  }) : _throwOnTimeout = throwOnTimeout,
-       super(_inner.call);
+  }) : _engine = LockEngine<R>(
+         timeout: timeout,
+         onBlocked: onBlocked,
+         throwOnTimeout: throwOnTimeout,
+       ),
+       super((arg) => throw UnimplementedError());
 
   final Func1<T, R> _inner;
-  final Duration? _timeout;
-  final BlockedCallback? _onBlocked;
-  final bool _throwOnTimeout;
-
-  final Lock _lock = Lock();
+  final LockEngine<R> _engine;
 
   @override
-  Future<R> call(T arg) async {
-    if (_lock.isLocked) {
-      _onBlocked?.call();
-    }
+  Future<R> call(T arg) => _engine.run(() => _inner(arg));
 
-    try {
-      await _lock.acquire(timeout: _timeout);
-    } on TimeoutException {
-      if (_throwOnTimeout) {
-        rethrow;
-      }
-    }
-
-    try {
-      return await _inner(arg);
-    } finally {
-      _lock.release();
-    }
-  }
-
-  /// Whether the lock is currently held.
-  ///
-  /// Returns true if the lock is acquired and held by an execution,
-  /// false if available. Use this to check lock status.
-  ///
-  /// Example:
-  /// ```dart
-  /// if (lockedFunc.isLocked) {
-  ///   print('Function is currently executing');
-  /// }
-  /// ```
-  bool get isLocked => _lock.isLocked;
+  /// Returns whether the lock is currently held.
+  bool get isLocked => _engine.isLocked;
 }
 
-/// Applies mutual exclusion lock to two-parameter functions.ter functions.
+/// Applies mutual exclusion lock to two-parameter functions.
 ///
 /// Wraps a [Func2] to ensure only one execution at a time through
 /// automatic lock acquisition and release. Before executing the
 /// wrapped function, acquires the lock and waits if necessary. The
-/// optional [_timeout] limits wait duration. The optional
-/// [_onBlocked] callback is invoked when execution finds the lock
-/// already held. The [_throwOnTimeout] flag controls timeout
+/// optional [timeout] limits wait duration. The optional
+/// [onBlocked] callback is invoked when execution finds the lock
+/// already held. The [throwOnTimeout] flag controls timeout
 /// behavior. The [isLocked] getter indicates lock status. This
 /// pattern is essential for protecting critical sections and
 /// preventing concurrent access to shared resources.
@@ -329,8 +295,8 @@ class LockExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a lock extension for a two-parameter function.
   ///
   /// The [_inner] parameter is the function to wrap. The optional
-  /// [_timeout] sets the maximum wait time for lock acquisition. The
-  /// optional [_onBlocked] callback is invoked when the lock is
+  /// [timeout] sets the maximum wait time for lock acquisition. The
+  /// optional [onBlocked] callback is invoked when the lock is
   /// already held. The [throwOnTimeout] parameter determines whether
   /// to throw [TimeoutException] on timeout (true) or proceed anyway
   /// (false).
@@ -346,47 +312,22 @@ class LockExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// ```
   LockExtension2(
     this._inner,
-    this._timeout,
-    this._onBlocked, {
+    Duration? timeout,
+    BlockedCallback? onBlocked, {
     required bool throwOnTimeout,
-  }) : _throwOnTimeout = throwOnTimeout,
-       super(_inner.call);
+  }) : _engine = LockEngine<R>(
+         timeout: timeout,
+         onBlocked: onBlocked,
+         throwOnTimeout: throwOnTimeout,
+       ),
+       super((arg1, arg2) => throw UnimplementedError());
 
   final Func2<T1, T2, R> _inner;
-  final Duration? _timeout;
-  final BlockedCallback? _onBlocked;
-  final bool _throwOnTimeout;
-
-  final Lock _lock = Lock();
+  final LockEngine<R> _engine;
 
   @override
-  Future<R> call(T1 arg1, T2 arg2) async {
-    if (_lock.isLocked) {
-      _onBlocked?.call();
-    }
-
-    try {
-      await _lock.acquire(timeout: _timeout);
-    } on TimeoutException {
-      if (_throwOnTimeout) {
-        rethrow;
-      }
-    }
-
-    try {
-      return await _inner(arg1, arg2);
-    } finally {
-      _lock.release();
-    }
-  }
+  Future<R> call(T1 arg1, T2 arg2) => _engine.run(() => _inner(arg1, arg2));
 
   /// Returns whether the lock is currently held.
-  ///
-  /// Example:
-  /// ```dart
-  /// if (lockedFunc.isLocked) {
-  ///   print('Function is locked');
-  /// }
-  /// ```
-  bool get isLocked => _lock.isLocked;
+  bool get isLocked => _engine.isLocked;
 }

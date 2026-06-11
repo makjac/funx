@@ -49,7 +49,11 @@ class CountdownLatch {
   CountdownLatch({
     required int count,
     this.onComplete,
-  }) : _count = count;
+  }) : _count = count {
+    if (count <= 0) {
+      throw ArgumentError.value(count, 'count', 'must be positive');
+    }
+  }
 
   /// Optional callback executed when count reaches zero.
   ///

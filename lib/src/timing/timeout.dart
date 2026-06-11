@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
+import 'package:funx/src/timing/_timing_engine.dart';
 
 /// Enforces time limit on function execution by throwing exception on
 /// timeout.
@@ -53,26 +54,16 @@ class TimeoutExtension<R> extends Func<R> {
   /// ```
   TimeoutExtension(
     this._inner,
-    this._duration, [
-    this._onTimeout,
-  ]) : super(() => throw UnimplementedError());
+    Duration duration, [
+    FutureOr<R> Function()? onTimeout,
+  ]) : _engine = TimeoutEngine<R>(duration, onTimeout),
+       super(() => throw UnimplementedError());
 
-  /// The wrapped function to execute with timeout constraint.
   final Func<R> _inner;
-
-  /// The maximum duration allowed for execution.
-  final Duration _duration;
-
-  /// Optional callback to handle timeout events and provide fallback.
-  final FutureOr<R> Function()? _onTimeout;
+  final TimeoutEngine<R> _engine;
 
   @override
-  Future<R> call() async {
-    if (_onTimeout != null) {
-      return _inner().timeout(_duration, onTimeout: _onTimeout);
-    }
-    return _inner().timeout(_duration);
-  }
+  Future<R> call() => _engine.run(_inner.call);
 }
 
 /// Enforces time limit on single-parameter function execution.
@@ -117,26 +108,16 @@ class TimeoutExtension1<T, R> extends Func1<T, R> {
   /// ```
   TimeoutExtension1(
     this._inner,
-    this._duration, [
-    this._onTimeout,
-  ]) : super((arg) => throw UnimplementedError());
+    Duration duration, [
+    FutureOr<R> Function()? onTimeout,
+  ]) : _engine = TimeoutEngine<R>(duration, onTimeout),
+       super((arg) => throw UnimplementedError());
 
-  /// The wrapped function to execute with timeout constraint.
   final Func1<T, R> _inner;
-
-  /// The maximum duration allowed for execution.
-  final Duration _duration;
-
-  /// Optional callback to handle timeout events and provide fallback.
-  final FutureOr<R> Function()? _onTimeout;
+  final TimeoutEngine<R> _engine;
 
   @override
-  Future<R> call(T arg) async {
-    if (_onTimeout != null) {
-      return _inner(arg).timeout(_duration, onTimeout: _onTimeout);
-    }
-    return _inner(arg).timeout(_duration);
-  }
+  Future<R> call(T arg) => _engine.run(() => _inner(arg));
 }
 
 /// Enforces time limit on two-parameter function execution.
@@ -182,24 +163,14 @@ class TimeoutExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// ```
   TimeoutExtension2(
     this._inner,
-    this._duration, [
-    this._onTimeout,
-  ]) : super((arg1, arg2) => throw UnimplementedError());
+    Duration duration, [
+    FutureOr<R> Function()? onTimeout,
+  ]) : _engine = TimeoutEngine<R>(duration, onTimeout),
+       super((arg1, arg2) => throw UnimplementedError());
 
-  /// The wrapped function to execute with timeout constraint.
   final Func2<T1, T2, R> _inner;
-
-  /// The maximum duration allowed for execution.
-  final Duration _duration;
-
-  /// Optional callback to handle timeout events and provide fallback.
-  final FutureOr<R> Function()? _onTimeout;
+  final TimeoutEngine<R> _engine;
 
   @override
-  Future<R> call(T1 arg1, T2 arg2) async {
-    if (_onTimeout != null) {
-      return _inner(arg1, arg2).timeout(_duration, onTimeout: _onTimeout);
-    }
-    return _inner(arg1, arg2).timeout(_duration);
-  }
+  Future<R> call(T1 arg1, T2 arg2) => _engine.run(() => _inner(arg1, arg2));
 }

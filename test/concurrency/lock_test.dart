@@ -405,5 +405,62 @@ void main() {
       expect(count1, equals(1));
       expect(count2, equals(1));
     });
+
+    test('timeout removes stale waiter before next release', () async {
+      final lock = Lock();
+      final order = <int>[];
+
+      await lock.acquire();
+
+      // Start a waiter that will time out.
+      final timedOut = lock
+          .acquire(timeout: const Duration(milliseconds: 5))
+          .then((_) async => order.add(1))
+          .catchError((Object _) {});
+
+      // Give the waiter time to register and then time out.
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      // Start another waiter that should acquire the lock after release.
+      final second = lock.acquire().then((_) async => order.add(2));
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      lock.release();
+
+      await timedOut;
+      await second;
+
+      // The timed-out waiter must not consume the release signal.
+      expect(order, equals([2]));
+    });
+
+    test('LockExtension does not release lock it failed to acquire', () async {
+      final locked =
+          funx.Func1<int, int>((id) async {
+                await Future<void>.delayed(const Duration(milliseconds: 50));
+                return id;
+              }).lock(
+                timeout: const Duration(milliseconds: 10),
+                throwOnTimeout: false,
+              )
+              as LockExtension1<int, int>;
+
+      // First call acquires the lock.
+      final future1 = locked(1);
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      // Second call times out but still executes (without the lock).
+      final future2 = locked(2);
+
+      // The first call must still hold the lock; the timed-out second
+      // call must not have released it.
+      expect(locked.isLocked, isTrue);
+
+      await Future.wait([future1, future2]);
+
+      // After both calls complete the lock must be fully released.
+      expect(locked.isLocked, isFalse);
+    });
   });
 }

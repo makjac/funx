@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
+import 'package:funx/src/reliability/_reliability_engines.dart';
 
 /// Provides fallback value or function for no-parameter functions.
 ///
@@ -61,46 +62,30 @@ class FallbackExtension<R> extends Func<R> {
          fallbackValue == null || fallbackFunction == null,
          'Only one of fallbackValue or fallbackFunction can be provided',
        ),
-       _fallbackValue = fallbackValue,
        _fallbackFunction = fallbackFunction,
+       _engine = FallbackEngine<R>(
+         fallbackValue: fallbackValue,
+         fallbackIf: fallbackIf,
+         onFallback: onFallback,
+       ),
        super(() => throw UnimplementedError());
 
   final Func<R> _inner;
-  final R? _fallbackValue;
   final Func<R>? _fallbackFunction;
 
   /// Predicate determining if error should trigger fallback.
-  ///
-  /// When null, all errors trigger fallback. When provided, only
-  /// errors passing predicate trigger fallback; others are rethrown.
   final bool Function(Object error)? fallbackIf;
 
   /// Callback invoked when fallback is used.
-  ///
-  /// Receives error that triggered fallback. Useful for logging,
-  /// metrics, or monitoring fallback usage patterns.
   final void Function(Object error)? onFallback;
 
+  final FallbackEngine<R> _engine;
+
   @override
-  Future<R> call() async {
-    try {
-      return await _inner();
-    } catch (error) {
-      // Check if we should use fallback for this error
-      if (fallbackIf != null && !fallbackIf!(error)) {
-        rethrow;
-      }
-
-      onFallback?.call(error);
-
-      // Return fallback value or execute fallback function
-      if (_fallbackValue != null) {
-        return _fallbackValue as R;
-      } else {
-        return _fallbackFunction!();
-      }
-    }
-  }
+  Future<R> call() => _engine.run(
+    _inner.call,
+    _fallbackFunction?.call,
+  );
 }
 
 /// Provides fallback value or function for one-parameter functions.
@@ -154,46 +139,30 @@ class FallbackExtension1<T, R> extends Func1<T, R> {
          fallbackValue == null || fallbackFunction == null,
          'Only one of fallbackValue or fallbackFunction can be provided',
        ),
-       _fallbackValue = fallbackValue,
        _fallbackFunction = fallbackFunction,
+       _engine = FallbackEngine<R>(
+         fallbackValue: fallbackValue,
+         fallbackIf: fallbackIf,
+         onFallback: onFallback,
+       ),
        super((arg) => throw UnimplementedError());
 
   final Func1<T, R> _inner;
-  final R? _fallbackValue;
   final Func1<T, R>? _fallbackFunction;
 
   /// Predicate determining if error should trigger fallback.
-  ///
-  /// When null, all errors trigger fallback. When provided, only
-  /// errors passing predicate trigger fallback; others are rethrown.
   final bool Function(Object error)? fallbackIf;
 
   /// Callback invoked when fallback is used.
-  ///
-  /// Receives error that triggered fallback. Useful for logging,
-  /// metrics, or monitoring fallback usage patterns.
   final void Function(Object error)? onFallback;
 
+  final FallbackEngine<R> _engine;
+
   @override
-  Future<R> call(T arg) async {
-    try {
-      return await _inner(arg);
-    } catch (error) {
-      // Check if we should use fallback for this error
-      if (fallbackIf != null && !fallbackIf!(error)) {
-        rethrow;
-      }
-
-      onFallback?.call(error);
-
-      // Return fallback value or execute fallback function
-      if (_fallbackValue != null) {
-        return _fallbackValue as R;
-      } else {
-        return _fallbackFunction!(arg);
-      }
-    }
-  }
+  Future<R> call(T arg) => _engine.run(
+    () => _inner(arg),
+    _fallbackFunction == null ? null : () => _fallbackFunction(arg),
+  );
 }
 
 /// Provides fallback value or function for two-parameter functions.
@@ -229,7 +198,7 @@ class FallbackExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// ```dart
   /// final withFallback = FallbackExtension2(
   ///   primaryFunc,
-  ///   fallbackValue: defaultResult,
+  ///   fallbackFunction: (id, data) => cache.set(id, data),
   /// );
   /// ```
   FallbackExtension2(
@@ -246,44 +215,28 @@ class FallbackExtension2<T1, T2, R> extends Func2<T1, T2, R> {
          fallbackValue == null || fallbackFunction == null,
          'Only one of fallbackValue or fallbackFunction can be provided',
        ),
-       _fallbackValue = fallbackValue,
        _fallbackFunction = fallbackFunction,
+       _engine = FallbackEngine<R>(
+         fallbackValue: fallbackValue,
+         fallbackIf: fallbackIf,
+         onFallback: onFallback,
+       ),
        super((arg1, arg2) => throw UnimplementedError());
 
   final Func2<T1, T2, R> _inner;
-  final R? _fallbackValue;
   final Func2<T1, T2, R>? _fallbackFunction;
 
   /// Predicate determining if error should trigger fallback.
-  ///
-  /// When null, all errors trigger fallback. When provided, only
-  /// errors passing predicate trigger fallback; others are rethrown.
   final bool Function(Object error)? fallbackIf;
 
   /// Callback invoked when fallback is used.
-  ///
-  /// Receives error that triggered fallback. Useful for logging,
-  /// metrics, or monitoring fallback usage patterns.
   final void Function(Object error)? onFallback;
 
+  final FallbackEngine<R> _engine;
+
   @override
-  Future<R> call(T1 arg1, T2 arg2) async {
-    try {
-      return await _inner(arg1, arg2);
-    } catch (error) {
-      // Check if we should use fallback for this error
-      if (fallbackIf != null && !fallbackIf!(error)) {
-        rethrow;
-      }
-
-      onFallback?.call(error);
-
-      // Return fallback value or execute fallback function
-      if (_fallbackValue != null) {
-        return _fallbackValue as R;
-      } else {
-        return _fallbackFunction!(arg1, arg2);
-      }
-    }
-  }
+  Future<R> call(T1 arg1, T2 arg2) => _engine.run(
+    () => _inner(arg1, arg2),
+    _fallbackFunction == null ? null : () => _fallbackFunction(arg1, arg2),
+  );
 }

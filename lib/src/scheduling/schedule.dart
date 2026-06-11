@@ -219,10 +219,14 @@ class ScheduleExtension<R> extends Func<R> {
         }
 
       case MissedExecutionPolicy.catchUp:
-        // Execute all missed occurrences
+        // Execute all missed occurrences.
         if (_mode == ScheduleMode.recurring) {
           var catchupTime = scheduled;
           while (catchupTime.isBefore(now)) {
+            if (_maxIterations != null && _iterationCount >= _maxIterations) {
+              _stop();
+              return;
+            }
             _executeScheduled();
             catchupTime = catchupTime.add(_interval!);
           }
@@ -243,7 +247,7 @@ class ScheduleExtension<R> extends Func<R> {
     _onTick?.call(_iterationCount);
 
     unawaited(
-      _inner()
+      Future.sync(_inner.call)
           .then((result) {
             _lastExecution = DateTime.now();
 
@@ -378,6 +382,7 @@ class ScheduleExtension1<T, R> extends Func1<T, R> {
   DateTime? _lastExecution;
   DateTime? _nextExecution;
   T? _arg;
+  bool _hasArg = false;
 
   void _validateConfiguration() {
     switch (_mode) {
@@ -415,6 +420,7 @@ class ScheduleExtension1<T, R> extends Func1<T, R> {
     }
 
     _arg = arg;
+    _hasArg = true;
     _isRunning = true;
     _isPaused = false;
     _iterationCount = 0;
@@ -489,6 +495,10 @@ class ScheduleExtension1<T, R> extends Func1<T, R> {
         if (_mode == ScheduleMode.recurring) {
           var catchupTime = scheduled;
           while (catchupTime.isBefore(now)) {
+            if (_maxIterations != null && _iterationCount >= _maxIterations) {
+              _stop();
+              return;
+            }
             _executeScheduled();
             catchupTime = catchupTime.add(_interval!);
           }
@@ -503,13 +513,13 @@ class ScheduleExtension1<T, R> extends Func1<T, R> {
   }
 
   void _executeScheduled() {
-    if (!_isRunning || _isPaused || _arg == null) return;
+    if (!_isRunning || _isPaused || !_hasArg) return;
 
     _iterationCount++;
     _onTick?.call(_iterationCount);
 
     unawaited(
-      _inner(_arg as T)
+      Future.sync(() => _inner(_arg as T))
           .then((result) {
             _lastExecution = DateTime.now();
 
@@ -554,6 +564,7 @@ class ScheduleExtension1<T, R> extends Func1<T, R> {
     _timer?.cancel();
     _timer = null;
     _arg = null;
+    _hasArg = false;
   }
 
   @override
@@ -627,6 +638,8 @@ class ScheduleExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   DateTime? _nextExecution;
   T1? _arg1;
   T2? _arg2;
+  bool _hasArg1 = false;
+  bool _hasArg2 = false;
 
   void _validateConfiguration() {
     switch (_mode) {
@@ -665,6 +678,8 @@ class ScheduleExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 
     _arg1 = arg1;
     _arg2 = arg2;
+    _hasArg1 = true;
+    _hasArg2 = true;
     _isRunning = true;
     _isPaused = false;
     _iterationCount = 0;
@@ -739,6 +754,10 @@ class ScheduleExtension2<T1, T2, R> extends Func2<T1, T2, R> {
         if (_mode == ScheduleMode.recurring) {
           var catchupTime = scheduled;
           while (catchupTime.isBefore(now)) {
+            if (_maxIterations != null && _iterationCount >= _maxIterations) {
+              _stop();
+              return;
+            }
             _executeScheduled();
             catchupTime = catchupTime.add(_interval!);
           }
@@ -753,13 +772,13 @@ class ScheduleExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   }
 
   void _executeScheduled() {
-    if (!_isRunning || _isPaused || _arg1 == null || _arg2 == null) return;
+    if (!_isRunning || _isPaused || !_hasArg1 || !_hasArg2) return;
 
     _iterationCount++;
     _onTick?.call(_iterationCount);
 
     unawaited(
-      _inner(_arg1 as T1, _arg2 as T2)
+      Future.sync(() => _inner(_arg1 as T1, _arg2 as T2))
           .then((result) {
             _lastExecution = DateTime.now();
 
@@ -805,6 +824,8 @@ class ScheduleExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     _timer = null;
     _arg1 = null;
     _arg2 = null;
+    _hasArg1 = false;
+    _hasArg2 = false;
   }
 
   @override

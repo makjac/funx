@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:funx/src/concurrency/_concurrency_engines.dart';
 import 'package:funx/src/concurrency/semaphore.dart';
 import 'package:funx/src/core/func.dart';
 import 'package:funx/src/core/types.dart';
@@ -47,8 +48,17 @@ class Bulkhead {
     required this.poolSize,
     required this.queueSize,
   }) {
+    if (poolSize <= 0) {
+      throw ArgumentError.value(poolSize, 'poolSize', 'must be positive');
+    }
+    if (queueSize <= 0) {
+      throw ArgumentError.value(queueSize, 'queueSize', 'must be positive');
+    }
+
     for (var i = 0; i < poolSize; i++) {
-      _semaphores.add(Semaphore(maxConcurrent: 1));
+      _semaphores.add(
+        Semaphore(maxConcurrent: 1, maxQueueSize: queueSize),
+      );
     }
   }
 
@@ -113,10 +123,10 @@ class Bulkhead {
 ///
 /// Wraps a [Func] to execute within isolated resource pools,
 /// preventing cascading failures. The function automatically executes
-/// in a pool selected by round-robin distribution. The [_poolSize]
-/// and [_queueSize] configure the bulkhead capacity. The optional
-/// [_timeout] limits pool access wait time. The optional
-/// [_onIsolationFailure] callback handles pool access or execution
+/// in a pool selected by round-robin distribution. The [poolSize]
+/// and [queueSize] configure the bulkhead capacity. The optional
+/// [timeout] limits pool access wait time. The optional
+/// [onIsolationFailure] callback handles pool access or execution
 /// failures. The [instance] getter provides access to the underlying
 /// bulkhead. This pattern is essential for isolating critical
 /// operations and preventing resource exhaustion.
@@ -134,10 +144,10 @@ class Bulkhead {
 class BulkheadExtension<R> extends Func<R> {
   /// Creates a bulkhead extension for a no-parameter function.
   ///
-  /// The [_inner] parameter is the function to wrap. The [_poolSize]
-  /// and [_queueSize] parameters configure the bulkhead resource
-  /// pools. The optional [_timeout] sets the maximum wait time for
-  /// pool access. The optional [_onIsolationFailure] callback is
+  /// The [_inner] parameter is the function to wrap. The [poolSize]
+  /// and [queueSize] parameters configure the bulkhead resource
+  /// pools. The optional [timeout] sets the maximum wait time for
+  /// pool access. The optional [onIsolationFailure] callback is
   /// invoked when pool access fails or execution throws an exception.
   ///
   /// Example:
@@ -152,37 +162,23 @@ class BulkheadExtension<R> extends Func<R> {
   /// ```
   BulkheadExtension(
     this._inner,
-    this._poolSize,
-    this._queueSize,
-    this._timeout,
-    this._onIsolationFailure,
-  ) : super(_inner.call) {
-    _bulkhead = Bulkhead(
-      poolSize: _poolSize,
-      queueSize: _queueSize,
-    );
-  }
+    int poolSize,
+    int queueSize,
+    Duration? timeout,
+    ErrorCallback? onIsolationFailure,
+  ) : _engine = BulkheadEngine<R>(
+        poolSize: poolSize,
+        queueSize: queueSize,
+        timeout: timeout,
+        onIsolationFailure: onIsolationFailure,
+      ),
+      super(_inner.call);
 
   final Func<R> _inner;
-  final int _poolSize;
-  final int _queueSize;
-  final Duration? _timeout;
-  final ErrorCallback? _onIsolationFailure;
-
-  late final Bulkhead _bulkhead;
+  final BulkheadEngine<R> _engine;
 
   @override
-  Future<R> call() async {
-    try {
-      return await _bulkhead.execute(
-        _inner.call,
-        timeout: _timeout,
-      );
-    } catch (error, stackTrace) {
-      _onIsolationFailure?.call(error, stackTrace);
-      rethrow;
-    }
-  }
+  Future<R> call() => _engine.run(_inner.call);
 
   /// The bulkhead instance.
   ///
@@ -190,17 +186,17 @@ class BulkheadExtension<R> extends Func<R> {
   /// ```dart
   /// print('Pool size: ${isolatedFunc.instance.poolSize}');
   /// ```
-  Bulkhead get instance => _bulkhead;
+  Bulkhead get instance => _engine.instance;
 }
 
 /// Applies bulkhead isolation to one-parameter functions.
 ///
 /// Wraps a [Func1] to execute within isolated resource pools,
 /// preventing cascading failures. The function automatically executes
-/// in a pool selected by round-robin distribution. The [_poolSize]
-/// and [_queueSize] configure the bulkhead capacity. The optional
-/// [_timeout] limits pool access wait time. The optional
-/// [_onIsolationFailure] callback handles pool access or execution
+/// in a pool selected by round-robin distribution. The [poolSize]
+/// and [queueSize] configure the bulkhead capacity. The optional
+/// [timeout] limits pool access wait time. The optional
+/// [onIsolationFailure] callback handles pool access or execution
 /// failures. The [instance] getter provides access to the underlying
 /// bulkhead. This pattern is essential for isolating critical
 /// operations and preventing resource exhaustion.
@@ -217,10 +213,10 @@ class BulkheadExtension<R> extends Func<R> {
 class BulkheadExtension1<T, R> extends Func1<T, R> {
   /// Creates a bulkhead extension for a one-parameter function.
   ///
-  /// The [_inner] parameter is the function to wrap. The [_poolSize]
-  /// and [_queueSize] parameters configure the bulkhead resource
-  /// pools. The optional [_timeout] sets the maximum wait time for
-  /// pool access. The optional [_onIsolationFailure] callback is
+  /// The [_inner] parameter is the function to wrap. The [poolSize]
+  /// and [queueSize] parameters configure the bulkhead resource
+  /// pools. The optional [timeout] sets the maximum wait time for
+  /// pool access. The optional [onIsolationFailure] callback is
   /// invoked when pool access fails or execution throws an exception.
   ///
   /// Example:
@@ -235,79 +231,61 @@ class BulkheadExtension1<T, R> extends Func1<T, R> {
   /// ```
   BulkheadExtension1(
     this._inner,
-    this._poolSize,
-    this._queueSize,
-    this._timeout,
-    this._onIsolationFailure,
-  ) : super(_inner.call) {
-    _bulkhead = Bulkhead(
-      poolSize: _poolSize,
-      queueSize: _queueSize,
-    );
-  }
+    int poolSize,
+    int queueSize,
+    Duration? timeout,
+    ErrorCallback? onIsolationFailure,
+  ) : _engine = BulkheadEngine<R>(
+        poolSize: poolSize,
+        queueSize: queueSize,
+        timeout: timeout,
+        onIsolationFailure: onIsolationFailure,
+      ),
+      super(_inner.call);
 
   final Func1<T, R> _inner;
-  final int _poolSize;
-  final int _queueSize;
-  final Duration? _timeout;
-  final ErrorCallback? _onIsolationFailure;
-
-  late final Bulkhead _bulkhead;
+  final BulkheadEngine<R> _engine;
 
   @override
-  Future<R> call(T arg) async {
-    try {
-      return await _bulkhead.execute(
-        () => _inner(arg),
-        timeout: _timeout,
-      );
-    } catch (error, stackTrace) {
-      _onIsolationFailure?.call(error, stackTrace);
-      rethrow;
-    }
-  }
+  Future<R> call(T arg) => _engine.run(() => _inner(arg));
 
-  /// The underlying bulkhead instance.
-  ///
-  /// Provides access to the bulkhead for inspecting pool size and
-  /// queue configuration.
+  /// The bulkhead instance.
   ///
   /// Example:
   /// ```dart
-  /// print('Pools: ${isolatedFunc.instance.poolSize}');
-  /// print('Queue size: ${isolatedFunc.instance.queueSize}');
+  /// print('Pool size: ${isolatedFunc.instance.poolSize}');
   /// ```
-  Bulkhead get instance => _bulkhead;
+  Bulkhead get instance => _engine.instance;
 }
 
-/// Applies bulkhead isolation to two-parameter functions.ter functions.
+/// Applies bulkhead isolation to two-parameter functions.
 ///
 /// Wraps a [Func2] to execute within isolated resource pools,
 /// preventing cascading failures. The function automatically executes
-/// in a pool selected by round-robin distribution. The [_poolSize]
-/// and [_queueSize] configure the bulkhead capacity. The optional
-/// [_timeout] limits pool access wait time. The optional
-/// [_onIsolationFailure] callback handles pool access or execution
+/// in a pool selected by round-robin distribution. The [poolSize]
+/// and [queueSize] configure the bulkhead capacity. The optional
+/// [timeout] limits pool access wait time. The optional
+/// [onIsolationFailure] callback handles pool access or execution
 /// failures. The [instance] getter provides access to the underlying
 /// bulkhead. This pattern is essential for isolating critical
 /// operations and preventing resource exhaustion.
 ///
 /// Example:
 /// ```dart
-/// final isolated = Func2<String, Data, Result>((id, data) async {
-///   return await process(id, data);
+/// final isolated = Func2<String, Data, void>((id, data) async {
+///   await db.update(id, data);
 /// }).bulkhead(
-///   poolSize: 3,
-///   queueSize: 75,
+///   poolSize: 2,
+///   queueSize: 50,
 /// );
 /// ```
 class BulkheadExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a bulkhead extension for a two-parameter function.
   ///
-  /// The [_inner] parameter is the function to wrap. The [_poolSize]
-  /// and [_queueSize] parameters configure the bulkhead resource
-  /// pools. The optional [_timeout] sets the maximum wait time for
-  /// pool access. The optional [_onIsolationFailure] callback is
+  /// The [_inner] parameter is the function to wrap. The [poolSize]
+  /// and [queueSize] parameters configure the bulkhead resource
+  /// pools. The optional [timeout] sets the maximum wait time for
+  /// pool access. The optional [onIsolationFailure] callback is
   /// invoked when pool access fails or execution throws an exception.
   ///
   /// Example:
@@ -322,37 +300,23 @@ class BulkheadExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// ```
   BulkheadExtension2(
     this._inner,
-    this._poolSize,
-    this._queueSize,
-    this._timeout,
-    this._onIsolationFailure,
-  ) : super(_inner.call) {
-    _bulkhead = Bulkhead(
-      poolSize: _poolSize,
-      queueSize: _queueSize,
-    );
-  }
+    int poolSize,
+    int queueSize,
+    Duration? timeout,
+    ErrorCallback? onIsolationFailure,
+  ) : _engine = BulkheadEngine<R>(
+        poolSize: poolSize,
+        queueSize: queueSize,
+        timeout: timeout,
+        onIsolationFailure: onIsolationFailure,
+      ),
+      super(_inner.call);
 
   final Func2<T1, T2, R> _inner;
-  final int _poolSize;
-  final int _queueSize;
-  final Duration? _timeout;
-  final ErrorCallback? _onIsolationFailure;
-
-  late final Bulkhead _bulkhead;
+  final BulkheadEngine<R> _engine;
 
   @override
-  Future<R> call(T1 arg1, T2 arg2) async {
-    try {
-      return await _bulkhead.execute(
-        () => _inner(arg1, arg2),
-        timeout: _timeout,
-      );
-    } catch (error, stackTrace) {
-      _onIsolationFailure?.call(error, stackTrace);
-      rethrow;
-    }
-  }
+  Future<R> call(T1 arg1, T2 arg2) => _engine.run(() => _inner(arg1, arg2));
 
   /// The bulkhead instance.
   ///
@@ -360,5 +324,5 @@ class BulkheadExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// ```dart
   /// print('Pool size: ${isolatedFunc.instance.poolSize}');
   /// ```
-  Bulkhead get instance => _bulkhead;
+  Bulkhead get instance => _engine.instance;
 }

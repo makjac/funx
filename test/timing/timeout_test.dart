@@ -92,17 +92,13 @@ void main() {
   });
 
   group('Timeout edge cases', () {
-    test('works with very short timeouts', () async {
-      final func = funx.Func<int>(
-        () async => 42,
-      ).timeout(const Duration(microseconds: 1));
+    test('times out with very short timeouts', () async {
+      final func = funx.Func<int>(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return 42;
+      }).timeout(const Duration(microseconds: 1));
 
-      // This might complete or timeout depending on system load
-      try {
-        await func();
-      } on TimeoutException {
-        // Expected in most cases
-      }
+      await expectLater(func.call, throwsA(isA<TimeoutException>()));
     });
 
     test('works with zero delay functions', () async {

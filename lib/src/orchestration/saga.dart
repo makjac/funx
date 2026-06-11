@@ -109,6 +109,7 @@ class SagaExtension1<T, R> extends Func1<T, R> {
     required this.steps,
     this.onCompensate,
     this.onStepComplete,
+    this.onCompensationError,
   }) : super((arg) => throw UnimplementedError());
 
   final Func1<T, R> _inner;
@@ -131,6 +132,15 @@ class SagaExtension1<T, R> extends Func1<T, R> {
   /// Receives the step index and its result upon successful
   /// completion. Called for each step including the initial step.
   final void Function(int index, dynamic result)? onStepComplete;
+
+  /// Optional callback invoked when a compensation fails.
+  ///
+  /// Receives the step index, the result that was being compensated,
+  /// and the error thrown by the compensation function. Called for each
+  /// compensation failure so callers can log or alert on partial
+  /// rollbacks.
+  final void Function(int index, dynamic result, Object error)?
+  onCompensationError;
 
   @override
   Future<R> call(T arg) async {
@@ -174,8 +184,11 @@ class SagaExtension1<T, R> extends Func1<T, R> {
         await step.compensation(item.result);
         onCompensate?.call(item.index, item.result);
       } catch (compensationError) {
-        // Log but continue compensating
-        // In production, this should be logged/monitored
+        onCompensationError?.call(
+          item.index,
+          item.result,
+          compensationError,
+        );
       }
     }
   }
@@ -231,6 +244,7 @@ class SagaExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     required this.steps,
     this.onCompensate,
     this.onStepComplete,
+    this.onCompensationError,
   }) : super((arg1, arg2) => throw UnimplementedError());
 
   final Func2<T1, T2, R> _inner;
@@ -253,6 +267,15 @@ class SagaExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Receives the step index and its result upon successful
   /// completion. Called for each step including the initial step.
   final void Function(int index, dynamic result)? onStepComplete;
+
+  /// Optional callback invoked when a compensation fails.
+  ///
+  /// Receives the step index, the result that was being compensated,
+  /// and the error thrown by the compensation function. Called for each
+  /// compensation failure so callers can log or alert on partial
+  /// rollbacks.
+  final void Function(int index, dynamic result, Object error)?
+  onCompensationError;
 
   @override
   Future<R> call(T1 arg1, T2 arg2) async {
@@ -291,7 +314,11 @@ class SagaExtension2<T1, T2, R> extends Func2<T1, T2, R> {
         await step.compensation(item.result);
         onCompensate?.call(item.index, item.result);
       } catch (compensationError) {
-        // Log but continue
+        onCompensationError?.call(
+          item.index,
+          item.result,
+          compensationError,
+        );
       }
     }
   }

@@ -1682,5 +1682,66 @@ void main() {
 
       expect(executeCount, equals(countAfterCancel));
     });
+
+    test('handles nullable argument for Func1', () async {
+      final values = <int?>[];
+
+      final subscription =
+          funx.Func1<int?, void>((value) async {
+                values.add(value);
+              })
+              .scheduleRecurring(
+                interval: const Duration(milliseconds: 30),
+                maxIterations: 2,
+              )
+              .start(null);
+
+      expect(subscription.isRunning, isTrue);
+
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+
+      expect(values, equals([null, null]));
+    });
+
+    test('handles nullable arguments for Func2', () async {
+      final values = <(int?, String?)>[];
+
+      final subscription =
+          funx.Func2<int?, String?, void>((a, b) async {
+                values.add((a, b));
+              })
+              .scheduleRecurring(
+                interval: const Duration(milliseconds: 30),
+                maxIterations: 2,
+              )
+              .start(null, null);
+
+      expect(subscription.isRunning, isTrue);
+
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+
+      expect(values, equals([(null, null), (null, null)]));
+    });
+
+    test('catches synchronous throw from scheduled Func', () async {
+      var errorCount = 0;
+
+      final subscription =
+          funx.Func(() async {
+                throw Exception('sync failure');
+              })
+              .scheduleRecurring(
+                interval: const Duration(milliseconds: 30),
+                maxIterations: 1,
+                onScheduleError: (_) => errorCount++,
+              )
+              .start();
+
+      expect(subscription.isRunning, isTrue);
+
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+
+      expect(errorCount, equals(1));
+    });
   });
 }

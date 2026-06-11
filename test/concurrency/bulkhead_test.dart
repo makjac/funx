@@ -261,4 +261,42 @@ void main() {
       expect(wrapped.instance.poolSize, equals(5));
     });
   });
+
+  group('Edge cases', () {
+    test('enforces per-pool queue size', () async {
+      final completer = Completer<void>();
+      final bulkhead = Bulkhead(poolSize: 1, queueSize: 1);
+
+      // First execution occupies the only pool slot.
+      final future1 = bulkhead.execute(() => completer.future);
+
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      // Second execution fits in the per-pool queue.
+      final future2 = bulkhead.execute(() async => 2);
+
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      // Third execution exceeds the queue size and must fail fast.
+      expect(
+        () => bulkhead.execute(() async => 3),
+        throwsA(isA<StateError>()),
+      );
+
+      completer.complete();
+      await future1;
+      expect(await future2, equals(2));
+    });
+
+    test('validates pool and queue sizes', () {
+      expect(
+        () => Bulkhead(poolSize: 0, queueSize: 1),
+        throwsArgumentError,
+      );
+      expect(
+        () => Bulkhead(poolSize: 1, queueSize: 0),
+        throwsArgumentError,
+      );
+    });
+  });
 }

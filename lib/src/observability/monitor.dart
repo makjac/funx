@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
+import 'package:funx/src/observability/_observability_engines.dart';
 
 /// Represents performance and execution metrics for monitored functions.
 ///
@@ -141,7 +142,6 @@ class Metrics {
 /// count, timing information, and calculated metrics like average
 /// duration and success rate. Invokes [onMetricsUpdate] callback after
 /// each execution with updated metrics for real-time monitoring.
-/// Provides methods to retrieve and reset metrics.
 ///
 /// Returns a [Future] of type [R] with the execution result. Metrics
 /// are updated regardless of success or failure.
@@ -178,81 +178,24 @@ class MonitorExtension<R> extends Func<R> {
   MonitorExtension(
     this._inner, {
     this.onMetricsUpdate,
-  }) : super(() => throw UnimplementedError());
+  }) : _engine = MonitorEngine<R>(onMetricsUpdate: onMetricsUpdate),
+       super(() => throw UnimplementedError());
 
-  /// The wrapped function to execute and monitor.
   final Func<R> _inner;
 
   /// Optional callback invoked after each execution with updated metrics.
   final void Function(Metrics metrics)? onMetricsUpdate;
 
-  /// Internal metrics storage tracking execution statistics.
-  final Metrics _metrics = Metrics();
+  final MonitorEngine<R> _engine;
 
   /// Returns a copy of the current metrics.
-  ///
-  /// Provides a snapshot of current execution statistics without
-  /// allowing external modification. The returned metrics reflect all
-  /// executions up to the point of calling this method.
-  ///
-  /// Returns a copy of the current [Metrics] instance.
-  ///
-  /// Example:
-  /// ```dart
-  /// final metrics = monitored.getMetrics();
-  /// print('Executed ${metrics.executionCount} times');
-  /// ```
-  Metrics getMetrics() => _metrics.copyWith();
+  Metrics getMetrics() => _engine.getMetrics();
 
   /// Resets all metrics to initial state.
-  ///
-  /// Clears execution count, error count, durations, and error
-  /// information. Use this to start fresh tracking or reset after
-  /// analyzing a specific time period.
-  ///
-  /// Example:
-  /// ```dart
-  /// monitored.resetMetrics();
-  /// print('Metrics reset: ${monitored.getMetrics().executionCount}');
-  /// ```
-  void resetMetrics() {
-    _metrics.executionCount = 0;
-    _metrics.errorCount = 0;
-    _metrics.totalDuration = Duration.zero;
-    _metrics.lastDuration = null;
-    _metrics.lastError = null;
-    _metrics.lastExecutionTime = null;
-  }
+  void resetMetrics() => _engine.resetMetrics();
 
   @override
-  Future<R> call() async {
-    final startTime = DateTime.now();
-    final stopwatch = Stopwatch()..start();
-
-    try {
-      final result = await _inner();
-
-      stopwatch.stop();
-      _metrics.executionCount++;
-      _metrics.lastDuration = stopwatch.elapsed;
-      _metrics.totalDuration += stopwatch.elapsed;
-      _metrics.lastExecutionTime = startTime;
-      onMetricsUpdate?.call(getMetrics());
-
-      return result;
-    } catch (error) {
-      stopwatch.stop();
-      _metrics.executionCount++;
-      _metrics.errorCount++;
-      _metrics.lastDuration = stopwatch.elapsed;
-      _metrics.totalDuration += stopwatch.elapsed;
-      _metrics.lastError = error;
-      _metrics.lastExecutionTime = startTime;
-      onMetricsUpdate?.call(getMetrics());
-
-      rethrow;
-    }
-  }
+  Future<R> call() => _engine.run(_inner.call);
 }
 
 /// Monitors single-parameter function execution and collects metrics.
@@ -290,80 +233,24 @@ class MonitorExtension1<T, R> extends Func1<T, R> {
   MonitorExtension1(
     this._inner, {
     this.onMetricsUpdate,
-  }) : super((arg) => throw UnimplementedError());
+  }) : _engine = MonitorEngine<R>(onMetricsUpdate: onMetricsUpdate),
+       super((arg) => throw UnimplementedError());
 
-  /// The wrapped function to execute and monitor.
   final Func1<T, R> _inner;
 
   /// Optional callback invoked after each execution with updated metrics.
   final void Function(Metrics metrics)? onMetricsUpdate;
 
-  /// Internal metrics storage tracking execution statistics.
-  final Metrics _metrics = Metrics();
+  final MonitorEngine<R> _engine;
 
   /// Returns a copy of the current metrics.
-  ///
-  /// Provides a snapshot of current execution statistics without
-  /// allowing external modification. The returned metrics reflect all
-  /// executions up to the point of calling this method.
-  ///
-  /// Returns a copy of the current [Metrics] instance.
-  ///
-  /// Example:
-  /// ```dart
-  /// final metrics = monitored.getMetrics();
-  /// print('Average: ${metrics.averageDuration}');
-  /// ```
-  Metrics getMetrics() => _metrics.copyWith();
+  Metrics getMetrics() => _engine.getMetrics();
 
   /// Resets all metrics to initial state.
-  ///
-  /// Clears execution count, error count, durations, and error
-  /// information. Use this to start fresh tracking or reset after
-  /// analyzing a specific time period.
-  ///
-  /// Example:
-  /// ```dart
-  /// monitored.resetMetrics();
-  /// ```
-  void resetMetrics() {
-    _metrics.executionCount = 0;
-    _metrics.errorCount = 0;
-    _metrics.totalDuration = Duration.zero;
-    _metrics.lastDuration = null;
-    _metrics.lastError = null;
-    _metrics.lastExecutionTime = null;
-  }
+  void resetMetrics() => _engine.resetMetrics();
 
   @override
-  Future<R> call(T arg) async {
-    final startTime = DateTime.now();
-    final stopwatch = Stopwatch()..start();
-
-    try {
-      final result = await _inner(arg);
-
-      stopwatch.stop();
-      _metrics.executionCount++;
-      _metrics.lastDuration = stopwatch.elapsed;
-      _metrics.totalDuration += stopwatch.elapsed;
-      _metrics.lastExecutionTime = startTime;
-      onMetricsUpdate?.call(getMetrics());
-
-      return result;
-    } catch (error) {
-      stopwatch.stop();
-      _metrics.executionCount++;
-      _metrics.errorCount++;
-      _metrics.lastDuration = stopwatch.elapsed;
-      _metrics.totalDuration += stopwatch.elapsed;
-      _metrics.lastError = error;
-      _metrics.lastExecutionTime = startTime;
-      onMetricsUpdate?.call(getMetrics());
-
-      rethrow;
-    }
-  }
+  Future<R> call(T arg) => _engine.run(() => _inner(arg));
 }
 
 /// Monitors two-parameter function execution and collects metrics.
@@ -401,78 +288,22 @@ class MonitorExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   MonitorExtension2(
     this._inner, {
     this.onMetricsUpdate,
-  }) : super((arg1, arg2) => throw UnimplementedError());
+  }) : _engine = MonitorEngine<R>(onMetricsUpdate: onMetricsUpdate),
+       super((arg1, arg2) => throw UnimplementedError());
 
-  /// The wrapped function to execute and monitor.
   final Func2<T1, T2, R> _inner;
 
   /// Optional callback invoked after each execution with updated metrics.
   final void Function(Metrics metrics)? onMetricsUpdate;
 
-  /// Internal metrics storage tracking execution statistics.
-  final Metrics _metrics = Metrics();
+  final MonitorEngine<R> _engine;
 
   /// Returns a copy of the current metrics.
-  ///
-  /// Provides a snapshot of current execution statistics without
-  /// allowing external modification. The returned metrics reflect all
-  /// executions up to the point of calling this method.
-  ///
-  /// Returns a copy of the current [Metrics] instance.
-  ///
-  /// Example:
-  /// ```dart
-  /// final metrics = monitored.getMetrics();
-  /// print('Success rate: ${metrics.successRate}');
-  /// ```
-  Metrics getMetrics() => _metrics.copyWith();
+  Metrics getMetrics() => _engine.getMetrics();
 
   /// Resets all metrics to initial state.
-  ///
-  /// Clears execution count, error count, durations, and error
-  /// information. Use this to start fresh tracking or reset after
-  /// analyzing a specific time period.
-  ///
-  /// Example:
-  /// ```dart
-  /// monitored.resetMetrics();
-  /// ```
-  void resetMetrics() {
-    _metrics.executionCount = 0;
-    _metrics.errorCount = 0;
-    _metrics.totalDuration = Duration.zero;
-    _metrics.lastDuration = null;
-    _metrics.lastError = null;
-    _metrics.lastExecutionTime = null;
-  }
+  void resetMetrics() => _engine.resetMetrics();
 
   @override
-  Future<R> call(T1 arg1, T2 arg2) async {
-    final startTime = DateTime.now();
-    final stopwatch = Stopwatch()..start();
-
-    try {
-      final result = await _inner(arg1, arg2);
-
-      stopwatch.stop();
-      _metrics.executionCount++;
-      _metrics.lastDuration = stopwatch.elapsed;
-      _metrics.totalDuration += stopwatch.elapsed;
-      _metrics.lastExecutionTime = startTime;
-      onMetricsUpdate?.call(getMetrics());
-
-      return result;
-    } catch (error) {
-      stopwatch.stop();
-      _metrics.executionCount++;
-      _metrics.errorCount++;
-      _metrics.lastDuration = stopwatch.elapsed;
-      _metrics.totalDuration += stopwatch.elapsed;
-      _metrics.lastError = error;
-      _metrics.lastExecutionTime = startTime;
-      onMetricsUpdate?.call(getMetrics());
-
-      rethrow;
-    }
-  }
+  Future<R> call(T1 arg1, T2 arg2) => _engine.run(() => _inner(arg1, arg2));
 }

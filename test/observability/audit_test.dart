@@ -248,5 +248,24 @@ void main() {
 
       expect(ext.getLogs().length, 2);
     });
+
+    test('callback error does not swallow function result', () async {
+      final func = funx.Func1<int, int>((n) async => n).audit(
+        onAudit: (_) => throw Exception('audit callback failed'),
+      );
+
+      expect(await func(42), equals(42));
+    });
+
+    test('callback error does not swallow function error', () async {
+      final func =
+          funx.Func1<int, int>((n) async {
+            throw Exception('inner failure');
+          }).audit(
+            onAudit: (_) => throw Exception('audit callback failed'),
+          );
+
+      expect(() => func(42), throwsA(isA<Exception>()));
+    });
   });
 }

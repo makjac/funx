@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:funx/src/concurrency/_concurrency_engines.dart';
 import 'package:funx/src/core/func.dart';
 import 'package:funx/src/core/types.dart';
 
@@ -60,7 +61,11 @@ class Barrier {
     this.barrierAction,
     this.timeout,
     this.onTimeout,
-  });
+  }) {
+    if (parties <= 0) {
+      throw ArgumentError.value(parties, 'parties', 'must be positive');
+    }
+  }
 
   /// Number of parties required to release the barrier.
   ///
@@ -132,7 +137,21 @@ class Barrier {
 
     if (_arrived == parties) {
       // All parties arrived
-      await barrierAction?.call();
+      try {
+        await barrierAction?.call();
+      } catch (error, stackTrace) {
+        _broken = true;
+        for (final completer in _waiters) {
+          if (!completer.isCompleted) {
+            completer.completeError(error, stackTrace);
+          }
+        }
+        _waiters.clear();
+        if (cyclic) {
+          _arrived = 0;
+        }
+        rethrow;
+      }
 
       // Release all waiters
       for (final completer in _waiters) {
@@ -189,8 +208,17 @@ class Barrier {
   /// }
   /// ```
   void reset() {
-    _arrived = 0;
     _broken = false;
+    _arrived = 0;
+
+    // Complete any pending waiters with an error so they don't hang.
+    for (final completer in _waiters) {
+      if (!completer.isCompleted) {
+        completer.completeError(
+          StateError('Barrier was reset'),
+        );
+      }
+    }
     _waiters.clear();
   }
 
@@ -230,7 +258,7 @@ class Barrier {
 ///
 /// Wraps a [Func] to automatically wait at a barrier after execution.
 /// The wrapped function executes normally, then waits at the provided
-/// [_barrier] before returning. This ensures all wrapped functions
+/// [barrier] before returning. This ensures all wrapped functions
 /// synchronize at the barrier point after completing their work. The
 /// [instance] getter provides access to the barrier for monitoring.
 /// This pattern is essential for coordinating parallel tasks that must
@@ -249,7 +277,7 @@ class Barrier {
 class BarrierExtension<R> extends Func<R> {
   /// Creates a barrier extension for a no-parameter function.
   ///
-  /// The [_inner] parameter is the function to wrap. The [_barrier]
+  /// The [_inner] parameter is the function to wrap. The [barrier]
   /// parameter is the barrier where the function will wait after
   /// execution. The function executes normally, then calls
   /// [Barrier.await_] before returning.
@@ -264,18 +292,15 @@ class BarrierExtension<R> extends Func<R> {
   /// ```
   BarrierExtension(
     this._inner,
-    this._barrier,
-  ) : super(_inner.call);
+    Barrier barrier,
+  ) : _engine = BarrierEngine<R>(barrier),
+      super(_inner.call);
 
   final Func<R> _inner;
-  final Barrier _barrier;
+  final BarrierEngine<R> _engine;
 
   @override
-  Future<R> call() async {
-    final result = await _inner();
-    await _barrier.await_();
-    return result;
-  }
+  Future<R> call() => _engine.run(_inner.call);
 
   /// The barrier instance used for synchronization.
   ///
@@ -289,14 +314,14 @@ class BarrierExtension<R> extends Func<R> {
   ///   workerFunc.instance.reset();
   /// }
   /// ```
-  Barrier get instance => _barrier;
+  Barrier get instance => _engine.instance;
 }
 
 /// Applies barrier synchronization to one-parameter functions.
 ///
 /// Wraps a [Func1] to automatically wait at a barrier after
 /// execution. The wrapped function executes normally with its
-/// parameter, then waits at the provided [_barrier] before returning.
+/// parameter, then waits at the provided [barrier] before returning.
 /// This ensures all wrapped functions synchronize at the barrier
 /// point after completing their work. The [instance] getter provides
 /// access to the barrier for monitoring. This pattern is essential
@@ -317,7 +342,7 @@ class BarrierExtension<R> extends Func<R> {
 class BarrierExtension1<T, R> extends Func1<T, R> {
   /// Creates a barrier extension for a one-parameter function.
   ///
-  /// The [_inner] parameter is the function to wrap. The [_barrier]
+  /// The [_inner] parameter is the function to wrap. The [barrier]
   /// parameter is the barrier where the function will wait after
   /// execution. The function executes normally with its parameter,
   /// then calls [Barrier.await_] before returning.
@@ -332,18 +357,15 @@ class BarrierExtension1<T, R> extends Func1<T, R> {
   /// ```
   BarrierExtension1(
     this._inner,
-    this._barrier,
-  ) : super(_inner.call);
+    Barrier barrier,
+  ) : _engine = BarrierEngine<R>(barrier),
+      super(_inner.call);
 
   final Func1<T, R> _inner;
-  final Barrier _barrier;
+  final BarrierEngine<R> _engine;
 
   @override
-  Future<R> call(T arg) async {
-    final result = await _inner(arg);
-    await _barrier.await_();
-    return result;
-  }
+  Future<R> call(T arg) => _engine.run(() => _inner(arg));
 
   /// The barrier instance used for synchronization.
   ///
@@ -357,14 +379,14 @@ class BarrierExtension1<T, R> extends Func1<T, R> {
   ///   processFunc.instance.reset();
   /// }
   /// ```
-  Barrier get instance => _barrier;
+  Barrier get instance => _engine.instance;
 }
 
-/// Applies barrier synchronization to two-parameter functions.ter functions.
+/// Applies barrier synchronization to two-parameter functions.
 ///
 /// Wraps a [Func2] to automatically wait at a barrier after
 /// execution. The wrapped function executes normally with its
-/// parameters, then waits at the provided [_barrier] before
+/// parameters, then waits at the provided [barrier] before
 /// returning. This ensures all wrapped functions synchronize at the
 /// barrier point after completing their work. The [instance] getter
 /// provides access to the barrier for monitoring. This pattern is
@@ -383,7 +405,7 @@ class BarrierExtension1<T, R> extends Func1<T, R> {
 class BarrierExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a barrier extension for a two-parameter function.
   ///
-  /// The [_inner] parameter is the function to wrap. The [_barrier]
+  /// The [_inner] parameter is the function to wrap. The [barrier]
   /// parameter is the barrier where the function will wait after
   /// execution. The function executes normally with its parameters,
   /// then calls [Barrier.await_] before returning.
@@ -398,18 +420,15 @@ class BarrierExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// ```
   BarrierExtension2(
     this._inner,
-    this._barrier,
-  ) : super(_inner.call);
+    Barrier barrier,
+  ) : _engine = BarrierEngine<R>(barrier),
+      super(_inner.call);
 
   final Func2<T1, T2, R> _inner;
-  final Barrier _barrier;
+  final BarrierEngine<R> _engine;
 
   @override
-  Future<R> call(T1 arg1, T2 arg2) async {
-    final result = await _inner(arg1, arg2);
-    await _barrier.await_();
-    return result;
-  }
+  Future<R> call(T1 arg1, T2 arg2) => _engine.run(() => _inner(arg1, arg2));
 
   /// The barrier instance used for synchronization.
   ///
@@ -423,5 +442,5 @@ class BarrierExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   ///   combineFunc.instance.reset();
   /// }
   /// ```
-  Barrier get instance => _barrier;
+  Barrier get instance => _engine.instance;
 }

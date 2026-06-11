@@ -452,4 +452,25 @@ void main() {
       expect(metrics.successRate, 0.0);
     });
   });
+
+  group('Callback safety', () {
+    test('callback error does not swallow function result', () async {
+      final func = funx.Func<int>(() async => 42).monitorObservability(
+        onMetricsUpdate: (_) => throw Exception('metrics callback failed'),
+      );
+
+      expect(await func(), equals(42));
+    });
+
+    test('callback error does not swallow function error', () async {
+      final func =
+          funx.Func<int>(() async {
+            throw Exception('inner failure');
+          }).monitorObservability(
+            onMetricsUpdate: (_) => throw Exception('metrics callback failed'),
+          );
+
+      expect(func.call, throwsA(isA<Exception>()));
+    });
+  });
 }
