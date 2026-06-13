@@ -67,7 +67,7 @@
 
     <!-- Atom feed autodiscovery -->
     {{- with .Site.Title }}
-        <link rel="alternate" type="application/atom+xml" title="Atom feed for {{ . }}" href="/index.xml" />
+        <link rel="alternate" type="application/atom+xml" title="Atom feed for {{ . }}" href='{{ "index.xml" | relLangURL }}' />
     {{- end }}
     <!-- Dark Mode -->
     {{ if eq .Site.Params.docs.darkMode true -}}

@@ -13,3 +13,7 @@ CLAUDE.md
 coverage/
 *.lcov
 *.info
+
+# Hugo vendored modules and generated IDE config
+website/_vendor/
+website/assets/jsconfig.json
