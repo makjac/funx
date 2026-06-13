@@ -55,7 +55,8 @@ void main() {
     final weight = _weightFromPath(file.path, parent);
     final icon = _iconForPath(file.path, parent);
 
-    final frontMatter = '''---
+    final frontMatter =
+        '''---
 title: "$title"
 description: "$description"
 icon: "$icon"
@@ -102,8 +103,9 @@ String? _extractTitle(String text) {
 }
 
 String _extractDescription(String text) {
-  final match = RegExp(r'## What it is\s*\n\s*([^\n]+)')
-      .firstMatch(text.replaceAll('\r\n', '\n'));
+  final match = RegExp(
+    r'## What it is\s*\n\s*([^\n]+)',
+  ).firstMatch(text.replaceAll('\r\n', '\n'));
   final raw = match?.group(1)?.trim() ?? '';
   return raw.replaceAll('"', '\\"').replaceAll('\n', ' ');
 }
