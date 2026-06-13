@@ -96,7 +96,10 @@ Future<void> _testBasicCircuitBreaker() async {
     } catch (_) {}
   }
 
-  assert(breaker.state == CircuitBreakerState.open, 'breaker state=${breaker.state}');
+  assert(
+    breaker.state == CircuitBreakerState.open,
+    'breaker state=${breaker.state}',
+  );
 }
 
 Future<void> _testBasicMemoize() async {
@@ -132,10 +135,7 @@ Future<void> _testChaining() async {
     callCount++;
     if (amount <= 0) throw ArgumentError('Invalid amount');
     return 'Processed: \$$amount';
-  })
-    .retry(maxAttempts: 3)
-    .debounce(Duration(milliseconds: 50))
-    .memoize();
+  }).retry(maxAttempts: 3).debounce(Duration(milliseconds: 50)).memoize();
 
   processPayment(100);
   processPayment(100);
@@ -159,12 +159,13 @@ Future<void> _testTiming() async {
   assert(executionCount == 1, 'timing debounce executionCount=$executionCount');
 
   var execCount = 0;
-  final trackScroll = Func1<double, void>((position) async {
-    execCount++;
-  }).throttle(
-    Duration(milliseconds: 100),
-    mode: ThrottleMode.trailing,
-  );
+  final trackScroll =
+      Func1<double, void>((position) async {
+        execCount++;
+      }).throttle(
+        Duration(milliseconds: 100),
+        mode: ThrottleMode.trailing,
+      );
 
   for (var i = 0; i < 10; i++) {
     trackScroll(i * 100.0);
@@ -189,12 +190,13 @@ Future<void> _testTiming() async {
 
 Future<void> _testScheduling() async {
   var executed = false;
-  final backup = Func(() async {
-    executed = true;
-    return 'Backup completed';
-  }).schedule(
-    at: DateTime.now().add(Duration(milliseconds: 100)),
-  );
+  final backup =
+      Func(() async {
+        executed = true;
+        return 'Backup completed';
+      }).schedule(
+        at: DateTime.now().add(Duration(milliseconds: 100)),
+      );
 
   backup.start();
 
@@ -202,32 +204,37 @@ Future<void> _testScheduling() async {
   assert(executed, 'schedule once executed=$executed');
 
   var executionCount = 0;
-  final healthCheck = Func(() async {
-    executionCount++;
-    return 'OK';
-  }).scheduleRecurring(
-    interval: Duration(milliseconds: 50),
-    maxIterations: 3,
-  );
+  final healthCheck =
+      Func(() async {
+        executionCount++;
+        return 'OK';
+      }).scheduleRecurring(
+        interval: Duration(milliseconds: 50),
+        maxIterations: 3,
+      );
 
   final subscription2 = healthCheck.start();
 
   await Future.delayed(Duration(milliseconds: 200));
-  assert(executionCount == 3, 'schedule recurring executionCount=$executionCount');
+  assert(
+    executionCount == 3,
+    'schedule recurring executionCount=$executionCount',
+  );
   subscription2.cancel();
 
   var customCount = 0;
-  final adaptive = Func(() async {
-    customCount++;
-    return customCount;
-  }).scheduleCustom(
-    scheduler: (lastExecution) {
-      final multiplier = lastExecution == null ? 1 : customCount;
-      final delay = Duration(milliseconds: 50 * multiplier);
-      return DateTime.now().add(delay);
-    },
-    maxIterations: 2,
-  );
+  final adaptive =
+      Func(() async {
+        customCount++;
+        return customCount;
+      }).scheduleCustom(
+        scheduler: (lastExecution) {
+          final multiplier = lastExecution == null ? 1 : customCount;
+          final delay = Duration(milliseconds: 50 * multiplier);
+          return DateTime.now().add(delay);
+        },
+        maxIterations: 2,
+      );
 
   adaptive.start();
   await Future.delayed(Duration(milliseconds: 300));
@@ -236,13 +243,14 @@ Future<void> _testScheduling() async {
 
 Future<void> _testBackpressure() async {
   var processedCount = 0;
-  final processor = Func1<int, void>((value) async {
-    processedCount++;
-    await Future.delayed(Duration(milliseconds: 50));
-  }).backpressure(
-    strategy: BackpressureStrategy.drop,
-    maxConcurrent: 1,
-  );
+  final processor =
+      Func1<int, void>((value) async {
+        processedCount++;
+        await Future.delayed(Duration(milliseconds: 50));
+      }).backpressure(
+        strategy: BackpressureStrategy.drop,
+        maxConcurrent: 1,
+      );
 
   processor(1);
   var dropped = 0;
@@ -258,18 +266,22 @@ Future<void> _testBackpressure() async {
   }
 
   await Future.delayed(Duration(milliseconds: 100));
-  assert(processedCount == 1, 'backpressure drop processedCount=$processedCount');
+  assert(
+    processedCount == 1,
+    'backpressure drop processedCount=$processedCount',
+  );
   assert(dropped == 2, 'backpressure drop dropped=$dropped');
 
   var bufferProcessed = 0;
-  final buffered = Func1<int, void>((value) async {
-    bufferProcessed++;
-    await Future.delayed(Duration(milliseconds: 20));
-  }).backpressure(
-    strategy: BackpressureStrategy.buffer,
-    maxConcurrent: 1,
-    bufferSize: 3,
-  );
+  final buffered =
+      Func1<int, void>((value) async {
+        bufferProcessed++;
+        await Future.delayed(Duration(milliseconds: 20));
+      }).backpressure(
+        strategy: BackpressureStrategy.buffer,
+        maxConcurrent: 1,
+        bufferSize: 3,
+      );
 
   buffered(1);
   buffered(2);
@@ -277,17 +289,21 @@ Future<void> _testBackpressure() async {
   buffered(4);
 
   await Future.delayed(Duration(milliseconds: 150));
-  assert(bufferProcessed == 4, 'backpressure buffer bufferProcessed=$bufferProcessed');
+  assert(
+    bufferProcessed == 4,
+    'backpressure buffer bufferProcessed=$bufferProcessed',
+  );
 
   var sampledCount = 0;
   var droppedCount = 0;
-  final sampled = Func1<int, void>((value) async {
-    sampledCount++;
-  }).backpressure(
-    strategy: BackpressureStrategy.sample,
-    sampleRate: 0.5,
-    maxConcurrent: 10,
-  );
+  final sampled =
+      Func1<int, void>((value) async {
+        sampledCount++;
+      }).backpressure(
+        strategy: BackpressureStrategy.sample,
+        sampleRate: 0.5,
+        maxConcurrent: 10,
+      );
 
   for (var i = 0; i < 100; i++) {
     try {
@@ -298,8 +314,14 @@ Future<void> _testBackpressure() async {
   }
 
   await Future.delayed(Duration(milliseconds: 100));
-  assert(sampledCount + droppedCount == 100, 'backpressure sample counts=$sampledCount+$droppedCount');
-  assert(sampledCount > 20 && sampledCount < 80, 'backpressure sample sampledCount=$sampledCount');
+  assert(
+    sampledCount + droppedCount == 100,
+    'backpressure sample counts=$sampledCount+$droppedCount',
+  );
+  assert(
+    sampledCount > 20 && sampledCount < 80,
+    'backpressure sample sampledCount=$sampledCount',
+  );
 }
 
 Future<void> _testConcurrency() async {
@@ -327,24 +349,28 @@ Future<void> _testConcurrency() async {
   }).semaphore(maxConcurrent: 2);
 
   await Future.wait([
-    task(), task(), task(), task(),
+    task(),
+    task(),
+    task(),
+    task(),
   ]);
   assert(peakConcurrent == 2, 'semaphore peakConcurrent=$peakConcurrent');
 }
 
 Future<void> _testReliability() async {
   var attemptCount = 0;
-  final unreliableOp = Func<String>(() async {
-    attemptCount++;
-    if (attemptCount < 3) throw Exception('Fail');
-    return 'success';
-  }).retry(
-    maxAttempts: 5,
-    backoff: ExponentialBackoff(
-      initialDelay: Duration(milliseconds: 10),
-      maxDelay: Duration(milliseconds: 100),
-    ),
-  );
+  final unreliableOp =
+      Func<String>(() async {
+        attemptCount++;
+        if (attemptCount < 3) throw Exception('Fail');
+        return 'success';
+      }).retry(
+        maxAttempts: 5,
+        backoff: ExponentialBackoff(
+          initialDelay: Duration(milliseconds: 10),
+          maxDelay: Duration(milliseconds: 100),
+        ),
+      );
 
   final result = await unreliableOp();
   assert(result == 'success', 'retry result=$result');
@@ -369,11 +395,12 @@ Future<void> _testReliability() async {
     assert(false, 'circuit breaker should throw');
   } catch (_) {}
 
-  final fetchConfig = Func<Map<String, dynamic>>(() async {
-    throw Exception('Config service unavailable');
-  }).fallback(
-    fallbackValue: {'mode': 'default'},
-  );
+  final fetchConfig =
+      Func<Map<String, dynamic>>(() async {
+        throw Exception('Config service unavailable');
+      }).fallback(
+        fallbackValue: {'mode': 'default'},
+      );
 
   final config = await fetchConfig();
   assert(config['mode'] == 'default', 'fallback config=$config');
@@ -404,8 +431,10 @@ Future<void> _testPerformance() async {
   batchOp(1);
   batchOp(2);
   await Future.delayed(Duration(milliseconds: 50));
-  assert(results.length == 2 && results.contains(1) && results.contains(2),
-      'performance batch results=$results');
+  assert(
+    results.length == 2 && results.contains(1) && results.contains(2),
+    'performance batch results=$results',
+  );
 
   var duplicateCallCount = 0;
   final deduplicatedOp = Func1<String, String>((input) async {
@@ -417,7 +446,10 @@ Future<void> _testPerformance() async {
   await Future.delayed(Duration(milliseconds: 10));
   deduplicatedOp('test');
   await Future.delayed(Duration(milliseconds: 50));
-  assert(duplicateCallCount == 1, 'performance deduplicate callCount=$duplicateCallCount');
+  assert(
+    duplicateCallCount == 1,
+    'performance deduplicate callCount=$duplicateCallCount',
+  );
 
   var sharedCallCount = 0;
   final sharedOp = Func<String>(() async {
@@ -436,15 +468,16 @@ Future<void> _testPerformance() async {
 
 Future<void> _testPriorityQueue() async {
   var executionOrder = <String>[];
-  final processTask = Func1<String, String>((task) async {
-    executionOrder.add(task);
-    await Future.delayed(Duration(milliseconds: 10));
-    return 'Completed: $task';
-  }).priorityQueue(
-    priorityFn: (task) => task == 'critical' ? 10 : 1,
-    maxQueueSize: 100,
-    maxConcurrent: 1,
-  );
+  final processTask =
+      Func1<String, String>((task) async {
+        executionOrder.add(task);
+        await Future.delayed(Duration(milliseconds: 10));
+        return 'Completed: $task';
+      }).priorityQueue(
+        priorityFn: (task) => task == 'critical' ? 10 : 1,
+        maxQueueSize: 100,
+        maxConcurrent: 1,
+      );
 
   processTask('normal-1');
   processTask('critical');
@@ -452,39 +485,45 @@ Future<void> _testPriorityQueue() async {
 
   await Future.delayed(Duration(milliseconds: 100));
   assert(executionOrder.length == 3, 'pq main length=${executionOrder.length}');
-  assert(executionOrder[0] == 'normal-1' && executionOrder[1] == 'critical',
-      'pq main order=$executionOrder');
+  assert(
+    executionOrder[0] == 'normal-1' && executionOrder[1] == 'critical',
+    'pq main order=$executionOrder',
+  );
 
   var basicOrder = <int>[];
-  final processor = Func1<int, void>((taskId) async {
-    basicOrder.add(taskId);
-    await Future.delayed(Duration(milliseconds: 20));
-  }).priorityQueue(
-    priorityFn: (id) => id,
-    maxQueueSize: 100,
-    maxConcurrent: 1,
-  );
+  final processor =
+      Func1<int, void>((taskId) async {
+        basicOrder.add(taskId);
+        await Future.delayed(Duration(milliseconds: 20));
+      }).priorityQueue(
+        priorityFn: (id) => id,
+        maxQueueSize: 100,
+        maxConcurrent: 1,
+      );
 
   processor(1);
   processor(5);
   processor(3);
 
   await Future.delayed(Duration(milliseconds: 100));
-  assert(basicOrder[0] == 1 && basicOrder[1] == 5 && basicOrder[2] == 3,
-      'pq basic order=$basicOrder');
+  assert(
+    basicOrder[0] == 1 && basicOrder[1] == 5 && basicOrder[2] == 3,
+    'pq basic order=$basicOrder',
+  );
 
   var dropCallCount = 0;
-  final dropLowest = Func1<int, String>((priority) async {
-    dropCallCount++;
-    await Future.delayed(Duration(milliseconds: 50));
-    return 'Task: $priority';
-  }).priorityQueue(
-    priorityFn: (p) => p,
-    maxQueueSize: 1,
-    maxConcurrent: 1,
-    onQueueFull: QueueFullPolicy.dropLowestPriority,
-    onItemDropped: (item) => print('Dropped: $item'),
-  );
+  final dropLowest =
+      Func1<int, String>((priority) async {
+        dropCallCount++;
+        await Future.delayed(Duration(milliseconds: 50));
+        return 'Task: $priority';
+      }).priorityQueue(
+        priorityFn: (p) => p,
+        maxQueueSize: 1,
+        maxConcurrent: 1,
+        onQueueFull: QueueFullPolicy.dropLowestPriority,
+        onItemDropped: (item) => print('Dropped: $item'),
+      );
 
   dropLowest(1);
   var dropThrown = false;
@@ -503,28 +542,37 @@ Future<void> _testPriorityQueue() async {
     priorityFn: (x) => x,
   );
 
-  assert(monitored.queueLength == 0, 'pq monitored queueLength=${monitored.queueLength}');
-  assert(monitored.activeCount == 0, 'pq monitored activeCount=${monitored.activeCount}');
+  assert(
+    monitored.queueLength == 0,
+    'pq monitored queueLength=${monitored.queueLength}',
+  );
+  assert(
+    monitored.activeCount == 0,
+    'pq monitored activeCount=${monitored.activeCount}',
+  );
 }
 
 Future<void> _testErrorHandling() async {
-  final riskyOp = Func<String>(() async {
-    throw ArgumentError('Invalid input');
-  }).catchError(
-    handlers: {
-      ArgumentError: (e) async => 'handled: ${(e as ArgumentError).message}',
-    },
-  );
+  final riskyOp =
+      Func<String>(() async {
+        throw ArgumentError('Invalid input');
+      }).catchError(
+        handlers: {
+          ArgumentError: (e) async =>
+              'handled: ${(e as ArgumentError).message}',
+        },
+      );
 
   final result = await riskyOp();
   assert(result == 'handled: Invalid input', 'catchError result=$result');
 
-  final anyErrorOp = Func<int>(() async {
-    throw Exception('Something went wrong');
-  }).catchError(
-    handlers: {},
-    catchAll: (e) async => 42,
-  );
+  final anyErrorOp =
+      Func<int>(() async {
+        throw Exception('Something went wrong');
+      }).catchError(
+        handlers: {},
+        catchAll: (e) async => 42,
+      );
 
   final value = await anyErrorOp();
   assert(value == 42, 'catchAll value=$value');
@@ -532,12 +580,13 @@ Future<void> _testErrorHandling() async {
 
 Future<void> _testValidation() async {
   var guardCallCount = 0;
-  final guardedOp = Func1<int, String>((value) async {
-    guardCallCount++;
-    return 'Processed: $value';
-  }).guard(
-    preCondition: (value) => value > 0,
-  );
+  final guardedOp =
+      Func1<int, String>((value) async {
+        guardCallCount++;
+        return 'Processed: $value';
+      }).guard(
+        preCondition: (value) => value > 0,
+      );
 
   try {
     await guardedOp(-5);
@@ -553,22 +602,24 @@ Future<void> _testObservability() async {
   var tapValue = '';
   var tapError = '';
 
-  final tappedOp = Func<String>(() async {
-    return 'success';
-  }).tap(
-    onValue: (result) => tapValue = result,
-    onError: (error, stack) => tapError = error.toString(),
-  );
+  final tappedOp =
+      Func<String>(() async {
+        return 'success';
+      }).tap(
+        onValue: (result) => tapValue = result,
+        onError: (error, stack) => tapError = error.toString(),
+      );
 
   final result = await tappedOp();
   assert(result == 'success' && tapValue == 'success', 'tap value=$tapValue');
 
-  final errorOp = Func<String>(() async {
-    throw Exception('fail');
-  }).tap(
-    onValue: (result) => tapValue = result,
-    onError: (error, stack) => tapError = error.toString(),
-  );
+  final errorOp =
+      Func<String>(() async {
+        throw Exception('fail');
+      }).tap(
+        onValue: (result) => tapValue = result,
+        onError: (error, stack) => tapError = error.toString(),
+      );
 
   try {
     await errorOp();
@@ -583,15 +634,16 @@ Future<void> _testApiClient() async {
   );
 
   var callCount = 0;
-  final apiCall = Func1<String, String>((endpoint) async {
-    callCount++;
-    if (callCount < 2) throw Exception('Network error');
-    return 'Response from $endpoint';
-  })
-    .retry(maxAttempts: 3)
-    .circuitBreaker(breaker)
-    .timeout(Duration(seconds: 5))
-    .memoize();
+  final apiCall =
+      Func1<String, String>((endpoint) async {
+            callCount++;
+            if (callCount < 2) throw Exception('Network error');
+            return 'Response from $endpoint';
+          })
+          .retry(maxAttempts: 3)
+          .circuitBreaker(breaker)
+          .timeout(Duration(seconds: 5))
+          .memoize();
 
   final result = await apiCall('/users');
   assert(result == 'Response from /users', 'apiClient result=$result');
@@ -607,9 +659,7 @@ Future<void> _testSearch() async {
   final search = Func1<String, String>((query) async {
     searchCount++;
     return 'Results for: $query';
-  })
-    .debounce(Duration(milliseconds: 50))
-    .memoize();
+  }).debounce(Duration(milliseconds: 50)).memoize();
 
   search('test');
   search('test');
@@ -627,15 +677,16 @@ Future<void> _testRateLimitedConcurrent() async {
   var concurrentCount = 0;
   var peakConcurrent = 0;
 
-  final processTask = Func1<int, String>((id) async {
-    concurrentCount++;
-    peakConcurrent = max(concurrentCount, peakConcurrent);
-    await Future.delayed(Duration(milliseconds: 50));
-    concurrentCount--;
-    return 'Task $id completed';
-  })
-    .semaphore(maxConcurrent: 2)
-    .rateLimit(maxCalls: 5, window: Duration(seconds: 1));
+  final processTask =
+      Func1<int, String>((id) async {
+            concurrentCount++;
+            peakConcurrent = max(concurrentCount, peakConcurrent);
+            await Future.delayed(Duration(milliseconds: 50));
+            concurrentCount--;
+            return 'Task $id completed';
+          })
+          .semaphore(maxConcurrent: 2)
+          .rateLimit(maxCalls: 5, window: Duration(seconds: 1));
 
   final futures = List.generate(4, processTask.call);
   await Future.wait(futures);
@@ -650,15 +701,16 @@ Future<void> _testResilientFetcher() async {
   );
 
   var attempts = 0;
-  final fetchData = Func1<String, String>((id) async {
-    attempts++;
-    if (attempts == 1) throw Exception('Network error');
-    return 'Data for $id';
-  })
-    .retry(maxAttempts: 2)
-    .circuitBreaker(breaker)
-    .fallback(fallbackValue: 'Cached data')
-    .timeout(Duration(seconds: 5));
+  final fetchData =
+      Func1<String, String>((id) async {
+            attempts++;
+            if (attempts == 1) throw Exception('Network error');
+            return 'Data for $id';
+          })
+          .retry(maxAttempts: 2)
+          .circuitBreaker(breaker)
+          .fallback(fallbackValue: 'Cached data')
+          .timeout(Duration(seconds: 5));
 
   final result = await fetchData('123');
   assert(result == 'Data for 123', 'resilient result=$result');
@@ -667,20 +719,21 @@ Future<void> _testResilientFetcher() async {
 
 Future<void> _testPriorityTaskProcessing() async {
   var processed = <String>[];
-  final taskProcessor = Func1<(String, int), String>(
-    (task) async {
-      final (name, priority) = task;
-      processed.add(name);
-      await Future.delayed(Duration(milliseconds: 30));
-      return 'Completed: $name';
-    },
-  ).priorityQueue(
-    priorityFn: (task) => task.$2,
-    maxQueueSize: 5,
-    maxConcurrent: 2,
-    onQueueFull: QueueFullPolicy.dropLowestPriority,
-    starvationPrevention: true,
-  );
+  final taskProcessor =
+      Func1<(String, int), String>(
+        (task) async {
+          final (name, priority) = task;
+          processed.add(name);
+          await Future.delayed(Duration(milliseconds: 30));
+          return 'Completed: $name';
+        },
+      ).priorityQueue(
+        priorityFn: (task) => task.$2,
+        maxQueueSize: 5,
+        maxConcurrent: 2,
+        onQueueFull: QueueFullPolicy.dropLowestPriority,
+        starvationPrevention: true,
+      );
 
   taskProcessor(('background-1', 1));
   taskProcessor(('critical', 10));
@@ -733,9 +786,9 @@ extension _CustomBehavior<R> on Func<R> {
 }
 
 Future<void> _testCustomExtensions() async {
-  final apiCall = Func<String>(() async => 'fetch result')
-    .withRequestId()
-    .retry(maxAttempts: 3);
+  final apiCall = Func<String>(
+    () async => 'fetch result',
+  ).withRequestId().retry(maxAttempts: 3);
 
   final result = await apiCall();
   assert(result == 'fetch result', 'custom extension result=$result');
