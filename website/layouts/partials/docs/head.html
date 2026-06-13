@@ -18,18 +18,53 @@
     </title>
     {{- if not hugo.IsProduction }}
     <meta name="robots" content="noindex">
+    {{- else }}
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     {{- end }}
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {{- with .Description | default ($.Param "description") }}
+    {{- $description := .Description | default ($.Param "description") | default .Site.Params.description -}}
+    {{- with $description }}
     <meta name="description" content="{{ . }}">
     {{- end }}
-    <meta name="keywords" content="Dart, funx, functions, decorators, package" />
-    <meta name="author" content="funx contributors" />
+    {{- $pageKeywords := .Params.keywords | default .Params.tags -}}
+    {{- $siteKeywords := .Site.Params.keywords | default (slice "funx" "Dart" "functions" "decorators" "package") -}}
+    {{- $keywords := cond (isset .Params "keywords") $pageKeywords (cond (isset .Params "tags") $pageKeywords $siteKeywords) -}}
+    <meta name="keywords" content="{{ delimit (union $keywords $siteKeywords) ", " }}" />
+    <meta name="author" content="{{ .Site.Params.author | default "Maksymilian Jakcowski" }}" />
     <meta name="Version" content="v{{ .Site.Params.version | default "1.3.0" }}" />
+    <link rel="canonical" href="{{ .Permalink }}" />
     <!-- favicon -->
     {{ block "favicon" . }}{{ partialCached (printf "%s/%s" ($.Scratch.Get "pathName") "head/favicon.html") . }}{{ end }}
     {{- partial (printf "%s/%s" ($.Scratch.Get "pathName") "head/opengraph") . }}
     {{- partial (printf "%s/%s" ($.Scratch.Get "pathName") "head/twitter_cards") . }}
+
+    <!-- Schema.org: TechArticle -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      "headline": "{{ .Title }}",
+      "description": "{{ $description }}",
+      "author": {
+        "@type": "Person",
+        "name": "{{ .Site.Params.author | default "Maksymilian Jakcowski" }}",
+        "url": "https://github.com/makjac"
+      },
+      "url": "{{ .Permalink }}",
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "{{ .Permalink }}"
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "{{ .Site.Params.author | default "Maksymilian Jakcowski" }}",
+        "url": "https://github.com/makjac"
+      },
+      "programmingLanguage": "Dart",
+      "isAccessibleForFree": true
+    }
+    </script>
+
     <!-- Atom feed autodiscovery -->
     {{- with .Site.Title }}
         <link rel="alternate" type="application/atom+xml" title="Atom feed for {{ . }}" href="/index.xml" />

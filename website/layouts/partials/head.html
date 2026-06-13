@@ -3,12 +3,58 @@
     <title>{{- .Site.Title }}</title>
     {{- if not hugo.IsProduction }}
     <meta name="robots" content="noindex">
+    {{- else }}
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     {{- end }}
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="{{ .Site.Params.description | default "A Dart package of composable function decorators" }}" />
-    <meta name="keywords" content="Dart, funx, functions, decorators, package" />
-    <meta name="author" content="funx contributors" />
+    <meta name="keywords" content="{{ delimit (.Site.Params.keywords | default (slice "funx" "Dart" "functions" "decorators" "package")) ", " }}" />
+    <meta name="author" content="{{ .Site.Params.author | default "Maksymilian Jakcowski" }}" />
     <meta name="Version" content="v{{ .Site.Params.version | default "1.3.0" }}" />
+    <link rel="canonical" href="{{ .Permalink }}" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{{ .Site.Title }}" />
+    <meta property="og:description" content="{{ .Site.Params.description | default "A Dart package of composable function decorators" }}" />
+    <meta property="og:url" content="{{ .Permalink }}" />
+    <meta property="og:site_name" content="{{ .Site.Title }}" />
+    {{- with resources.Get "images/logos/logo.svg" }}
+    <meta property="og:image" content="{{ .Permalink | absURL }}" />
+    {{- end }}
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ .Site.Title }}" />
+    <meta name="twitter:description" content="{{ .Site.Params.description | default "A Dart package of composable function decorators" }}" />
+    {{- with resources.Get "images/logos/logo.svg" }}
+    <meta name="twitter:image" content="{{ .Permalink | absURL }}" />
+    {{- end }}
+
+    <!-- Schema.org: SoftwareApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "funx",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Any",
+      "programmingLanguage": "Dart",
+      "description": "{{ .Site.Params.description | default "A Dart package of composable function decorators" }}",
+      "url": "{{ .Site.BaseURL }}",
+      "softwareVersion": "{{ .Site.Params.version | default "1.3.0" }}",
+      "author": {
+        "@type": "Person",
+        "name": "{{ .Site.Params.author | default "Maksymilian Jakcowski" }}",
+        "url": "https://github.com/makjac"
+      },
+      "codeRepository": "https://github.com/makjac/funx",
+      "downloadUrl": "https://pub.dev/packages/funx",
+      "license": "https://github.com/makjac/funx/blob/main/LICENSE",
+      "isAccessibleForFree": true
+    }
+    </script>
+
     <!-- favicon -->
     {{ block "head/favicon" . }}{{ partialCached "head/favicon.html" . }}{{ end }}
     <!-- Google Fonts -->

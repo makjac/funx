@@ -108,6 +108,14 @@ Each mechanism is documented with the same structure:
 
 This documentation targets **funx v1.3.0**. v1.3.0 refactored shared logic into internal engine files (`_timing_engine.dart`, `_reliability_engines.dart`, `_observability_engines.dart`, `_concurrency_engines.dart`) without changing the public API.
 
+## Resources
+
+- **[funx on pub.dev](https://pub.dev/packages/funx)** — install the package.
+- **[API reference](https://pub.dev/documentation/funx/latest/)** — generated Dart API docs.
+- **[funx library docs](https://pub.dev/documentation/funx/latest/funx/)** — core library entry point.
+- **[GitHub repository](https://github.com/makjac/funx)** — source code, issues, and PRs.
+- **[Maksymilian Jakcowski on GitHub](https://github.com/makjac)** — author profile.
+
 ## Contributing
 
 Found an inaccuracy? The source of truth is `lib/funx.dart` and the files under `lib/src/`. Open an issue or PR with a reference to the relevant source file.
