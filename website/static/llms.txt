@@ -15,20 +15,20 @@ Maksymilian Jakcowski — https://github.com/makjac
 - Library docs: https://pub.dev/documentation/funx/latest/funx/
 - Repository: https://github.com/makjac/funx
 - Author: https://github.com/makjac
-- Website: https://funx.dev
+- Website: https://makjac.github.io/funx
 
 ## Documentation sections
 
-- Core: https://funx.dev/docs/core/
-- Concurrency: https://funx.dev/docs/concurrency/
-- Control Flow: https://funx.dev/docs/control_flow/
-- Error Handling: https://funx.dev/docs/error_handling/
-- Observability: https://funx.dev/docs/observability/
-- Orchestration: https://funx.dev/docs/orchestration/
-- Performance: https://funx.dev/docs/performance/
-- Reliability: https://funx.dev/docs/reliability/
-- Scheduling: https://funx.dev/docs/scheduling/
-- State: https://funx.dev/docs/state/
-- Timing: https://funx.dev/docs/timing/
-- Transformation: https://funx.dev/docs/transformation/
-- Validation: https://funx.dev/docs/validation/
+- Core: https://makjac.github.io/funx/docs/core/
+- Concurrency: https://makjac.github.io/funx/docs/concurrency/
+- Control Flow: https://makjac.github.io/funx/docs/control_flow/
+- Error Handling: https://makjac.github.io/funx/docs/error_handling/
+- Observability: https://makjac.github.io/funx/docs/observability/
+- Orchestration: https://makjac.github.io/funx/docs/orchestration/
+- Performance: https://makjac.github.io/funx/docs/performance/
+- Reliability: https://makjac.github.io/funx/docs/reliability/
+- Scheduling: https://makjac.github.io/funx/docs/scheduling/
+- State: https://makjac.github.io/funx/docs/state/
+- Timing: https://makjac.github.io/funx/docs/timing/
+- Transformation: https://makjac.github.io/funx/docs/transformation/
+- Validation: https://makjac.github.io/funx/docs/validation/

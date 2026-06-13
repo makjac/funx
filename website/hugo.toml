@@ -1,4 +1,4 @@
-baseURL = 'https://funx.dev'
+baseURL = 'https://makjac.github.io/funx/'
 languageCode = 'en-us'
 title = 'funx'
 enableEmoji = true
@@ -7,7 +7,7 @@ contentDir = 'content'
 
 [params]
 description = 'A Dart package of composable function decorators'
-version = '1.3.0'
+version = '1.3.1'
 author = 'Maksymilian Jakcowski'
 keywords = ['funx', 'Dart', 'functions', 'decorators', 'package', 'async', 'composable']
 sans_serif_font = "'Inter', sans-serif"
@@ -44,7 +44,7 @@ codeFences = true
 
 [[menus.primary]]
 name = 'Docs'
-url = '/docs/'
+url = 'docs/'
 weight = 10
 
 [[menus.primary]]

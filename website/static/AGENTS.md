@@ -20,7 +20,7 @@ This file provides context for AI agents and automated tooling that interact wit
 | Library API docs | https://pub.dev/documentation/funx/latest/funx/ |
 | Source repository | https://github.com/makjac/funx |
 | Author profile | https://github.com/makjac |
-| Website | https://funx.dev |
+| Website | https://makjac.github.io/funx |
 
 ## Repository layout
 
