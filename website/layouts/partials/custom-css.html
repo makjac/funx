@@ -1,0 +1,10 @@
+{{- $options := dict "enableSourceMap" true -}}
+{{- if hugo.IsProduction -}}
+  {{- $options = dict "enableSourceMap" false "outputStyle" "compressed" -}}
+{{- end -}}
+{{- $custom := resources.Get "/scss/custom.scss" -}}
+{{- $custom = $custom | css.Sass $options -}}
+{{- if hugo.IsProduction -}}
+  {{- $custom = $custom | minify | fingerprint "sha384" -}}
+{{- end -}}
+<link rel="stylesheet" href="{{ $custom.RelPermalink }}" {{ if hugo.IsProduction }}integrity="{{ $custom.Data.Integrity }}"{{ end -}}/>

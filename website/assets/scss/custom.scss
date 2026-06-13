@@ -1,0 +1,155 @@
+// funx brand overrides for LotusDocs
+
+// Primary indigo palette
+$fx-primary: #6366f1;
+$fx-primary-dark: #4f46e5;
+$fx-primary-darker: #4338ca;
+$fx-slate-900: #0f172a;
+$fx-slate-700: #334155;
+$fx-slate-500: #64748b;
+$fx-slate-100: #f1f5f9;
+
+:root {
+  --bs-primary: #{$fx-primary};
+  --bs-primary-rgb: 99, 102, 241;
+  --bs-link-color: #{$fx-primary-dark};
+  --bs-link-hover-color: #{$fx-primary-darker};
+}
+
+.btn-primary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #{$fx-primary};
+  --bs-btn-border-color: #{$fx-primary};
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #{$fx-primary-dark};
+  --bs-btn-hover-border-color: #{$fx-primary-dark};
+  --bs-btn-focus-shadow-rgb: 99, 102, 241;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #{$fx-primary-darker};
+  --bs-btn-active-border-color: #{$fx-primary-darker};
+}
+
+.btn-outline-primary {
+  --bs-btn-color: #{$fx-primary};
+  --bs-btn-border-color: #{$fx-primary};
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #{$fx-primary};
+  --bs-btn-hover-border-color: #{$fx-primary};
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #{$fx-primary-dark};
+  --bs-btn-active-border-color: #{$fx-primary-dark};
+}
+
+.btn-soft-primary {
+  background-color: rgba($fx-primary, 0.08) !important;
+  border-color: rgba($fx-primary, 0.08) !important;
+  color: $fx-primary !important;
+  &:hover, &:focus, &:active {
+    background-color: $fx-primary !important;
+    border-color: $fx-primary !important;
+    color: #fff !important;
+  }
+}
+
+.text-primary { color: $fx-primary !important; }
+.bg-primary { background-color: $fx-primary !important; }
+.border-primary { border-color: $fx-primary !important; }
+
+a {
+  color: $fx-primary-dark;
+  &:hover { color: $fx-primary-darker; }
+}
+
+.classic-hero-image svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+// Hero
+.hero {
+  padding-top: 8rem;
+  padding-bottom: 5rem;
+  background: linear-gradient(160deg, #ffffff 0%, #eef2ff 100%);
+
+  .heading {
+    font-size: 3.75rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: $fx-slate-900;
+  }
+
+  .para-desc {
+    font-size: 1.15rem;
+    line-height: 1.7;
+    color: $fx-slate-700;
+  }
+
+  .badge {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+}
+
+// Header logo sizing
+#top-header .navigation-menu {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  > li {
+    margin: 0 0.5rem;
+    > a {
+      display: block;
+      min-height: auto;
+      padding: 0.5rem 0.75rem;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: $fx-slate-700;
+      &:hover { color: $fx-primary; }
+    }
+  }
+}
+
+#topnav .logo {
+  .small, .big {
+    height: 31px;
+    display: flex;
+    align-items: center;
+  }
+  svg { height: 100%; width: auto; }
+}
+
+.sidebar-brand {
+  svg { height: 28px; width: auto; }
+}
+
+// Feature grid
+.features.feature-primary {
+  .icon {
+    background-color: rgba($fx-primary, 0.1) !important;
+    color: $fx-primary !important;
+  }
+}
+
+.features {
+  .title {
+    font-weight: 600;
+    color: $fx-slate-900;
+  }
+  .para {
+    color: $fx-slate-500;
+  }
+}
+
+// Footer
+.footer {
+  background-color: $fx-slate-100;
+  color: $fx-slate-700;
+  border-top: 1px solid #e2e8f0;
+}
+
+// Material icons alignment
+.material-icons.align-middle { vertical-align: middle; }

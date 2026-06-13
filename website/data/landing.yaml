@@ -1,0 +1,123 @@
+hero:
+  enable: true
+  weight: 1
+  template: hero
+  badge:
+    text: "Dart 3 compatible"
+    color: primary
+    pill: true
+    soft: true
+  title: "funx"
+  subtitle: "A Dart package of composable function decorators. Wrap ordinary functions in small, chainable building blocks for timing, concurrency, reliability, caching, observability, and more."
+  ctaButton:
+    btnText: "Read the docs"
+    url: "/docs/"
+    icon: "menu_book"
+  cta2Button:
+    btnText: "View on GitHub"
+    url: "https://github.com/makjac/funx"
+    icon: "open_in_new"
+  image:
+    path: "images"
+    filename: "hero.svg"
+    alt: "funx composable decorators illustration"
+  info: "Version 1.3.0 · MIT License"
+
+# Disable the default Lotus Docs landing-page sections that ship with the theme.
+featureGrid:
+  enable: false
+
+imageCompare:
+  enable: false
+
+feature_grid:
+  enable: true
+  weight: 2
+  template: feature_grid
+  title: "Explore the docs"
+  subtitle: "Each category groups related decorators so you can find the right tool quickly."
+  items:
+    - icon: "rocket_launch"
+      title: "Get Started"
+      description: "Read the full overview, install the package, and run your first decorator."
+      ctaLink:
+        text: "Start here"
+        url: "/docs/"
+    - icon: "token"
+      title: "Core"
+      description: "The building blocks: Func, Func1, Func2, validation, guards, and snapshots."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/core/"
+    - icon: "sync_alt"
+      title: "Concurrency"
+      description: "Locks, semaphores, pools, and isolates for safe parallel execution."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/concurrency/"
+    - icon: "account_tree"
+      title: "Control Flow"
+      description: "Branch, loop, gate, and compose functions with predictable control flow."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/control_flow/"
+    - icon: "error_outline"
+      title: "Error Handling"
+      description: "Retry, fallback, circuit breakers, and structured error recovery."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/error_handling/"
+    - icon: "monitoring"
+      title: "Observability"
+      description: "Logs, metrics, tracing, and health checks for your functions."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/observability/"
+    - icon: "hub"
+      title: "Orchestration"
+      description: "Sagas, schedules, pipelines, and distributed coordination."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/orchestration/"
+    - icon: "speed"
+      title: "Performance"
+      description: "Caching, memoization, throttling, and debouncing."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/performance/"
+    - icon: "replay"
+      title: "Reliability"
+      description: "Idempotency, timeouts, hedging, and bulkheads."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/reliability/"
+    - icon: "event_note"
+      title: "Scheduling"
+      description: "Run functions once, on intervals, with cron, or after delays."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/scheduling/"
+    - icon: "storage"
+      title: "State"
+      description: "Snapshots, state machines, and persistent function state."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/state/"
+    - icon: "timer"
+      title: "Timing"
+      description: "Deadlines, timeouts, rate windows, and time-based policies."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/timing/"
+    - icon: "transform"
+      title: "Transformation"
+      description: "Map, adapt, serialize, and reshape inputs and outputs."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/transformation/"
+    - icon: "verified"
+      title: "Validation"
+      description: "Schema checks, guards, contracts, and input validation."
+      ctaLink:
+        text: "Explore"
+        url: "/docs/validation/"
