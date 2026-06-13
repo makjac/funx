@@ -1,6 +1,6 @@
 ![header][header_image_url]
 
-[![CI][ci_bagge]][ci_url] [![codecov][codecov_badge]][codecov_url] [![pub package][pub_package_badge]][pub_package_url] [![pub likes][pub_likes_badge]][pub_likes_link] [![style: very good analysis][very_good_analysis_badge]][very_good_analysis_url] [![License: MIT][license_badge]][license_badge_link]
+[![CI][ci_badge]][ci_url] [![codecov][codecov_badge]][codecov_url] [![pub package][pub_package_badge]][pub_package_url] [![pub likes][pub_likes_badge]][pub_likes_link] [![style: very good analysis][very_good_analysis_badge]][very_good_analysis_url] [![License: MIT][license_badge]][license_badge_link]
 
 # Funx
 
@@ -8,7 +8,7 @@ Function execution control library for Dart and Flutter. Provides decorators for
 
 ## Purpose
 
-Funx addresses the complexity of implementing reliable, performant function execution patterns in Dart/Flutter applications. Instead of manually implementing retry logic, debouncing, rate limiting, or circuit breakers, developers wrap functions with composable decorators.
+Funx addresses the complexity of implementing reliable, performant function execution patterns in Dart/Flutter applications. Instead of manually implementing retry logic, debouncing, rate limiting, or circuit breakers, developers wrap functions with composable decorators that can be layered to build sophisticated execution pipelines.
 
 This package is useful when building applications that require:
 
@@ -19,14 +19,36 @@ This package is useful when building applications that require:
 - Performance optimization through caching, batching, and memoization
 - Observable function execution with metrics and audit trails
 
+## Getting Started
+
+Add `funx` to your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  funx: ^1.3.0
+```
+
+Or install it from the command line:
+
+```bash
+dart pub add funx
+```
+
+Then import it in your Dart code:
+
+```dart
+import 'package:funx/funx.dart';
+```
+
 ## Features
 
 ### Core Functionality
 
 - Function wrapper with composable decorators
 - Support for async (`Future<T>`), sync (`T`), and parameterized functions
-- Three wrapper types: `Func<R>`, `Func1<T, R>`, `Func2<T1, T2, R>`
-- Zero external dependencies
+- Async wrapper types: `Func<R>`, `Func1<T, R>`, `Func2<T1, T2, R>`
+- Sync wrapper types: `FuncSync<R>`, `FuncSync1<T, R>`, `FuncSync2<T1, T2, R>` (limited decorator support)
+- Zero runtime dependencies
 
 ### Mechanism Categories
 
@@ -75,8 +97,16 @@ final trackScroll = Func1<double, void>((position) async {
 }).throttle(Duration(milliseconds: 50));
 
 await trackScroll(100);
-expect(() => trackScroll(200), throwsStateError); // Throttled
-expect(() => trackScroll(300), throwsStateError); // Throttled
+try {
+  await trackScroll(200); // Throttled, throws StateError
+} catch (e) {
+  print('Throttled: $e');
+}
+try {
+  await trackScroll(300); // Throttled, throws StateError
+} catch (e) {
+  print('Throttled: $e');
+}
 
 // callCount == 1 (first call executed, others rejected)
 ```
@@ -136,20 +166,22 @@ final result2 = await square(10);
 
 ### Func Wrapper Types
 
-Funx provides three wrapper types based on the number of parameters:
+Funx provides async and sync wrapper types based on the number of parameters:
 
 ```dart
-// No parameters
+// Async wrappers
 final greet = Func<String>(() async => 'Hello, World!');
 final result = await greet();
 
-// One parameter  
 final processAge = Func1<int, String>((age) async => 'Age: $age');
 final output = await processAge(25);
 
-// Two parameters
 final calculate = Func2<int, int, int>((x, y) async => x + y);
 final sum = await calculate(1, 2);
+
+// Sync wrapper (scheduling only)
+final syncGreet = FuncSync<String>(() => 'Hello, World!');
+final syncResult = syncGreet();
 ```
 
 ### Chaining Decorators
@@ -176,13 +208,13 @@ await Future.delayed(Duration(milliseconds: 100));
 
 ### Execution Order
 
-Decorators execute in reverse order (last applied executes first):
+Decorators wrap the original function like layers. The last applied decorator becomes the outermost layer and executes first when the wrapped function is called:
 
 ```dart
 final fn = Func<String>(() async => await operation())
-  .retry()      // 3. Executes third
-  .timeout()    // 2. Executes second
-  .tap(onValue: (v) => print(v));  // 1. Executes first
+  .retry(maxAttempts: 3)              // 3. Executes third (innermost)
+  .timeout(Duration(seconds: 5))      // 2. Executes second
+  .tap(onValue: (v) => print(v));     // 1. Executes first (outermost)
 ```
 
 ## Mechanism Categories
@@ -273,21 +305,22 @@ final adaptive = Func(() async {
   return customCount;
 }).scheduleCustom(
   scheduler: (lastExecution) {
-    // Double delay after each execution
-    final delay = Duration(milliseconds: 50 * customCount);
+    // First execution after 50ms, then increase delay
+    final multiplier = lastExecution == null ? 1 : customCount;
+    final delay = Duration(milliseconds: 50 * multiplier);
     return DateTime.now().add(delay);
   },
   maxIterations: 2,
 );
 
-final subscription3 = adaptive.start();
-await Future.delayed(Duration(milliseconds: 200));
+adaptive.start();
+await Future.delayed(Duration(milliseconds: 300));
 // customCount == 2
 ```
 
 ### Backpressure
 
-Control execution rate when consumer is slower than producer:
+Control execution rate when consumer is slower than producer. Strategies `drop`, `sample`, and `error` throw `StateError` when a request is rejected.
 
 ```dart
 // Drop strategy - reject new requests when busy
@@ -300,9 +333,17 @@ final processor = Func1<int, void>((value) async {
   maxConcurrent: 1,
 );
 
-processor(1); // Accepted
-processor(2); // Dropped (busy)
-processor(3); // Dropped (busy)
+processor(1); // Accepted, starts executing
+try {
+  await processor(2); // Dropped (busy), throws StateError
+} catch (e) {
+  print('Dropped: $e');
+}
+try {
+  await processor(3); // Dropped (busy), throws StateError
+} catch (e) {
+  print('Dropped: $e');
+}
 
 await Future.delayed(Duration(milliseconds: 100));
 // processedCount == 1
@@ -328,6 +369,7 @@ await Future.delayed(Duration(milliseconds: 100));
 
 // Sample strategy - probabilistic acceptance
 var sampledCount = 0;
+var droppedCount = 0;
 final sampled = Func1<int, void>((value) async {
   sampledCount++;
 }).backpressure(
@@ -337,10 +379,15 @@ final sampled = Func1<int, void>((value) async {
 );
 
 for (var i = 0; i < 100; i++) {
-  sampled(i);
+  try {
+    await sampled(i);
+  } catch (e) {
+    droppedCount++;
+  }
 }
 
 await Future.delayed(Duration(milliseconds: 100));
+// sampledCount + droppedCount == 100
 // sampledCount ≈ 50 (probabilistic)
 ```
 
@@ -349,6 +396,8 @@ await Future.delayed(Duration(milliseconds: 100));
 Manage parallel execution:
 
 ```dart
+import 'dart:math';
+
 // Lock - mutual exclusion (ensures sequential execution)
 var counter = 0;
 final incrementCounter = Func<void>(() async {
@@ -365,11 +414,11 @@ await Future.wait([
 
 // Semaphore - limit concurrent executions
 var concurrentCount = 0;
-var maxConcurrent = 0;
+var peakConcurrent = 0;
 
 final task = Func<void>(() async {
   concurrentCount++;
-  maxConcurrent = max(concurrentCount, maxConcurrent);
+  peakConcurrent = max(concurrentCount, peakConcurrent);
   await Future.delayed(Duration(milliseconds: 50));
   concurrentCount--;
 }).semaphore(maxConcurrent: 2);
@@ -377,7 +426,7 @@ final task = Func<void>(() async {
 await Future.wait([
   task(), task(), task(), task(),
 ]);
-// maxConcurrent == 2 (never more than 2 concurrent)
+// peakConcurrent == 2 (never more than 2 concurrent)
 ```
 
 ### Reliability
@@ -402,13 +451,15 @@ final unreliableOp = Func<String>(() async {
 final result = await unreliableOp(); // 'success' after 3 attempts
 
 // Circuit Breaker - prevent cascading failures
-final apiCall = Func<String>(() async {
-  throw Exception('Service down');
-}).circuitBreaker(
+final breaker = CircuitBreaker(
   failureThreshold: 3,
   successThreshold: 1,
   timeout: Duration(milliseconds: 100),
 );
+
+final apiCall = Func<String>(() async {
+  throw Exception('Service down');
+}).circuitBreaker(breaker);
 
 // First 3 calls fail and open the circuit
 for (var i = 0; i < 3; i++) {
@@ -451,22 +502,20 @@ await expensiveOp(10); // callCount: 2 (different arg)
 
 // Batch - group operations
 final results = <int>[];
-final batchOp = Func1<int, void>((value) async {
-  await Future.delayed(Duration(milliseconds: 5));
-  results.add(value);
-}).batch(
-  executor: (values) async {
+final batchOp = Func1<int, int>((value) async => value).batch(
+  executor: Func1<List<int>, void>((values) async {
     await Future.delayed(Duration(milliseconds: 10));
     results.addAll(values);
-  },
+  }),
+  maxWait: Duration(milliseconds: 20),
 );
 
 batchOp(1);
 batchOp(2);
 await Future.delayed(Duration(milliseconds: 50));
-// results contains [1, 2] from batched execution
+// results == [1, 2] from batched execution
 
-// Rate limit - control throughput
+// Rate limit - control throughput (token bucket waits by default)
 var executionCount = 0;
 final rateLimitedOp = Func<void>(() async {
   executionCount++;
@@ -477,7 +526,7 @@ final rateLimitedOp = Func<void>(() async {
 
 rateLimitedOp();
 rateLimitedOp();
-rateLimitedOp(); // This one waits or throws depending on strategy
+rateLimitedOp(); // Waits for the next token (default token bucket strategy)
 
 // Deduplicate - prevent duplicate sequential calls
 var duplicateCallCount = 0;
@@ -554,15 +603,29 @@ await Future.delayed(Duration(milliseconds: 100));
 // executionOrder: [1, 5, 3] - highest priority (5) executed second
 
 // Queue overflow policies
+var dropCallCount = 0;
 final dropLowest = Func1<int, String>((priority) async {
+  dropCallCount++;
+  await Future.delayed(Duration(milliseconds: 50));
   return 'Task: $priority';
 }).priorityQueue(
   priorityFn: (p) => p,
-  maxQueueSize: 2,
+  maxQueueSize: 1,
   maxConcurrent: 1,
   onQueueFull: QueueFullPolicy.dropLowestPriority,
   onItemDropped: (item) => print('Dropped: $item'),
 );
+
+dropLowest(1); // Starts executing
+try {
+  await dropLowest(2); // Queued
+  await dropLowest(3); // Drops 2 (lower priority than 3), throws StateError
+} catch (e) {
+  print('Drop lowest: $e');
+}
+
+await Future.delayed(Duration(milliseconds: 200));
+// dropCallCount == 2 (tasks 1 and 3 executed, task 2 dropped)
 
 // Starvation prevention - boost waiting tasks
 final withStarvation = Func1<String, String>((task) async {
@@ -577,7 +640,7 @@ final withStarvation = Func1<String, String>((task) async {
 // Monitor queue state
 final monitored = Func1<int, int>((x) async => x * 2).priorityQueue(
   priorityFn: (x) => x,
-) as PriorityQueueExtension<int, int>;
+);
 
 print('Queue length: ${monitored.queueLength}');
 print('Active tasks: ${monitored.activeCount}');
@@ -593,18 +656,18 @@ final riskyOp = Func<String>(() async {
   throw ArgumentError('Invalid input');
 }).catchError(
   handlers: {
-    ArgumentError: (e, stack) => 'handled: ${e.message}',
+    ArgumentError: (e) async => 'handled: ${(e as ArgumentError).message}',
   },
 );
 
 final result = await riskyOp(); // 'handled: Invalid input'
 
-// Catch any exception with default handler
+// Catch any exception with catchAll fallback
 final anyErrorOp = Func<int>(() async {
   throw Exception('Something went wrong');
 }).catchError(
   handlers: {},
-  defaultHandler: (e, stack) => 42,
+  catchAll: (e) async => 42,
 );
 
 final value = await anyErrorOp(); // 42
@@ -725,12 +788,14 @@ final result = await search('test');
 ### Rate-Limited Concurrent Operations
 
 ```dart
+import 'dart:math';
+
 var concurrentCount = 0;
-var maxConcurrent = 0;
+var peakConcurrent = 0;
 
 final processTask = Func1<int, String>((id) async {
   concurrentCount++;
-  maxConcurrent = max(concurrentCount, maxConcurrent);
+  peakConcurrent = max(concurrentCount, peakConcurrent);
   await Future.delayed(Duration(milliseconds: 50));
   concurrentCount--;
   return 'Task $id completed';
@@ -741,7 +806,7 @@ final processTask = Func1<int, String>((id) async {
 final futures = List.generate(4, processTask.call);
 await Future.wait(futures);
 
-// maxConcurrent: 2 (semaphore limited concurrency)
+// peakConcurrent == 2 (semaphore limited concurrency)
 ```
 
 ### Resilient Data Fetcher
@@ -811,6 +876,7 @@ extension RequestIdDecorator<R> on Func<R> {
       print('[Request $requestId] Starting');
       
       try {
+        // `call()` invokes the original wrapped function
         final result = await call();
         print('[Request $requestId] Success');
         return result;
@@ -841,7 +907,7 @@ extension CustomDecorator<R> on Func<R> {
       // 1. Pre-processing
       print('Pre-processing...');
       
-      // 2. Execute original function
+      // 2. Execute original function (`call()` invokes the wrapped function)
       try {
         final result = await call();
         
@@ -873,6 +939,7 @@ extension CustomSyncDecorator<R> on FuncSync<R> {
   FuncSync<R> withLogging() {
     return FuncSync<R>(() {
       print('Executing function');
+      // `call()` invokes the original wrapped function
       final result = call();
       print('Result: $result');
       return result;
@@ -886,6 +953,8 @@ extension CustomSyncDecorator<R> on FuncSync<R> {
 ### Basic Testing
 
 ```dart
+import 'dart:async';
+
 import 'package:test/test.dart';
 import 'package:funx/funx.dart';
 
@@ -959,7 +1028,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 <!-- badges -->
 
-[ci_bagge]: https://github.com/makjac/funx/workflows/CI/badge.svg
+[ci_badge]: https://github.com/makjac/funx/workflows/CI/badge.svg
 [ci_url]: https://github.com/makjac/funx/actions
 
 [codecov_badge]: https://codecov.io/gh/makjac/funx/branch/main/graph/badge.svg
@@ -982,6 +1051,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 [header_image_url]: https://raw.githubusercontent.com/makjac/images/refs/heads/main/funx/banner.png
 
 <!--
-Version: 1.1.0
-Last Updated: 2024-12-01
+Version: 1.3.0
+Last Updated: 2026-06-11
 -->
