@@ -9,7 +9,7 @@ void main() {
         return 42;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension<int>;
+      final ext = func;
 
       await func();
       await func();
@@ -24,7 +24,7 @@ void main() {
         throw Exception('error');
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension<int>;
+      final ext = func;
 
       for (var i = 0; i < 3; i++) {
         try {
@@ -44,7 +44,7 @@ void main() {
         return 42;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension<int>;
+      final ext = func;
 
       await func();
 
@@ -60,7 +60,7 @@ void main() {
         return 42;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension<int>;
+      final ext = func;
 
       await func();
       await func();
@@ -77,7 +77,7 @@ void main() {
         return 42;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension<int>;
+      final ext = func;
 
       for (var i = 0; i < 4; i++) {
         try {
@@ -114,7 +114,7 @@ void main() {
         throw Exception('test error');
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension<int>;
+      final ext = func;
 
       try {
         await func();
@@ -133,7 +133,7 @@ void main() {
         return 42;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension<int>;
+      final ext = func;
       await func();
 
       final after = DateTime.now();
@@ -159,7 +159,7 @@ void main() {
         return 42;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension<int>;
+      final ext = func;
 
       await func();
       await func();
@@ -178,7 +178,7 @@ void main() {
         return n * 2;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension1<int, int>;
+      final ext = func;
 
       await func(5);
       await func(10);
@@ -195,7 +195,7 @@ void main() {
         return n;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension1<int, int>;
+      final ext = func;
 
       await func(5);
       try {
@@ -231,7 +231,7 @@ void main() {
         return n * 2;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension1<int, int>;
+      final ext = func;
 
       await func(5);
       await func(10);
@@ -252,7 +252,7 @@ void main() {
         return n * 2;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension1<int, int>;
+      final ext = func;
 
       await func(5);
 
@@ -267,7 +267,7 @@ void main() {
         throw Exception('Func1 error');
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension1<int, int>;
+      final ext = func;
 
       try {
         await func(5);
@@ -306,7 +306,7 @@ void main() {
         return a + b;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension2<int, int, int>;
+      final ext = func;
 
       await func(5, 10);
       await func(3, 7);
@@ -339,7 +339,7 @@ void main() {
         return a + b;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension2<int, int, int>;
+      final ext = func;
 
       await func(5, 10);
       await func(3, 7);
@@ -360,7 +360,7 @@ void main() {
         return a + b;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension2<int, int, int>;
+      final ext = func;
 
       await func(5, 10);
 
@@ -375,7 +375,7 @@ void main() {
         throw Exception('Func2 error');
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension2<int, int, int>;
+      final ext = func;
 
       try {
         await func(5, 10);
@@ -392,7 +392,7 @@ void main() {
         return a + b;
       }).monitorObservability();
 
-      final ext = func as obs.MonitorExtension2<int, int, int>;
+      final ext = func;
 
       await func(5, 10);
       try {

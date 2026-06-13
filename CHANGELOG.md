@@ -1,3 +1,9 @@
+## 1.3.1
+
+- **README improvements**:
+  - Added a **Resources** section with links to pub.dev, the Dart API reference,
+    the GitHub repository, and the author profile.
+
 ## 1.3.0
 
 - **Internal refactor**: extracted shared generic engines to reduce code duplication

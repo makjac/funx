@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" role="img" aria-label="funx composable decorators illustration">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eef2ff"/>
+      <stop offset="100%" stop-color="#e0e7ff"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" rx="24" fill="url(#bg)"/>
+  
+  <!-- decorative nodes -->
+  <circle cx="120" cy="100" r="12" fill="#6366f1" opacity="0.8"/>
+  <circle cx="480" cy="120" r="16" fill="#8b5cf6" opacity="0.7"/>
+  <circle cx="520" cy="280" r="10" fill="#6366f1" opacity="0.6"/>
+  <circle cx="80" cy="300" r="14" fill="#a5b4fc" opacity="0.8"/>
+  
+  <!-- connecting paths -->
+  <path d="M120 100 C 220 100, 250 180, 340 180" fill="none" stroke="#c7d2fe" stroke-width="4" stroke-linecap="round"/>
+  <path d="M340 180 C 420 180, 440 120, 480 120" fill="none" stroke="#c7d2fe" stroke-width="4" stroke-linecap="round"/>
+  <path d="M340 180 C 420 220, 460 260, 520 280" fill="none" stroke="#c7d2fe" stroke-width="4" stroke-linecap="round"/>
+  <path d="M340 180 C 260 240, 160 260, 80 300" fill="none" stroke="#c7d2fe" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- central function block -->
+  <rect x="280" y="140" width="120" height="80" rx="16" fill="url(#accent)"/>
+  <text x="340" y="188" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="700" fill="#ffffff">ƒ(x)</text>
+  
+  <!-- surrounding decorator blocks -->
+  <rect x="80" y="70" width="80" height="48" rx="12" fill="#ffffff" stroke="#6366f1" stroke-width="2"/>
+  <text x="120" y="100" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#4f46e5">lock</text>
+  
+  <rect x="440" y="80" width="80" height="48" rx="12" fill="#ffffff" stroke="#6366f1" stroke-width="2"/>
+  <text x="480" y="110" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#4f46e5">retry</text>
+  
+  <rect x="460" y="260" width="80" height="48" rx="12" fill="#ffffff" stroke="#6366f1" stroke-width="2"/>
+  <text x="500" y="290" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#4f46e5">cache</text>
+  
+  <rect x="40" y="270" width="80" height="48" rx="12" fill="#ffffff" stroke="#6366f1" stroke-width="2"/>
+  <text x="80" y="300" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#4f46e5">guard</text>
+  
+  <rect x="250" y="280" width="80" height="48" rx="12" fill="#ffffff" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="290" y="310" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#7c3aed">timeout</text>
+  
+  <rect x="150" y="180" width="80" height="48" rx="12" fill="#ffffff" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="190" y="210" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#7c3aed">observe</text>
+</svg>

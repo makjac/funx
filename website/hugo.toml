@@ -1,0 +1,66 @@
+baseURL = 'https://funx.dev'
+languageCode = 'en-us'
+title = 'funx'
+enableEmoji = true
+enableRobotsTXT = true
+contentDir = 'content'
+
+[params]
+description = 'A Dart package of composable function decorators'
+version = '1.3.0'
+author = 'Maksymilian Jakcowski'
+keywords = ['funx', 'Dart', 'functions', 'decorators', 'package', 'async', 'composable']
+sans_serif_font = "'Inter', sans-serif"
+mono_font = "'JetBrains Mono', monospace"
+google_fonts = [["Inter", "400;500;600;700"], ["JetBrains Mono", "400"]]
+
+[params.footer]
+copyright = '© :YEAR: funx contributors. Released under the MIT License.'
+
+[params.social]
+github = 'makjac'
+
+[params.docs]
+title = 'funx docs'
+sidebarIcons = true
+titleIcon = true
+descriptions = true
+darkMode = true
+
+[markup]
+[markup.tableOfContents]
+endLevel = 3
+startLevel = 1
+[markup.goldmark]
+[markup.goldmark.renderer]
+unsafe = true
+[markup.goldmark.parser]
+[markup.goldmark.parser.attribute]
+block = true
+[markup.highlight]
+style = 'github-dark'
+lineNos = true
+codeFences = true
+
+[[menus.primary]]
+name = 'Docs'
+url = '/docs/'
+weight = 10
+
+[[menus.primary]]
+name = 'pub.dev'
+url = 'https://pub.dev/packages/funx'
+weight = 20
+
+[[menus.primary]]
+name = 'GitHub'
+url = 'https://github.com/makjac/funx'
+weight = 30
+
+[module]
+[[module.imports]]
+path = "github.com/colinwilson/lotusdocs"
+disable = false
+[[module.imports]]
+path = "github.com/gohugoio/hugo-mod-bootstrap-scss/v5"
+disable = false

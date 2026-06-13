@@ -1,0 +1,34 @@
+# funx
+
+> A Dart package of composable function decorators.
+
+funx wraps ordinary functions in small, chainable, reusable building blocks for timing, concurrency, reliability, caching, observability, and more.
+
+## Author
+
+Maksymilian Jakcowski — https://github.com/makjac
+
+## Resources
+
+- Package: https://pub.dev/packages/funx
+- API reference: https://pub.dev/documentation/funx/latest/
+- Library docs: https://pub.dev/documentation/funx/latest/funx/
+- Repository: https://github.com/makjac/funx
+- Author: https://github.com/makjac
+- Website: https://funx.dev
+
+## Documentation sections
+
+- Core: https://funx.dev/docs/core/
+- Concurrency: https://funx.dev/docs/concurrency/
+- Control Flow: https://funx.dev/docs/control_flow/
+- Error Handling: https://funx.dev/docs/error_handling/
+- Observability: https://funx.dev/docs/observability/
+- Orchestration: https://funx.dev/docs/orchestration/
+- Performance: https://funx.dev/docs/performance/
+- Reliability: https://funx.dev/docs/reliability/
+- Scheduling: https://funx.dev/docs/scheduling/
+- State: https://funx.dev/docs/state/
+- Timing: https://funx.dev/docs/timing/
+- Transformation: https://funx.dev/docs/transformation/
+- Validation: https://funx.dev/docs/validation/
