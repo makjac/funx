@@ -12,11 +12,10 @@ void main() {
   group('snapshot coverage gaps', () {
     test('Func1 clearSnapshots', () {
       var state = 0;
-      final func =
-          funx.Func1<int, int>((n) async => state += n).snapshot(
-                getState: () => state,
-                setState: (s) => state = s,
-              );
+      final func = funx.Func1<int, int>((n) async => state += n).snapshot(
+        getState: () => state,
+        setState: (s) => state = s,
+      );
 
       // Separate expects require separate receiver references.
       // ignore: cascade_invocations
@@ -28,12 +27,12 @@ void main() {
 
     test('Func2 autoSnapshot and snapshots getter', () async {
       var state = 0;
-      final func =
-          funx.Func2<int, int, int>((a, b) async => state = a + b).snapshot(
-                getState: () => state,
-                setState: (s) => state = s,
-                autoSnapshot: true,
-              );
+      final func = funx.Func2<int, int, int>((a, b) async => state = a + b)
+          .snapshot(
+            getState: () => state,
+            setState: (s) => state = s,
+            autoSnapshot: true,
+          );
 
       await func(1, 2);
       await func(3, 4);

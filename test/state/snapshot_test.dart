@@ -14,8 +14,7 @@ void main() {
             setState: (s) => state = s,
           );
 
-      final snapshot = func
-          .createSnapshot();
+      final snapshot = func.createSnapshot();
       expect(snapshot.state, 10);
     });
 

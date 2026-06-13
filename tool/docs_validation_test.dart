@@ -5,9 +5,9 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
-/// Validates that every Dart code block in `docs/` compiles cleanly.
+/// Validates that every Dart code block in `doc/` compiles cleanly.
 void main() {
-  final docsDir = Directory(path.join('docs'));
+  final docsDir = Directory(path.join('doc'));
   final files =
       docsDir
           .listSync(recursive: true)
