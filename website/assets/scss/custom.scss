@@ -60,13 +60,13 @@ a {
   &:hover { color: $fx-primary-darker; }
 }
 
+// Hero
 .classic-hero-image svg {
   max-width: 100%;
   height: auto;
   display: block;
 }
 
-// Hero
 .hero {
   padding-top: 8rem;
   padding-bottom: 5rem;
@@ -153,3 +153,41 @@ a {
 
 // Material icons alignment
 .material-icons.align-middle { vertical-align: middle; }
+
+// Code blocks – high-contrast dark cards on both light and dark pages
+.main-content pre,
+.docs-section-content pre {
+  background-color: #0f172a !important;
+  border: 1px solid #334155 !important;
+  border-radius: 0.5rem !important;
+  padding: 1rem !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+
+  code {
+    background-color: transparent !important;
+    color: inherit !important;
+  }
+}
+
+[data-dark-mode] .main-content pre,
+[data-dark-mode] .docs-section-content pre {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+}
+
+// Inline code
+.main-content code:not(pre code),
+.docs-section-content code:not(pre code) {
+  background-color: #e2e8f0;
+  color: #0f172a;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+[data-dark-mode] .main-content code:not(pre code),
+[data-dark-mode] .docs-section-content code:not(pre code) {
+  background-color: #334155;
+  color: #f8fafc;
+}
