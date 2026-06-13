@@ -14,7 +14,7 @@ void main() {
             setState: (s) => state = s,
           );
 
-      final snapshot = (func as snap.SnapshotExtension<int, int>)
+      final snapshot = func
           .createSnapshot();
       expect(snapshot.state, 10);
     });
@@ -29,7 +29,7 @@ void main() {
             setState: (s) => state = s,
           );
 
-      final ext = func as snap.SnapshotExtension<int, int>;
+      final ext = func;
       final snapshot = ext.createSnapshot();
       state = 20;
       ext.restoreSnapshot(snapshot);
@@ -47,7 +47,7 @@ void main() {
             autoSnapshot: true,
           );
 
-      final ext = func as snap.SnapshotExtension<int, int>;
+      final ext = func;
       await func();
       await func();
 
@@ -69,7 +69,7 @@ void main() {
             onSnapshot: (snap) => captured = snap,
           );
 
-      final ext = func as snap.SnapshotExtension<int, int>;
+      final ext = func;
       // ignore: cascade_invocations test
       ext.createSnapshot();
       expect(captured, isNotNull);
@@ -89,7 +89,7 @@ void main() {
             onRestore: (snap) => restored = snap,
           );
 
-      final ext = func as snap.SnapshotExtension<int, int>;
+      final ext = func;
       final snapshot = ext.createSnapshot();
       ext.restoreSnapshot(snapshot);
       expect(restored, isNotNull);
@@ -106,7 +106,7 @@ void main() {
             setState: (s) => state = s,
           );
 
-      final ext = func as snap.SnapshotExtension<int, int>
+      final ext = func
         ..createSnapshot()
         ..createSnapshot();
       expect(ext.snapshots.length, 2);
@@ -127,7 +127,7 @@ void main() {
             setState: (s) => state = s,
           );
 
-      final ext = func as snap.SnapshotExtension1<int, int, int>;
+      final ext = func;
       await func(10);
       final snapshot = ext.createSnapshot();
       await func(5);
@@ -148,7 +148,7 @@ void main() {
             autoSnapshot: true,
           );
 
-      final ext = func as snap.SnapshotExtension1<int, int, int>;
+      final ext = func;
       await func(5);
       await func(3);
 
@@ -169,7 +169,7 @@ void main() {
             setState: (s) => state = s,
           );
 
-      final ext = func as snap.SnapshotExtension2<int, int, int, int>;
+      final ext = func;
       await func(10, 5);
       final snapshot = ext.createSnapshot();
       await func(20, 2);

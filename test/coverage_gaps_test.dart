@@ -6,7 +6,6 @@ import 'package:funx/src/core/func.dart' as funx;
 import 'package:funx/src/core/types.dart';
 import 'package:funx/src/performance/compress.dart' as compress;
 import 'package:funx/src/performance/memoize.dart' as memo;
-import 'package:funx/src/state/snapshot.dart' as snap;
 import 'package:test/test.dart';
 
 void main() {
@@ -17,8 +16,7 @@ void main() {
           funx.Func1<int, int>((n) async => state += n).snapshot(
                 getState: () => state,
                 setState: (s) => state = s,
-              )
-              as snap.SnapshotExtension1<int, int, int>;
+              );
 
       // Separate expects require separate receiver references.
       // ignore: cascade_invocations
@@ -35,8 +33,7 @@ void main() {
                 getState: () => state,
                 setState: (s) => state = s,
                 autoSnapshot: true,
-              )
-              as snap.SnapshotExtension2<int, int, int, int>;
+              );
 
       await func(1, 2);
       await func(3, 4);

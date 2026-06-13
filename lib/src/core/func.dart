@@ -788,7 +788,7 @@ class Func<R> {
   ///   autoSnapshot: true,
   /// );
   /// ```
-  Func<R> snapshot<S>({
+  SnapshotExtension<R, S> snapshot<S>({
     required S Function() getState,
     required void Function(S state) setState,
     bool autoSnapshot = false,
@@ -815,7 +815,7 @@ class Func<R> {
   ///  },
   /// );
   /// ```
-  Func<R> monitorObservability({
+  obs.MonitorExtension<R> monitorObservability({
     void Function(obs.Metrics metrics)? onMetricsUpdate,
   }) {
     return obs.MonitorExtension(
@@ -1704,7 +1704,7 @@ class Func1<T, R> {
   ///   setState: (s) => state = s,
   /// );
   /// ```
-  Func1<T, R> snapshot<S>({
+  SnapshotExtension1<T, R, S> snapshot<S>({
     required S Function() getState,
     required void Function(S state) setState,
     bool autoSnapshot = false,
@@ -1759,7 +1759,7 @@ class Func1<T, R> {
   ///   },
   /// );
   /// ```
-  Func1<T, R> monitorObservability({
+  obs.MonitorExtension1<T, R> monitorObservability({
     void Function(obs.Metrics metrics)? onMetricsUpdate,
   }) {
     return obs.MonitorExtension1(
@@ -2615,7 +2615,7 @@ class Func2<T1, T2, R> {
   ///   setState: (s) => state = s,
   /// );
   /// ```
-  Func2<T1, T2, R> snapshot<S>({
+  SnapshotExtension2<T1, T2, R, S> snapshot<S>({
     required S Function() getState,
     required void Function(S state) setState,
     bool autoSnapshot = false,
@@ -2670,7 +2670,7 @@ class Func2<T1, T2, R> {
   ///   },
   /// );
   /// ```
-  Func2<T1, T2, R> monitorObservability({
+  obs.MonitorExtension2<T1, T2, R> monitorObservability({
     void Function(obs.Metrics metrics)? onMetricsUpdate,
   }) {
     return obs.MonitorExtension2(

@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:funx/funx.dart' hide Func1, Func2;
 import 'package:funx/src/core/func.dart' as funx;
 import 'package:funx/src/observability/audit.dart' as obs;
-import 'package:funx/src/observability/monitor.dart' as obs;
 import 'package:test/test.dart';
 
 void main() {
@@ -38,7 +37,7 @@ void main() {
       expect(result, equals('fast-test'));
       expect(winnerIndex, equals(0)); // fast won (competitor index 0)
 
-      final ext = raced as obs.MonitorExtension1<String, String>;
+      final ext = raced;
       final metrics = ext.getMetrics();
       expect(metrics.executionCount, equals(1));
       expect(metrics.successRate, equals(1.0));
@@ -112,7 +111,7 @@ void main() {
       expect(paymentProcessed, isTrue);
       expect(inventoryReserved, isTrue);
 
-      final ext = monitored as obs.MonitorExtension1<String, String>;
+      final ext = monitored;
       final metrics = ext.getMetrics();
       expect(metrics.executionCount, equals(1));
       expect(metrics.errorCount, equals(0));
@@ -196,7 +195,7 @@ void main() {
 
       expect(tappedValues, equals([10, 15]));
 
-      final ext = combined as obs.MonitorExtension1<int, List<int>>;
+      final ext = combined;
       final metrics = ext.getMetrics();
       expect(metrics.executionCount, equals(1));
     });
@@ -236,7 +235,7 @@ void main() {
         expect(result2, equals(result));
         expect(executionCount, equals(1)); // still 1, memoized
 
-        final ext = func as obs.MonitorExtension1<String, String>;
+        final ext = func;
         final metrics = ext.getMetrics();
         expect(metrics.executionCount, greaterThan(0));
       },
@@ -297,7 +296,7 @@ void main() {
       expect(tapCount, equals(3));
       expect(tappedValues.length, equals(3));
 
-      final ext = monitored as obs.MonitorExtension1<String, String>;
+      final ext = monitored;
       final metrics = ext.getMetrics();
       expect(metrics.executionCount, equals(3));
 
@@ -562,7 +561,7 @@ void main() {
         expect(result, equals('secondary-response')); // faster
         expect(secondaryCallCount, equals(1));
 
-        final ext = monitored as obs.MonitorExtension1<String, String>;
+        final ext = monitored;
         final metrics = ext.getMetrics();
         expect(metrics.executionCount, equals(1));
         expect(metrics.errorCount, equals(0));
@@ -605,12 +604,7 @@ void main() {
       expect(processedEvents[0]['priority'], equals('high'));
       expect(processedEvents[1]['priority'], equals('normal'));
 
-      final ext =
-          processEvent
-              as obs.MonitorExtension1<
-                Map<String, dynamic>,
-                Map<String, dynamic>
-              >;
+      final ext = processEvent;
       final metrics = ext.getMetrics();
       expect(metrics.executionCount, equals(3));
       expect(metrics.successRate, equals(1.0));
@@ -649,7 +643,7 @@ void main() {
         expect(results.length, equals(3));
         expect(jobs.length, equals(3));
 
-        final ext = monitored as obs.MonitorExtension1<String, List<String>>;
+        final ext = monitored;
         final metrics = ext.getMetrics();
         expect(metrics.executionCount, equals(1));
         expect(metrics.totalDuration.inMilliseconds, greaterThan(0));
@@ -702,7 +696,7 @@ void main() {
       expect(step2Complete, isTrue);
       expect(attempts, equals(2)); // Failed once, succeeded on retry
 
-      final ext = sagaFunc as obs.MonitorExtension1<int, String>;
+      final ext = sagaFunc;
       final metrics = ext.getMetrics();
       expect(metrics.executionCount, equals(1));
       expect(metrics.successRate, equals(1.0));
