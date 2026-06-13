@@ -3,13 +3,13 @@ import 'package:path/path.dart' as p;
 
 /// Prepares the funx markdown docs for Hugo + Lotus Docs.
 ///
-/// 1. Copies docs/ into content/docs/ preserving the directory tree.
+/// 1. Copies doc/ into content/docs/ preserving the directory tree.
 /// 2. Turns top-level category files (e.g. concurrency.md) into section
 ///    landing pages: concurrency/_index.md.
 /// 3. Adds front matter to every page, including category-specific icons and
 ///    weights so the sidebar is ordered consistently.
 void main() {
-  final sourceDir = Directory('../docs');
+  final sourceDir = Directory('../doc');
   final targetDir = Directory('content/docs')..createSync(recursive: true);
 
   // Clean previous run.
