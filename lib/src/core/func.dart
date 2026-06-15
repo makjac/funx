@@ -11,6 +11,11 @@ library;
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:funx/src/cancellation/cancel_token.dart';
+import 'package:funx/src/cancellation/cancellable_extension.dart';
+import 'package:funx/src/cancellation/cancellable_func.dart';
+import 'package:funx/src/cancellation/cancellable_func1.dart';
+import 'package:funx/src/cancellation/cancellable_func2.dart';
 import 'package:funx/src/concurrency/barrier.dart';
 import 'package:funx/src/concurrency/bulkhead.dart';
 import 'package:funx/src/concurrency/countdown_latch.dart';
@@ -822,6 +827,22 @@ class Func<R> {
       this,
       onMetricsUpdate: onMetricsUpdate,
     );
+  }
+
+  /// Makes this function cancellable.
+  ///
+  /// Returns a [CancellableFunc] that can be cancelled via [CancelToken] or
+  /// by calling [CancellableFunc.operation] and then
+  /// [CancelableOperation.cancel].
+  ///
+  /// Example:
+  /// ```dart
+  /// final work = Func<String>(() async => 'done').cancellable();
+  /// final operation = work.operation();
+  /// operation.cancel();
+  /// ```
+  CancellableFunc<R> cancellable({CancelToken? token}) {
+    return CancellableExtension(this).cancellable(token: token);
   }
 }
 
@@ -1789,6 +1810,15 @@ class Func1<T, R> {
       maxLogs: maxLogs,
     );
   }
+
+  /// Makes this function cancellable.
+  ///
+  /// Returns a [CancellableFunc1] that can be cancelled via [CancelToken] or
+  /// by calling [CancellableFunc1.operation] and then
+  /// [CancelableOperation.cancel].
+  CancellableFunc1<T, R> cancellable({CancelToken? token}) {
+    return CancellableExtension1(this).cancellable(token: token);
+  }
 }
 
 /// Wraps async two-parameter functions with execution control.
@@ -2699,5 +2729,14 @@ class Func2<T1, T2, R> {
       onAudit: onAudit,
       maxLogs: maxLogs,
     );
+  }
+
+  /// Makes this function cancellable.
+  ///
+  /// Returns a [CancellableFunc2] that can be cancelled via [CancelToken] or
+  /// by calling [CancellableFunc2.operation] and then
+  /// [CancelableOperation.cancel].
+  CancellableFunc2<T1, T2, R> cancellable({CancelToken? token}) {
+    return CancellableExtension2(this).cancellable(token: token);
   }
 }

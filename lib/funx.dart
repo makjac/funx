@@ -44,6 +44,15 @@
 /// ```
 library;
 
+// Cancellation
+export 'src/cancellation/cancel_exception.dart';
+export 'src/cancellation/cancel_token.dart';
+export 'src/cancellation/cancelable_operation.dart';
+export 'src/cancellation/cancellable_extension.dart';
+export 'src/cancellation/cancellable_func.dart';
+export 'src/cancellation/cancellable_func1.dart';
+export 'src/cancellation/cancellable_func2.dart';
+
 // Concurrency
 export 'src/concurrency/barrier.dart';
 export 'src/concurrency/bulkhead.dart';
