@@ -164,6 +164,25 @@ final result2 = await square(10);
 // callCount == 1 (second call uses cached result)
 ```
 
+For more control, use a pluggable backend, weighted eviction, stampede
+protection, or cache warming:
+
+```dart
+final fetchUser = Func1<String, User>((id) async => api.getUser(id)).memoize(
+  cache: LruCache<String, User>(maxSize: 100),
+  maxWeight: 1024,
+  weigh: (user) => user.jsonSize,
+  stampedeProtection: true,
+);
+
+final getProduct = Func1<String, Product>((id) async => db.product(id))
+    .cacheAside(
+      cache: LfuCache<String, Product>(maxSize: 50),
+      warmKeys: ['featured'],
+      warmInterval: Duration(minutes: 5),
+    );
+```
+
 ### Cancellable - Long-running Operations
 
 ```dart
