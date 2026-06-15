@@ -139,7 +139,8 @@ class MemoizeExtension1<T, R> extends Func1<T, R> {
     int? maxWeight,
     int Function(R result)? weigh,
     this.stampedeProtection = false,
-  }) : _cache = _wrapCache(
+  }) : _weigh = weigh,
+       _cache = _wrapCache(
          cache ?? _buildCache<T, R>(evictionPolicy, maxSize),
          maxWeight: maxWeight,
          weigh: weigh,
@@ -159,6 +160,8 @@ class MemoizeExtension1<T, R> extends Func1<T, R> {
 
   /// Whether stampede protection is enabled.
   final bool stampedeProtection;
+
+  final int Function(R result)? _weigh;
 
   final AdvancedCache<T, R> _cache;
   final StampedeProtection<T, R> _stampedeProtection =
@@ -207,6 +210,7 @@ class MemoizeExtension1<T, R> extends Func1<T, R> {
         CacheEntry(
           result,
           expiresAt: computeExpirationTime(ttl),
+          weight: _weigh?.call(result) ?? 1,
         ),
       );
       return result;
@@ -253,7 +257,8 @@ class MemoizeExtension2<T1, T2, R> extends Func2<T1, T2, R> {
     int? maxWeight,
     int Function(R result)? weigh,
     this.stampedeProtection = false,
-  }) : _cache = _wrapCache(
+  }) : _weigh = weigh,
+       _cache = _wrapCache(
          cache ??
              _buildCache<ArgPair<T1, T2>, R>(
                evictionPolicy,
@@ -277,6 +282,8 @@ class MemoizeExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 
   /// Whether stampede protection is enabled.
   final bool stampedeProtection;
+
+  final int Function(R result)? _weigh;
 
   final AdvancedCache<ArgPair<T1, T2>, R> _cache;
   final StampedeProtection<ArgPair<T1, T2>, R> _stampedeProtection =
@@ -326,6 +333,7 @@ class MemoizeExtension2<T1, T2, R> extends Func2<T1, T2, R> {
         CacheEntry(
           result,
           expiresAt: computeExpirationTime(ttl),
+          weight: _weigh?.call(result) ?? 1,
         ),
       );
       return result;
