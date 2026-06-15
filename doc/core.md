@@ -261,6 +261,102 @@ void main() {
 
 ---
 
+## Plain function extensions
+
+### What it is
+
+Extension methods that apply stateless Funx decorators directly to plain async
+functions (`Future<R> Function()`, `Future<R> Function(T)`, and
+`Future<R> Function(T1, T2)`) without wrapping them in `Func`, `Func1`, or
+`Func2` first.
+
+### When to use it
+
+- You want the most ergonomic API and do not need stateful decorators.
+- You are passing functions to libraries that expect plain function types.
+
+### Stateful decorators
+
+Stateful decorators such as `debounce`, `throttle`, `circuitBreaker`,
+`memoize`, `monitorObservability`, and `audit` remain `Func`-only. Use the
+wrappers above when you need them.
+
+### Examples
+
+**0-argument function**
+
+```dart
+Future<String> fetchData() async => 'data';
+
+final decorated = fetchData
+  .retry(maxAttempts: 3)
+  .timeout(Duration(seconds: 5))
+  .fallback(fallbackValue: 'default');
+
+void main() async {
+  print(await decorated()); // data
+}
+```
+
+**1-argument function**
+
+```dart
+Future<User> fetchUser(String id) async =>
+    (await api.getUser(id)) as User;
+
+final decorated = fetchUser
+  .validate(validators: [
+    (id) => id.isNotEmpty ? null : 'ID required',
+  ])
+  .retry(maxAttempts: 3)
+  .timeout(Duration(seconds: 5));
+
+void main() async {
+  print(await decorated('123'));
+}
+```
+
+**2-argument function**
+
+```dart
+Future<int> add(int a, int b) async => a + b;
+
+final decorated = add
+  .guard(preCondition: (a, b) => b != 0)
+  .timeout(Duration(seconds: 1));
+
+void main() async {
+  print(await decorated(10, 32)); // 42
+}
+```
+
+---
+
+## Future extensions
+
+### What it is
+
+Convenience decorators for `Future<T>` values.
+
+### When to use it
+
+- You already have a future and want to add a timeout or fallback without
+  wrapping the operation in a `Func`.
+
+### Examples
+
+```dart
+Future<String> fetchData() async => 'data';
+
+final result = await fetchData()
+  .withTimeout(const Duration(seconds: 5))
+  .withFallback(fallbackValue: 'default');
+
+print(result);
+```
+
+---
+
 ## Type aliases
 
 Funx also exports type aliases for plain functions:
