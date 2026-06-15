@@ -1,3 +1,22 @@
+## 1.3.5
+
+- **Advanced cache**: extend `memoize` and `cacheAside` with pluggable backends,
+  weighted eviction, stampede protection, and cache warming.
+  - New cache backends: `LruCache`, `LfuCache`, `FifoCache`, and the
+    `AdvancedCache` interface.
+  - `WeightedCache` wraps any `AdvancedCache` with a total weight limit and a
+    custom `weigh` function.
+  - `StampedeProtection` coalesces concurrent loads for the same key.
+  - `CacheWarmer` keeps a configurable set of keys warm on a timer.
+  - `memoize()` gains `cache`, `maxWeight`, `weigh`, and `stampedeProtection`
+    options.
+  - `cacheAside()` gains `cache`, `warmKeys`, and `warmInterval` options.
+  - Shared `CacheEntry` and `Cache` abstractions live in
+    `lib/src/performance/cache/`.
+  - New tests: `test/performance/cache/` and
+    `test/performance/memoize_advanced_test.dart`,
+    `test/performance/cache_aside_warming_test.dart`.
+
 ## 1.3.4
 
 - **API ergonomics**: apply stateless Funx decorators directly to plain Dart
