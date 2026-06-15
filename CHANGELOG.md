@@ -1,3 +1,20 @@
+## 1.3.4
+
+- **API ergonomics**: apply stateless Funx decorators directly to plain Dart
+  functions and `Future` values.
+  - `lib/src/core/function_extensions.dart` adds extensions on
+    `Future<R> Function()`, `Future<R> Function(T)`, and
+    `Future<R> Function(T1, T2)`.
+  - Supported decorators: `timeout`, `delay`, `asDeferred`, `idleCallback`,
+    `retry`, `fallback`, `recover`, `catchError`, `defaultValue`, `guard`,
+    `validate`, `proxy`, `transform`, `when`, `repeat`, and `tap`.
+  - Stateful decorators (`debounce`, `throttle`, `circuitBreaker`, `memoize`,
+    `monitorObservability`, `audit`, etc.) remain `Func`-only.
+  - `lib/src/core/future_extensions.dart` adds `withTimeout` and
+    `withFallback` on `Future<T>`.
+  - New tests: `test/core/function_extensions_test.dart` and
+    `test/core/future_extensions_test.dart`.
+
 ## 1.3.3
 
 - **Resilience policy**: added `ResiliencePolicy` for composing reliability
