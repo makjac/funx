@@ -17,3 +17,5 @@ coverage/
 # Hugo vendored modules and generated IDE config
 website/_vendor/
 website/assets/jsconfig.json
+
+temp/
