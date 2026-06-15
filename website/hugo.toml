@@ -7,9 +7,17 @@ contentDir = 'content'
 
 [params]
 description = 'A Dart package of composable function decorators'
-version = '1.3.1'
+version = '1.3.2'
 author = 'Maksymilian Jakcowski'
-keywords = ['funx', 'Dart', 'functions', 'decorators', 'package', 'async', 'composable']
+keywords = [
+    'funx',
+    'Dart',
+    'functions',
+    'decorators',
+    'package',
+    'async',
+    'composable',
+]
 sans_serif_font = "'Inter', sans-serif"
 mono_font = "'JetBrains Mono', monospace"
 google_fonts = [["Inter", "400;500;600;700"], ["JetBrains Mono", "400"]]
