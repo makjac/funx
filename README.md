@@ -64,8 +64,9 @@ import 'package:funx/funx.dart';
 - **Orchestration** (3): race, all, saga
 - **Observability** (3): tap, monitor, audit
 - **State** (1): snapshot
+- **Cancellation** (1): cancellable
 
-Total: 48 mechanisms across 12 categories
+Total: 49 mechanisms across 13 categories
 
 ## Basic Usage
 
@@ -160,6 +161,24 @@ final square = Func1<int, int>((n) async {
 final result1 = await square(10);
 final result2 = await square(10);
 // callCount == 1 (second call uses cached result)
+```
+
+### Cancellable - Long-running Operations
+
+```dart
+final fetch = Func<String>(() async {
+  await Future.delayed(Duration(seconds: 5));
+  return 'data';
+}).cancellable();
+
+final operation = fetch.operation();
+operation.cancel();
+
+try {
+  await operation.value;
+} on CancelException {
+  print('Cancelled');
+}
 ```
 
 ## Core Concepts
