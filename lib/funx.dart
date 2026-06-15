@@ -71,6 +71,8 @@ export 'src/control_flow/switch.dart';
 // Core
 export 'src/core/func.dart';
 export 'src/core/func_sync.dart';
+export 'src/core/function_extensions.dart';
+export 'src/core/future_extensions.dart';
 export 'src/core/types.dart';
 
 // Error Handling
