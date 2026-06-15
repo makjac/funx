@@ -47,6 +47,7 @@ import 'package:funx/funx.dart';
 - Function wrapper with composable decorators
 - Support for async (`Future<T>`), sync (`T`), and parameterized functions
 - Async wrapper types: `Func<R>`, `Func1<T, R>`, `Func2<T1, T2, R>`
+- Direct decorators on plain async functions and `Future<T>` values
 - Sync wrapper types: `FuncSync<R>`, `FuncSync1<T, R>`, `FuncSync2<T1, T2, R>` (limited decorator support)
 - Zero runtime dependencies
 
@@ -179,6 +180,28 @@ try {
 } on CancelException {
   print('Cancelled');
 }
+```
+
+### Plain Function Extensions
+
+Starting with version 1.3.4, you can apply stateless decorators directly to
+plain async functions without wrapping them first:
+
+```dart
+final fetchUser = api.getUser
+  .retry(maxAttempts: 3)
+  .timeout(Duration(seconds: 5))
+  .fallback(fallbackValue: User.guest());
+
+final user = await fetchUser('user-123');
+```
+
+`Future<T>` also has convenience extensions:
+
+```dart
+final result = await fetchData()
+  .withTimeout(Duration(seconds: 5))
+  .withFallback(fallbackValue: 'default');
 ```
 
 ## Core Concepts
