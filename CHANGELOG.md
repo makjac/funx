@@ -1,3 +1,11 @@
+## 1.3.2
+
+- **Cancellation**: added cooperative cancellation support.
+  - `cancellable()` decorator for `Func`, `Func1`, and `Func2`.
+  - `CancelableOperation<R>` and `CancelableCompleter<R>` for manual control.
+  - `CancelToken` for cancelling multiple operations at once.
+  - `CancelException` thrown when an operation is cancelled.
+
 ## 1.3.1
 
 - **README improvements**:
