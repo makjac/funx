@@ -1,6 +1,15 @@
 import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
+import 'package:funx/src/performance/cache/_cache_engine.dart';
+import 'package:funx/src/performance/cache/advanced_cache.dart';
+import 'package:funx/src/performance/cache/arg_pair.dart';
+import 'package:funx/src/performance/cache/cache_entry.dart';
+import 'package:funx/src/performance/cache/fifo_cache.dart';
+import 'package:funx/src/performance/cache/lfu_cache.dart';
+import 'package:funx/src/performance/cache/lru_cache.dart';
+import 'package:funx/src/performance/cache/stampede_protection.dart';
+import 'package:funx/src/performance/cache/weighted_cache.dart';
 
 /// Eviction policy for memoization cache.
 enum EvictionPolicy {
@@ -15,18 +24,19 @@ enum EvictionPolicy {
   fifo,
 }
 
-/// Internal class to track cache entry metadata for eviction policies.
-class _CacheEntry<R> {
-  _CacheEntry(this.result, this.timestamp, this.accessCount);
-
-  /// The cached result value.
-  R result;
-
-  /// Timestamp when the entry was created or last accessed.
-  DateTime timestamp;
-
-  /// Number of times this entry has been accessed.
-  int accessCount;
+/// Builds an [AdvancedCache] for the given [evictionPolicy] and [maxSize].
+AdvancedCache<K, V> _buildCache<K, V>(
+  EvictionPolicy evictionPolicy,
+  int maxSize,
+) {
+  switch (evictionPolicy) {
+    case EvictionPolicy.lru:
+      return LruCache<K, V>(maxSize: maxSize);
+    case EvictionPolicy.lfu:
+      return LfuCache<K, V>(maxSize: maxSize);
+    case EvictionPolicy.fifo:
+      return FifoCache<K, V>(maxSize: maxSize);
+  }
 }
 
 /// A function that caches results based on no arguments.
@@ -66,40 +76,46 @@ class MemoizeExtension<R> extends Func<R> {
   /// Policy for evicting entries when cache is full.
   final EvictionPolicy evictionPolicy;
 
-  _CacheEntry<R>? _cachedEntry;
+  CacheEntry<R>? _cachedEntry;
 
   /// Clears the cache.
   void clear() {
     _cachedEntry = null;
   }
 
-  bool _isExpired(_CacheEntry<R> entry) {
-    if (ttl == null) return false;
-    return DateTime.now().difference(entry.timestamp) > ttl!;
+  bool _isExpired(CacheEntry<R> entry) {
+    return entry.isExpired;
   }
 
   @override
   Future<R> call() async {
     if (_cachedEntry != null && !_isExpired(_cachedEntry!)) {
       _cachedEntry!.accessCount++;
-      return _cachedEntry!.result;
+      return _cachedEntry!.value;
     }
 
     final result = await _inner();
-    _cachedEntry = _CacheEntry(result, DateTime.now(), 1);
+    _cachedEntry = CacheEntry(
+      result,
+      expiresAt: computeExpirationTime(ttl),
+    );
     return result;
   }
 }
 
 /// A function that caches results based on one argument.
 ///
-/// Supports TTL, cache size limits, and various eviction policies.
+/// Supports TTL, pluggable cache backends, weighted eviction, and cache
+/// stampede protection.
 ///
 /// Example:
 /// ```dart
 /// final fetchUser = Func1((String id) async {
 ///   return await api.getUser(id);
-/// }).memoize(ttl: Duration(minutes: 5), maxSize: 50);
+/// }).memoize(
+///   ttl: Duration(minutes: 5),
+///   maxSize: 50,
+/// );
 ///
 /// await fetchUser('user1'); // Calls API
 /// await fetchUser('user1'); // Returns cached
@@ -109,14 +125,26 @@ class MemoizeExtension1<T, R> extends Func1<T, R> {
   /// Creates a memoization wrapper for single-argument functions.
   ///
   /// [ttl] controls how long results are cached.
-  /// [maxSize] limits the cache size.
+  /// [maxSize] limits the cache size when using [evictionPolicy].
   /// [evictionPolicy] determines which entries to remove when full.
+  /// [cache] is an optional custom cache backend.
+  /// [maxWeight] and [weigh] enable weighted eviction.
+  /// [stampedeProtection] coalesces concurrent loads for the same key.
   MemoizeExtension1(
     this._inner, {
     this.ttl,
     this.maxSize = 100,
     this.evictionPolicy = EvictionPolicy.lru,
-  }) : super((_) => throw UnimplementedError());
+    AdvancedCache<T, R>? cache,
+    int? maxWeight,
+    int Function(R result)? weigh,
+    this.stampedeProtection = false,
+  }) : _cache = _wrapCache(
+         cache ?? _buildCache<T, R>(evictionPolicy, maxSize),
+         maxWeight: maxWeight,
+         weigh: weigh,
+       ),
+       super((_) => throw UnimplementedError());
 
   final Func1<T, R> _inner;
 
@@ -129,7 +157,31 @@ class MemoizeExtension1<T, R> extends Func1<T, R> {
   /// Policy for evicting entries when cache is full.
   final EvictionPolicy evictionPolicy;
 
-  final Map<T, _CacheEntry<R>> _cache = {};
+  /// Whether stampede protection is enabled.
+  final bool stampedeProtection;
+
+  final AdvancedCache<T, R> _cache;
+  final StampedeProtection<T, R> _stampedeProtection =
+      StampedeProtection<T, R>();
+
+  static AdvancedCache<K, V> _wrapCache<K, V>(
+    AdvancedCache<K, V> cache, {
+    int? maxWeight,
+    int Function(V result)? weigh,
+  }) {
+    if (maxWeight != null || weigh != null) {
+      assert(
+        maxWeight != null && weigh != null,
+        'Both maxWeight and weigh must be provided for weighted eviction',
+      );
+      return WeightedCache<K, V>(
+        cache,
+        maxWeight: maxWeight!,
+        weigh: weigh!,
+      );
+    }
+    return cache;
+  }
 
   /// Clears all cached entries.
   void clear() {
@@ -141,87 +193,36 @@ class MemoizeExtension1<T, R> extends Func1<T, R> {
     _cache.remove(arg);
   }
 
-  bool _isExpired(_CacheEntry<R> entry) {
-    if (ttl == null) return false;
-    return DateTime.now().difference(entry.timestamp) > ttl!;
-  }
-
-  void _evictIfNeeded() {
-    if (_cache.length < maxSize) return;
-
-    T? keyToRemove;
-
-    switch (evictionPolicy) {
-      case EvictionPolicy.lru:
-        // Find least recently accessed (oldest timestamp)
-        DateTime? oldestTime;
-        for (final entry in _cache.entries) {
-          if (oldestTime == null ||
-              entry.value.timestamp.isBefore(oldestTime)) {
-            oldestTime = entry.value.timestamp;
-            keyToRemove = entry.key;
-          }
-        }
-
-      case EvictionPolicy.lfu:
-        // Find least frequently used (lowest access count)
-        int? lowestCount;
-        for (final entry in _cache.entries) {
-          if (lowestCount == null || entry.value.accessCount < lowestCount) {
-            lowestCount = entry.value.accessCount;
-            keyToRemove = entry.key;
-          }
-        }
-
-      case EvictionPolicy.fifo:
-        // Remove first inserted (we'll use a queue-like approach)
-        keyToRemove = _cache.keys.first;
-    }
-
-    if (keyToRemove != null) {
-      _cache.remove(keyToRemove);
-    }
-  }
-
   @override
   Future<R> call(T arg) async {
-    final cached = _cache[arg];
-    if (cached != null && !_isExpired(cached)) {
-      cached.accessCount++;
-      cached.timestamp = DateTime.now(); // Update for LRU
-      return cached.result;
+    final cached = _cache.get(arg);
+    if (cached != null) {
+      return cached;
     }
 
-    _evictIfNeeded();
+    Future<R> loader() async {
+      final result = await _inner(arg);
+      _cache.putEntry(
+        arg,
+        CacheEntry(
+          result,
+          expiresAt: computeExpirationTime(ttl),
+        ),
+      );
+      return result;
+    }
 
-    final result = await _inner(arg);
-    _cache[arg] = _CacheEntry(result, DateTime.now(), 1);
-    return result;
+    if (stampedeProtection) {
+      return _stampedeProtection.load(arg, loader);
+    }
+    return loader();
   }
-}
-
-/// Internal helper for creating cache keys from two arguments.
-class _ArgPair<T1, T2> {
-  const _ArgPair(this.arg1, this.arg2);
-
-  final T1 arg1;
-  final T2 arg2;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _ArgPair<T1, T2> &&
-          runtimeType == other.runtimeType &&
-          arg1 == other.arg1 &&
-          arg2 == other.arg2;
-
-  @override
-  int get hashCode => Object.hash(arg1, arg2);
 }
 
 /// A function that caches results based on two arguments.
 ///
-/// Supports TTL, cache size limits, and various eviction policies.
+/// Supports TTL, pluggable cache backends, weighted eviction, and cache
+/// stampede protection.
 ///
 /// Example:
 /// ```dart
@@ -238,14 +239,30 @@ class MemoizeExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a memoization wrapper for two-argument functions.
   ///
   /// [ttl] controls how long results are cached.
-  /// [maxSize] limits the cache size.
+  /// [maxSize] limits the cache size when using [evictionPolicy].
   /// [evictionPolicy] determines which entries to remove when full.
+  /// [cache] is an optional custom cache backend.
+  /// [maxWeight] and [weigh] enable weighted eviction.
+  /// [stampedeProtection] coalesces concurrent loads for the same key.
   MemoizeExtension2(
     this._inner, {
     this.ttl,
     this.maxSize = 100,
     this.evictionPolicy = EvictionPolicy.lru,
-  }) : super((_, _) => throw UnimplementedError());
+    AdvancedCache<ArgPair<T1, T2>, R>? cache,
+    int? maxWeight,
+    int Function(R result)? weigh,
+    this.stampedeProtection = false,
+  }) : _cache = _wrapCache(
+         cache ??
+             _buildCache<ArgPair<T1, T2>, R>(
+               evictionPolicy,
+               maxSize,
+             ),
+         maxWeight: maxWeight,
+         weigh: weigh,
+       ),
+       super((_, _) => throw UnimplementedError());
 
   final Func2<T1, T2, R> _inner;
 
@@ -258,7 +275,31 @@ class MemoizeExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Policy for evicting entries when cache is full.
   final EvictionPolicy evictionPolicy;
 
-  final Map<_ArgPair<T1, T2>, _CacheEntry<R>> _cache = {};
+  /// Whether stampede protection is enabled.
+  final bool stampedeProtection;
+
+  final AdvancedCache<ArgPair<T1, T2>, R> _cache;
+  final StampedeProtection<ArgPair<T1, T2>, R> _stampedeProtection =
+      StampedeProtection<ArgPair<T1, T2>, R>();
+
+  static AdvancedCache<K, V> _wrapCache<K, V>(
+    AdvancedCache<K, V> cache, {
+    int? maxWeight,
+    int Function(V result)? weigh,
+  }) {
+    if (maxWeight != null || weigh != null) {
+      assert(
+        maxWeight != null && weigh != null,
+        'Both maxWeight and weigh must be provided for weighted eviction',
+      );
+      return WeightedCache<K, V>(
+        cache,
+        maxWeight: maxWeight!,
+        weigh: weigh!,
+      );
+    }
+    return cache;
+  }
 
   /// Clears all cached entries.
   void clear() {
@@ -267,63 +308,33 @@ class MemoizeExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 
   /// Clears the cached entry for specific arguments.
   void clearArgs(T1 arg1, T2 arg2) {
-    _cache.remove(_ArgPair(arg1, arg2));
-  }
-
-  bool _isExpired(_CacheEntry<R> entry) {
-    if (ttl == null) return false;
-    return DateTime.now().difference(entry.timestamp) > ttl!;
-  }
-
-  void _evictIfNeeded() {
-    if (_cache.length < maxSize) return;
-
-    _ArgPair<T1, T2>? keyToRemove;
-
-    switch (evictionPolicy) {
-      case EvictionPolicy.lru:
-        DateTime? oldestTime;
-        for (final entry in _cache.entries) {
-          if (oldestTime == null ||
-              entry.value.timestamp.isBefore(oldestTime)) {
-            oldestTime = entry.value.timestamp;
-            keyToRemove = entry.key;
-          }
-        }
-
-      case EvictionPolicy.lfu:
-        int? lowestCount;
-        for (final entry in _cache.entries) {
-          if (lowestCount == null || entry.value.accessCount < lowestCount) {
-            lowestCount = entry.value.accessCount;
-            keyToRemove = entry.key;
-          }
-        }
-
-      case EvictionPolicy.fifo:
-        keyToRemove = _cache.keys.first;
-    }
-
-    if (keyToRemove != null) {
-      _cache.remove(keyToRemove);
-    }
+    _cache.remove(ArgPair(arg1, arg2));
   }
 
   @override
   Future<R> call(T1 arg1, T2 arg2) async {
-    final key = _ArgPair(arg1, arg2);
-    final cached = _cache[key];
-    if (cached != null && !_isExpired(cached)) {
-      cached.accessCount++;
-      cached.timestamp = DateTime.now(); // Update for LRU
-      return cached.result;
+    final key = ArgPair(arg1, arg2);
+    final cached = _cache.get(key);
+    if (cached != null) {
+      return cached;
     }
 
-    _evictIfNeeded();
+    Future<R> loader() async {
+      final result = await _inner(arg1, arg2);
+      _cache.putEntry(
+        key,
+        CacheEntry(
+          result,
+          expiresAt: computeExpirationTime(ttl),
+        ),
+      );
+      return result;
+    }
 
-    final result = await _inner(arg1, arg2);
-    _cache[key] = _CacheEntry(result, DateTime.now(), 1);
-    return result;
+    if (stampedeProtection) {
+      return _stampedeProtection.load(key, loader);
+    }
+    return loader();
   }
 }
 
@@ -362,25 +373,38 @@ extension Func1MemoizeExtension<T, R> on Func1<T, R> {
   ///
   /// Parameters:
   /// - [ttl]: Time-to-live for cached results (optional)
-  /// - [maxSize]: Maximum cache size (default: 100)
+  /// - [maxSize]: Maximum cache size when using [evictionPolicy] (default: 100)
   /// - [evictionPolicy]: Policy for removing entries when full (default: LRU)
+  /// - [cache]: Optional custom [AdvancedCache] backend
+  /// - [maxWeight]: Maximum total weight for weighted eviction
+  /// - [weigh]: Function returning the weight of a result
+  /// - [stampedeProtection]: Coalesce concurrent loads for the same key
   ///
   /// Example:
   /// ```dart
   /// final fetchUser = Func1((String id) => api.getUser(id)).memoize(
   ///   ttl: Duration(minutes: 5),
   ///   maxSize: 50,
+  ///   stampedeProtection: true,
   /// );
   /// ```
   Func1<T, R> memoize({
     Duration? ttl,
     int maxSize = 100,
     EvictionPolicy evictionPolicy = EvictionPolicy.lru,
+    AdvancedCache<T, R>? cache,
+    int? maxWeight,
+    int Function(R result)? weigh,
+    bool stampedeProtection = false,
   }) => MemoizeExtension1(
     this,
     ttl: ttl,
     maxSize: maxSize,
     evictionPolicy: evictionPolicy,
+    cache: cache,
+    maxWeight: maxWeight,
+    weigh: weigh,
+    stampedeProtection: stampedeProtection,
   );
 }
 
@@ -390,8 +414,12 @@ extension Func2MemoizeExtension<T1, T2, R> on Func2<T1, T2, R> {
   ///
   /// Parameters:
   /// - [ttl]: Time-to-live for cached results (optional)
-  /// - [maxSize]: Maximum cache size (default: 100)
+  /// - [maxSize]: Maximum cache size when using [evictionPolicy] (default: 100)
   /// - [evictionPolicy]: Policy for removing entries when full (default: LRU)
+  /// - [cache]: Optional custom [AdvancedCache] backend
+  /// - [maxWeight]: Maximum total weight for weighted eviction
+  /// - [weigh]: Function returning the weight of a result
+  /// - [stampedeProtection]: Coalesce concurrent loads for the same key
   ///
   /// Example:
   /// ```dart
@@ -405,10 +433,18 @@ extension Func2MemoizeExtension<T1, T2, R> on Func2<T1, T2, R> {
     Duration? ttl,
     int maxSize = 100,
     EvictionPolicy evictionPolicy = EvictionPolicy.lru,
+    AdvancedCache<ArgPair<T1, T2>, R>? cache,
+    int? maxWeight,
+    int Function(R result)? weigh,
+    bool stampedeProtection = false,
   }) => MemoizeExtension2(
     this,
     ttl: ttl,
     maxSize: maxSize,
     evictionPolicy: evictionPolicy,
+    cache: cache,
+    maxWeight: maxWeight,
+    weigh: weigh,
+    stampedeProtection: stampedeProtection,
   );
 }

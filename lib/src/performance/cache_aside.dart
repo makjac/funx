@@ -1,6 +1,13 @@
 import 'dart:async';
 
 import 'package:funx/src/core/func.dart';
+import 'package:funx/src/performance/cache/_cache_engine.dart';
+import 'package:funx/src/performance/cache/advanced_cache.dart';
+import 'package:funx/src/performance/cache/arg_pair.dart';
+import 'package:funx/src/performance/cache/cache.dart';
+import 'package:funx/src/performance/cache/cache_entry.dart';
+import 'package:funx/src/performance/cache/cache_warmer.dart';
+import 'package:funx/src/performance/cache/lru_cache.dart';
 
 /// Refresh strategy for cache-aside pattern.
 enum RefreshStrategy {
@@ -12,23 +19,6 @@ enum RefreshStrategy {
 
   /// Refresh on next access after TTL expires.
   refreshOnAccess,
-}
-
-/// Simple in-memory cache interface.
-///
-/// You can implement this interface with your own cache backend.
-abstract class Cache<K, V> {
-  /// Get value from cache.
-  V? get(K key);
-
-  /// Put value into cache.
-  void put(K key, V value);
-
-  /// Remove value from cache.
-  void remove(K key);
-
-  /// Clear all cache entries.
-  void clear();
 }
 
 /// Simple in-memory cache implementation.
@@ -50,22 +40,6 @@ class InMemoryCache<K, V> implements Cache<K, V> {
   /// Clears all entries from cache.
   @override
   void clear() => _storage.clear();
-}
-
-/// Cache entry with metadata.
-class _CacheEntry<V> {
-  _CacheEntry(this.value, this.timestamp);
-
-  /// The cached value.
-  final V value;
-
-  /// Timestamp when the entry was cached.
-  final DateTime timestamp;
-
-  /// Checks if entry has expired based on TTL.
-  bool isExpired(Duration ttl) {
-    return DateTime.now().difference(timestamp) > ttl;
-  }
 }
 
 /// A function that implements cache-aside pattern.
@@ -93,20 +67,26 @@ class CacheAsideExtension1<T, R> extends Func1<T, R> {
   /// [cache] is the cache storage backend.
   /// [ttl] controls cache entry expiration.
   /// [refreshStrategy] determines how to handle expired entries.
+  /// [warmKeys] is an optional list of keys to keep warm.
+  /// [warmInterval] is the interval at which [warmKeys] are refreshed.
   CacheAsideExtension1(
     this._inner, {
-    Cache<T, _CacheEntry<R>>? cache,
+    AdvancedCache<T, R>? cache,
     this.ttl,
     this.refreshStrategy = RefreshStrategy.none,
     this.onCacheMiss,
     this.onCacheHit,
-  }) : cache = cache ?? InMemoryCache<T, _CacheEntry<R>>(),
-       super((_) => throw UnimplementedError());
+    this.warmKeys,
+    this.warmInterval,
+  }) : cache = cache ?? LruCache<T, R>(maxSize: 100),
+       super((_) => throw UnimplementedError()) {
+    _startWarmer();
+  }
 
   final Func1<T, R> _inner;
 
-  /// Cache storage.
-  final Cache<T, _CacheEntry<R>> cache;
+  /// Cache storage backend.
+  final AdvancedCache<T, R> cache;
 
   /// Time-to-live for cached entries.
   final Duration? ttl;
@@ -120,10 +100,37 @@ class CacheAsideExtension1<T, R> extends Func1<T, R> {
   /// Callback when cache hit occurs.
   final void Function()? onCacheHit;
 
+  /// Keys that should be kept warm.
+  final Iterable<T>? warmKeys;
+
+  /// Interval at which warm keys are refreshed.
+  final Duration? warmInterval;
+
+  CacheWarmer<T, R>? _warmer;
+
+  void _startWarmer() {
+    if (warmKeys == null || warmInterval == null) return;
+    _warmer = CacheWarmer<T, R>(
+      cache: cache,
+      loader: _inner.call,
+      interval: warmInterval!,
+      keys: warmKeys!,
+    )..start();
+  }
+
+  /// Stops the background warmer if one was started.
+  void dispose() {
+    _warmer?.stop();
+    _warmer = null;
+  }
+
   Future<void> _backgroundRefresh(T key) async {
     try {
       final value = await _inner(key);
-      cache.put(key, _CacheEntry(value, DateTime.now()));
+      cache.putEntry(
+        key,
+        CacheEntry(value, expiresAt: computeExpirationTime(ttl)),
+      );
     } catch (_) {
       // Ignore refresh errors
     }
@@ -131,11 +138,11 @@ class CacheAsideExtension1<T, R> extends Func1<T, R> {
 
   @override
   Future<R> call(T arg) async {
-    final cached = cache.get(arg);
+    final cached = cache.getEntry(arg);
 
     if (cached != null) {
       // Check if expired
-      if (ttl != null && cached.isExpired(ttl!)) {
+      if (ttl != null && cached.isExpired) {
         if (refreshStrategy == RefreshStrategy.backgroundRefresh) {
           // Return stale value and refresh in background
           onCacheHit?.call();
@@ -145,14 +152,20 @@ class CacheAsideExtension1<T, R> extends Func1<T, R> {
           // Load fresh value
           onCacheMiss?.call();
           final value = await _inner(arg);
-          cache.put(arg, _CacheEntry(value, DateTime.now()));
+          cache.putEntry(
+            arg,
+            CacheEntry(value, expiresAt: computeExpirationTime(ttl)),
+          );
           return value;
         } else {
           // TTL expired, no refresh strategy
           cache.remove(arg);
           onCacheMiss?.call();
           final value = await _inner(arg);
-          cache.put(arg, _CacheEntry(value, DateTime.now()));
+          cache.putEntry(
+            arg,
+            CacheEntry(value, expiresAt: computeExpirationTime(ttl)),
+          );
           return value;
         }
       }
@@ -165,7 +178,10 @@ class CacheAsideExtension1<T, R> extends Func1<T, R> {
     // Cache miss
     onCacheMiss?.call();
     final value = await _inner(arg);
-    cache.put(arg, _CacheEntry(value, DateTime.now()));
+    cache.putEntry(
+      arg,
+      CacheEntry(value, expiresAt: computeExpirationTime(ttl)),
+    );
     return value;
   }
 
@@ -174,8 +190,9 @@ class CacheAsideExtension1<T, R> extends Func1<T, R> {
     cache.remove(key);
   }
 
-  /// Clear all cache entries.
+  /// Clear all cache entries and stop the warmer.
   void clearCache() {
+    dispose();
     cache.clear();
   }
 }
@@ -184,7 +201,7 @@ class CacheAsideExtension1<T, R> extends Func1<T, R> {
 ///
 /// Example:
 /// ```dart
-/// final cache = InMemoryCache<_ArgPair<int, int>, int>();
+/// final cache = InMemoryCache<ArgPair<int, int>, int>();
 ///
 /// final compute = Func2((int a, int b) async {
 ///   return await expensiveCalc(a, b);
@@ -197,18 +214,22 @@ class CacheAsideExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Creates a cache-aside wrapper for two-argument functions.
   CacheAsideExtension2(
     this._inner, {
-    Cache<_ArgPair<T1, T2>, _CacheEntry<R>>? cache,
+    AdvancedCache<ArgPair<T1, T2>, R>? cache,
     this.ttl,
     this.refreshStrategy = RefreshStrategy.none,
     this.onCacheMiss,
     this.onCacheHit,
-  }) : cache = cache ?? InMemoryCache<_ArgPair<T1, T2>, _CacheEntry<R>>(),
-       super((_, _) => throw UnimplementedError());
+    this.warmKeys,
+    this.warmInterval,
+  }) : cache = cache ?? LruCache<ArgPair<T1, T2>, R>(maxSize: 100),
+       super((_, _) => throw UnimplementedError()) {
+    _startWarmer();
+  }
 
   final Func2<T1, T2, R> _inner;
 
   /// Cache storage backend for storing argument pair results.
-  final Cache<_ArgPair<T1, T2>, _CacheEntry<R>> cache;
+  final AdvancedCache<ArgPair<T1, T2>, R> cache;
 
   /// Time-to-live for cached entries before expiration.
   final Duration? ttl;
@@ -222,10 +243,37 @@ class CacheAsideExtension2<T1, T2, R> extends Func2<T1, T2, R> {
   /// Optional callback invoked when cache hit occurs.
   final void Function()? onCacheHit;
 
-  Future<void> _backgroundRefresh(_ArgPair<T1, T2> key) async {
+  /// Argument pairs that should be kept warm.
+  final Iterable<(T1, T2)>? warmKeys;
+
+  /// Interval at which warm keys are refreshed.
+  final Duration? warmInterval;
+
+  CacheWarmer<ArgPair<T1, T2>, R>? _warmer;
+
+  void _startWarmer() {
+    if (warmKeys == null || warmInterval == null) return;
+    _warmer = CacheWarmer<ArgPair<T1, T2>, R>(
+      cache: cache,
+      loader: (key) => _inner(key.arg1, key.arg2),
+      interval: warmInterval!,
+      keys: warmKeys!.map((pair) => ArgPair(pair.$1, pair.$2)),
+    )..start();
+  }
+
+  /// Stops the background warmer if one was started.
+  void dispose() {
+    _warmer?.stop();
+    _warmer = null;
+  }
+
+  Future<void> _backgroundRefresh(ArgPair<T1, T2> key) async {
     try {
       final value = await _inner(key.arg1, key.arg2);
-      cache.put(key, _CacheEntry(value, DateTime.now()));
+      cache.putEntry(
+        key,
+        CacheEntry(value, expiresAt: computeExpirationTime(ttl)),
+      );
     } catch (_) {
       // Ignore refresh errors
     }
@@ -233,11 +281,11 @@ class CacheAsideExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 
   @override
   Future<R> call(T1 arg1, T2 arg2) async {
-    final key = _ArgPair(arg1, arg2);
-    final cached = cache.get(key);
+    final key = ArgPair(arg1, arg2);
+    final cached = cache.getEntry(key);
 
     if (cached != null) {
-      if (ttl != null && cached.isExpired(ttl!)) {
+      if (ttl != null && cached.isExpired) {
         if (refreshStrategy == RefreshStrategy.backgroundRefresh) {
           onCacheHit?.call();
           unawaited(_backgroundRefresh(key));
@@ -245,13 +293,19 @@ class CacheAsideExtension2<T1, T2, R> extends Func2<T1, T2, R> {
         } else if (refreshStrategy == RefreshStrategy.refreshOnAccess) {
           onCacheMiss?.call();
           final value = await _inner(arg1, arg2);
-          cache.put(key, _CacheEntry(value, DateTime.now()));
+          cache.putEntry(
+            key,
+            CacheEntry(value, expiresAt: computeExpirationTime(ttl)),
+          );
           return value;
         } else {
           cache.remove(key);
           onCacheMiss?.call();
           final value = await _inner(arg1, arg2);
-          cache.put(key, _CacheEntry(value, DateTime.now()));
+          cache.putEntry(
+            key,
+            CacheEntry(value, expiresAt: computeExpirationTime(ttl)),
+          );
           return value;
         }
       }
@@ -262,68 +316,44 @@ class CacheAsideExtension2<T1, T2, R> extends Func2<T1, T2, R> {
 
     onCacheMiss?.call();
     final value = await _inner(arg1, arg2);
-    cache.put(key, _CacheEntry(value, DateTime.now()));
+    cache.putEntry(
+      key,
+      CacheEntry(value, expiresAt: computeExpirationTime(ttl)),
+    );
     return value;
   }
 
   /// Manually invalidate cache for specific arguments.
   void invalidate(T1 arg1, T2 arg2) {
-    cache.remove(_ArgPair(arg1, arg2));
+    cache.remove(ArgPair(arg1, arg2));
   }
 
-  /// Clear all cache entries.
+  /// Clear all cache entries and stop the warmer.
   void clearCache() {
+    dispose();
     cache.clear();
   }
-}
-
-/// Internal helper for creating cache keys from two arguments.
-class _ArgPair<T1, T2> {
-  const _ArgPair(this.arg1, this.arg2);
-
-  final T1 arg1;
-  final T2 arg2;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _ArgPair<T1, T2> &&
-          runtimeType == other.runtimeType &&
-          arg1 == other.arg1 &&
-          arg2 == other.arg2;
-
-  @override
-  int get hashCode => Object.hash(arg1, arg2);
 }
 
 /// Extension methods for adding cache-aside pattern to functions with one
 /// argument.
 extension Func1CacheAsideExtension<T, R> on Func1<T, R> {
-  /// Applies cache-aside pattern to this function.
+  /// Adds cache-aside caching to this function.
   ///
-  /// Parameters:
-  /// - [cache]: Cache storage implementation
-  /// - [ttl]: Time-to-live for cache entries (optional)
-  /// - [refreshStrategy]: How to handle expired entries
-  /// - [onCacheMiss]: Callback for cache misses
-  /// - [onCacheHit]: Callback for cache hits
-  ///
-  /// Example:
-  /// ```dart
-  /// final cache = InMemoryCache<String, User>();
-  /// final getUser = Func1((String id) => db.getUser(id)).cacheAside(
-  ///   cache: cache,
-  ///   ttl: Duration(minutes: 15),
-  ///   refreshStrategy: RefreshStrategy.backgroundRefresh,
-  ///   onCacheMiss: () => metrics.increment('cache_miss'),
-  /// );
-  /// ```
-  Func1<T, R> cacheAside({
-    Cache<T, _CacheEntry<R>>? cache,
+  /// [cache] is an optional custom [AdvancedCache] backend. If omitted, an
+  /// in-memory LRU cache is used.
+  /// [ttl] controls cache entry expiration.
+  /// [refreshStrategy] determines how expired entries are handled.
+  /// [warmKeys] is a list of keys to keep warm.
+  /// [warmInterval] is the refresh interval for warm keys.
+  CacheAsideExtension1<T, R> cacheAside({
+    AdvancedCache<T, R>? cache,
     Duration? ttl,
     RefreshStrategy refreshStrategy = RefreshStrategy.none,
     void Function()? onCacheMiss,
     void Function()? onCacheHit,
+    Iterable<T>? warmKeys,
+    Duration? warmInterval,
   }) => CacheAsideExtension1(
     this,
     cache: cache,
@@ -331,28 +361,30 @@ extension Func1CacheAsideExtension<T, R> on Func1<T, R> {
     refreshStrategy: refreshStrategy,
     onCacheMiss: onCacheMiss,
     onCacheHit: onCacheHit,
+    warmKeys: warmKeys,
+    warmInterval: warmInterval,
   );
 }
 
 /// Extension methods for adding cache-aside pattern to functions with two
 /// arguments.
 extension Func2CacheAsideExtension<T1, T2, R> on Func2<T1, T2, R> {
-  /// Applies cache-aside pattern to this function.
+  /// Adds cache-aside caching to this function.
   ///
-  /// Example:
-  /// ```dart
-  /// final cache = InMemoryCache<_ArgPair<int, int>, int>();
-  /// final compute = Func2((int a, int b) => a * b).cacheAside(
-  ///   cache: cache,
-  ///   ttl: Duration(minutes: 5),
-  /// );
-  /// ```
-  Func2<T1, T2, R> cacheAside({
-    Cache<_ArgPair<T1, T2>, _CacheEntry<R>>? cache,
+  /// [cache] is an optional custom [AdvancedCache] backend. If omitted, an
+  /// in-memory LRU cache is used.
+  /// [ttl] controls cache entry expiration.
+  /// [refreshStrategy] determines how expired entries are handled.
+  /// [warmKeys] is a list of argument pairs to keep warm.
+  /// [warmInterval] is the refresh interval for warm keys.
+  CacheAsideExtension2<T1, T2, R> cacheAside({
+    AdvancedCache<ArgPair<T1, T2>, R>? cache,
     Duration? ttl,
     RefreshStrategy refreshStrategy = RefreshStrategy.none,
     void Function()? onCacheMiss,
     void Function()? onCacheHit,
+    Iterable<(T1, T2)>? warmKeys,
+    Duration? warmInterval,
   }) => CacheAsideExtension2(
     this,
     cache: cache,
@@ -360,5 +392,7 @@ extension Func2CacheAsideExtension<T1, T2, R> on Func2<T1, T2, R> {
     refreshStrategy: refreshStrategy,
     onCacheMiss: onCacheMiss,
     onCacheHit: onCacheHit,
+    warmKeys: warmKeys,
+    warmInterval: warmInterval,
   );
 }

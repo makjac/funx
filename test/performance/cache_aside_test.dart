@@ -133,11 +133,9 @@ void main() {
     test('invalidate() removes key from cache', () async {
       var callCount = 0;
 
-      final func =
-          Func1((String key) async {
-                return ++callCount;
-              }).cacheAside()
-              as CacheAsideExtension1<String, int>;
+      final func = Func1((String key) async {
+        return ++callCount;
+      }).cacheAside();
 
       await func('key1');
       func.invalidate('key1');
@@ -149,11 +147,9 @@ void main() {
     test('clearCache() removes all entries', () async {
       var callCount = 0;
 
-      final func =
-          Func1((String key) async {
-                return ++callCount;
-              }).cacheAside()
-              as CacheAsideExtension1<String, int>;
+      final func = Func1((String key) async {
+        return ++callCount;
+      }).cacheAside();
 
       await func('key1');
       await func('key2');
@@ -187,12 +183,10 @@ void main() {
     test('invalidate() removes specific argument pair', () async {
       var callCount = 0;
 
-      final func =
-          Func2((int a, int b) async {
-                callCount++;
-                return a + b;
-              }).cacheAside()
-              as CacheAsideExtension2<int, int, int>;
+      final func = Func2((int a, int b) async {
+        callCount++;
+        return a + b;
+      }).cacheAside();
 
       await func(3, 4);
       await func(5, 6);
@@ -208,11 +202,10 @@ void main() {
 
       final func =
           Func2((int a, int b) async {
-                return ++callCount;
-              }).cacheAside(
-                ttl: const Duration(milliseconds: 100),
-              )
-              as CacheAsideExtension2<int, int, int>;
+            return ++callCount;
+          }).cacheAside(
+            ttl: const Duration(milliseconds: 100),
+          );
 
       await func(3, 4);
       await Future<void>.delayed(const Duration(milliseconds: 150));
@@ -226,12 +219,11 @@ void main() {
 
       final func =
           Func2((int a, int b) async {
-                return ++callCount;
-              }).cacheAside(
-                ttl: const Duration(milliseconds: 100),
-                refreshStrategy: RefreshStrategy.backgroundRefresh,
-              )
-              as CacheAsideExtension2<int, int, int>;
+            return ++callCount;
+          }).cacheAside(
+            ttl: const Duration(milliseconds: 100),
+            refreshStrategy: RefreshStrategy.backgroundRefresh,
+          );
 
       final result1 = await func(3, 4);
       await Future<void>.delayed(const Duration(milliseconds: 150));
@@ -244,11 +236,9 @@ void main() {
     test('clearCache removes all entries for Func2', () async {
       var callCount = 0;
 
-      final func =
-          Func2((int a, int b) async {
-                return ++callCount;
-              }).cacheAside()
-              as CacheAsideExtension2<int, int, int>;
+      final func = Func2((int a, int b) async {
+        return ++callCount;
+      }).cacheAside();
 
       await func(3, 4);
       await func(5, 6);
