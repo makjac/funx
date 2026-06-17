@@ -1,3 +1,16 @@
+## 1.3.3
+
+- **Resilience policy**: added `ResiliencePolicy` for composing reliability
+  decorators in a single, well-defined order.
+  - `ResiliencePolicy<R>` groups `timeout`, `retry`, `circuitBreaker`, and
+    `fallback` configuration.
+  - `ResiliencePolicyBuilder<R>` provides a fluent API:
+    `.timeout().retry().circuitBreaker().fallbackValue()/fallbackFunction()`.
+  - `.withPolicy()` and `.withResilience()` extension methods on `Func`,
+    `Func1`, and `Func2`.
+  - Decorators are applied in the recommended order:
+    `timeout -> retry -> circuitBreaker -> fallback`.
+
 ## 1.3.2
 
 - **Cancellation**: added cooperative cancellation support.

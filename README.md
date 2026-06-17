@@ -55,7 +55,7 @@ import 'package:funx/funx.dart';
 - **Timing** (6): debounce, throttle, delay, timeout, defer, idle callback
 - **Scheduling** (2): schedule (one-time, recurring, custom), backpressure control with 6 strategies
 - **Concurrency** (8): lock, read-write lock, semaphore, queue, bulkhead, barrier, countdown latch, monitor
-- **Reliability** (5): retry, backoff strategies, circuit breaker, fallback, recovery
+- **Reliability** (6): retry, backoff strategies, circuit breaker, fallback, recovery, resilience policy
 - **Performance** (11): rate limiting, batching, memoization, cache-aside, compression, deduplication, sharing, once, warm-up, lazy loading, priority queue
 - **Error Handling** (2): catch, default value
 - **Validation** (2): guard, validate
@@ -66,7 +66,7 @@ import 'package:funx/funx.dart';
 - **State** (1): snapshot
 - **Cancellation** (1): cancellable
 
-Total: 49 mechanisms across 13 categories
+Total: 50 mechanisms across 13 categories
 
 ## Basic Usage
 

@@ -106,6 +106,9 @@ export 'src/reliability/backoff.dart';
 export 'src/reliability/circuit_breaker.dart';
 export 'src/reliability/fallback.dart';
 export 'src/reliability/recover.dart';
+export 'src/reliability/resilience_extension.dart';
+export 'src/reliability/resilience_policy.dart';
+export 'src/reliability/resilience_policy_builder.dart';
 export 'src/reliability/retry.dart';
 
 // Scheduling
