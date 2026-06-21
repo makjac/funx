@@ -7,7 +7,7 @@ contentDir = 'content'
 
 [params]
 description = 'A Dart package of composable function decorators'
-version = '1.3.5'
+version = '1.4.0'
 author = 'Maksymilian Jakcowski'
 keywords = [
     'funx',
