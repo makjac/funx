@@ -92,6 +92,16 @@ export 'src/orchestration/saga.dart';
 
 // Performance
 export 'src/performance/batch.dart';
+export 'src/performance/cache/advanced_cache.dart';
+export 'src/performance/cache/arg_pair.dart';
+export 'src/performance/cache/cache.dart';
+export 'src/performance/cache/cache_entry.dart';
+export 'src/performance/cache/cache_warmer.dart';
+export 'src/performance/cache/fifo_cache.dart';
+export 'src/performance/cache/lfu_cache.dart';
+export 'src/performance/cache/lru_cache.dart';
+export 'src/performance/cache/stampede_protection.dart';
+export 'src/performance/cache/weighted_cache.dart';
 export 'src/performance/cache_aside.dart';
 export 'src/performance/compress.dart';
 export 'src/performance/deduplicate.dart';

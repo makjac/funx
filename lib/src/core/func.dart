@@ -36,6 +36,8 @@ import 'package:funx/src/orchestration/all.dart';
 import 'package:funx/src/orchestration/race.dart';
 import 'package:funx/src/orchestration/saga.dart';
 import 'package:funx/src/performance/batch.dart';
+import 'package:funx/src/performance/cache/advanced_cache.dart';
+import 'package:funx/src/performance/cache/arg_pair.dart';
 import 'package:funx/src/performance/cache_aside.dart';
 import 'package:funx/src/performance/compress.dart';
 import 'package:funx/src/performance/deduplicate.dart';
@@ -1301,12 +1303,20 @@ class Func1<T, R> {
     Duration? ttl,
     int maxSize = 100,
     EvictionPolicy evictionPolicy = EvictionPolicy.lru,
+    AdvancedCache<T, R>? cache,
+    int? maxWeight,
+    int Function(R result)? weigh,
+    bool stampedeProtection = false,
   }) {
     return MemoizeExtension1(
       this,
       ttl: ttl,
       maxSize: maxSize,
       evictionPolicy: evictionPolicy,
+      cache: cache,
+      maxWeight: maxWeight,
+      weigh: weigh,
+      stampedeProtection: stampedeProtection,
     );
   }
 
@@ -1464,14 +1474,24 @@ class Func1<T, R> {
   ///     refreshStrategy: RefreshStrategy.backgroundRefresh,
   ///   );
   /// ```
-  Func1<T, R> cacheAside({
+  CacheAsideExtension1<T, R> cacheAside({
+    AdvancedCache<T, R>? cache,
     Duration? ttl,
     RefreshStrategy refreshStrategy = RefreshStrategy.none,
+    void Function()? onCacheMiss,
+    void Function()? onCacheHit,
+    Iterable<T>? warmKeys,
+    Duration? warmInterval,
   }) {
     return CacheAsideExtension1(
       this,
+      cache: cache,
       ttl: ttl,
       refreshStrategy: refreshStrategy,
+      onCacheMiss: onCacheMiss,
+      onCacheHit: onCacheHit,
+      warmKeys: warmKeys,
+      warmInterval: warmInterval,
     );
   }
 
@@ -2270,12 +2290,20 @@ class Func2<T1, T2, R> {
     Duration? ttl,
     int maxSize = 100,
     EvictionPolicy evictionPolicy = EvictionPolicy.lru,
+    AdvancedCache<ArgPair<T1, T2>, R>? cache,
+    int? maxWeight,
+    int Function(R result)? weigh,
+    bool stampedeProtection = false,
   }) {
     return MemoizeExtension2(
       this,
       ttl: ttl,
       maxSize: maxSize,
       evictionPolicy: evictionPolicy,
+      cache: cache,
+      maxWeight: maxWeight,
+      weigh: weigh,
+      stampedeProtection: stampedeProtection,
     );
   }
 
@@ -2385,14 +2413,24 @@ class Func2<T1, T2, R> {
   ///     refreshStrategy: RefreshStrategy.backgroundRefresh,
   ///   );
   /// ```
-  Func2<T1, T2, R> cacheAside({
+  CacheAsideExtension2<T1, T2, R> cacheAside({
+    AdvancedCache<ArgPair<T1, T2>, R>? cache,
     Duration? ttl,
     RefreshStrategy refreshStrategy = RefreshStrategy.none,
+    void Function()? onCacheMiss,
+    void Function()? onCacheHit,
+    Iterable<(T1, T2)>? warmKeys,
+    Duration? warmInterval,
   }) {
     return CacheAsideExtension2(
       this,
+      cache: cache,
       ttl: ttl,
       refreshStrategy: refreshStrategy,
+      onCacheMiss: onCacheMiss,
+      onCacheHit: onCacheHit,
+      warmKeys: warmKeys,
+      warmInterval: warmInterval,
     );
   }
 
