@@ -1,3 +1,8 @@
+## 1.4.1
+
+- Added `llms.txt` to improve compatibility with AI coding assistants and agents.
+- Added an AI documentation section to the README with a reference to `llms.txt`.
+
 ## 1.4.0
 
 - **Advanced cache**: extend `memoize` and `cacheAside` with pluggable backends,
