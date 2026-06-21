@@ -17,6 +17,14 @@
     `test/performance/memoize_advanced_test.dart`,
     `test/performance/cache_aside_warming_test.dart`.
 
+- **AI-friendly documentation**: add plain-text `/raw/` pages and regenerate
+  `llms.txt` to point LLMs at token-efficient documentation sources.
+  - `website/prepare_content.dart` now mirrors every `doc/` page into
+    `static/raw/` as an `index.html` file containing only the original Markdown.
+  - URLs like `/raw/concurrency/` serve the Markdown source with no navigation,
+    styling, or HTML wrappers.
+  - `llms.txt` links to the raw sections and every per-topic raw page.
+
 ## 1.3.4
 
 - **API ergonomics**: apply stateless Funx decorators directly to plain Dart
