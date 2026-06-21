@@ -11,13 +11,16 @@ void main() {
   group('Memoize with backends + reliability', () {
     test('memoize with LFU cache + retry', () async {
       var count = 0;
-      final func = funx.Func1<String, int>((key) async {
-        count++;
-        if (count == 1) throw Exception('fail');
-        return key.length;
-      }).retry(maxAttempts: 2).memoize(
-        cache: LfuCache<String, int>(maxSize: 10),
-      );
+      final func =
+          funx.Func1<String, int>((key) async {
+                count++;
+                if (count == 1) throw Exception('fail');
+                return key.length;
+              })
+              .retry(maxAttempts: 2)
+              .memoize(
+                cache: LfuCache<String, int>(maxSize: 10),
+              );
 
       expect(await func('hello'), 5);
       expect(await func('hello'), 5);
@@ -25,12 +28,15 @@ void main() {
     });
 
     test('memoize with FIFO cache + timeout', () async {
-      final func = funx.Func1<int, int>((n) async {
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-        return n * 2;
-      }).timeout(const Duration(milliseconds: 100)).memoize(
-        cache: FifoCache<int, int>(maxSize: 5),
-      );
+      final func =
+          funx.Func1<int, int>((n) async {
+                await Future<void>.delayed(const Duration(milliseconds: 5));
+                return n * 2;
+              })
+              .timeout(const Duration(milliseconds: 100))
+              .memoize(
+                cache: FifoCache<int, int>(maxSize: 5),
+              );
 
       expect(await func(3), 6);
       expect(await func(3), 6);
@@ -38,16 +44,17 @@ void main() {
 
     test('memoize with weighted cache + stampede protection', () async {
       var count = 0;
-      final func = funx.Func1<String, String>((key) async {
-        count++;
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-        return key.toUpperCase();
-      }).memoize(
-        cache: LruCache<String, String>(maxSize: 100),
-        maxWeight: 50,
-        weigh: (value) => value.length,
-        stampedeProtection: true,
-      );
+      final func =
+          funx.Func1<String, String>((key) async {
+            count++;
+            await Future<void>.delayed(const Duration(milliseconds: 20));
+            return key.toUpperCase();
+          }).memoize(
+            cache: LruCache<String, String>(maxSize: 100),
+            maxWeight: 50,
+            weigh: (value) => value.length,
+            stampedeProtection: true,
+          );
 
       final results = await Future.wait<String>([
         func('a'),
@@ -76,14 +83,15 @@ void main() {
     test('cacheAside with LFU cache + warmKeys keeps cache hot', () async {
       final cache = LfuCache<String, int>(maxSize: 10);
       var calls = 0;
-      final func = funx.Func1<String, int>((key) async {
-        calls++;
-        return key.length;
-      }).cacheAside(
-        cache: cache,
-        warmKeys: ['foo', 'bar'],
-        warmInterval: const Duration(milliseconds: 50),
-      );
+      final func =
+          funx.Func1<String, int>((key) async {
+            calls++;
+            return key.length;
+          }).cacheAside(
+            cache: cache,
+            warmKeys: ['foo', 'bar'],
+            warmInterval: const Duration(milliseconds: 50),
+          );
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(cache.get('foo'), 3);
@@ -102,14 +110,16 @@ void main() {
         timeout: const Duration(milliseconds: 100),
       );
       var count = 0;
-      final func = funx.Func1<String, int>((key) async {
-        count++;
-        if (count <= 2) throw Exception('fail');
-        return key.length;
-      }).cacheAside(cache: LruCache<String, int>(maxSize: 10))
-          .retry(maxAttempts: 3)
-          .circuitBreaker(cb)
-          .fallback(fallbackValue: -1);
+      final func =
+          funx.Func1<String, int>((key) async {
+                count++;
+                if (count <= 2) throw Exception('fail');
+                return key.length;
+              })
+              .cacheAside(cache: LruCache<String, int>(maxSize: 10))
+              .retry(maxAttempts: 3)
+              .circuitBreaker(cb)
+              .fallback(fallbackValue: -1);
 
       expect(await func('hello'), 5);
       expect(await func('hello'), 5);
@@ -119,14 +129,15 @@ void main() {
   group('Weighted cache + eviction', () {
     test('weighted LFU evicts by weight', () async {
       var calls = 0;
-      final func = funx.Func1<String, String>((key) async {
-        calls++;
-        return key * 3;
-      }).memoize(
-        cache: LfuCache<String, String>(maxSize: 10),
-        maxWeight: 10,
-        weigh: (value) => value.length,
-      );
+      final func =
+          funx.Func1<String, String>((key) async {
+            calls++;
+            return key * 3;
+          }).memoize(
+            cache: LfuCache<String, String>(maxSize: 10),
+            maxWeight: 10,
+            weigh: (value) => value.length,
+          );
 
       await func('ab'); // weight 6
       await func('cd'); // weight 6 -> total 12, evicts oldest
@@ -137,14 +148,15 @@ void main() {
 
     test('weighted FIFO rejects entry heavier than maxWeight', () async {
       var calls = 0;
-      final func = funx.Func1<String, String>((key) async {
-        calls++;
-        return key;
-      }).memoize(
-        cache: FifoCache<String, String>(maxSize: 10),
-        maxWeight: 5,
-        weigh: (value) => value.length,
-      );
+      final func =
+          funx.Func1<String, String>((key) async {
+            calls++;
+            return key;
+          }).memoize(
+            cache: FifoCache<String, String>(maxSize: 10),
+            maxWeight: 5,
+            weigh: (value) => value.length,
+          );
 
       await func('toolong'); // weight 7 > 5, rejected
       await func('toolong'); // should trigger loader again
@@ -169,13 +181,14 @@ void main() {
 
     test('stampede protection + cacheAside', () async {
       var count = 0;
-      final func = funx.Func1<String, int>((key) async {
-        count++;
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-        return key.length;
-      }).cacheAside(
-        cache: LruCache<String, int>(maxSize: 10),
-      );
+      final func =
+          funx.Func1<String, int>((key) async {
+            count++;
+            await Future<void>.delayed(const Duration(milliseconds: 20));
+            return key.length;
+          }).cacheAside(
+            cache: LruCache<String, int>(maxSize: 10),
+          );
 
       final results = await Future.wait<int>([func('x'), func('x')]);
       expect(results, everyElement(1));

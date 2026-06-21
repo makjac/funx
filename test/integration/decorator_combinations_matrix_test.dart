@@ -13,14 +13,15 @@ void main() {
   group('Timing + Reliability', () {
     test('debounce + retry + fallback', () async {
       var attempts = 0;
-      final func = funx.Func1<int, int>((n) async {
-        attempts++;
-        if (attempts < 3) throw Exception('fail');
-        return n * 2;
-      })
-          .debounce(const Duration(milliseconds: 30))
-          .retry(maxAttempts: 3)
-          .fallback(fallbackValue: -1);
+      final func =
+          funx.Func1<int, int>((n) async {
+                attempts++;
+                if (attempts < 3) throw Exception('fail');
+                return n * 2;
+              })
+              .debounce(const Duration(milliseconds: 30))
+              .retry(maxAttempts: 3)
+              .fallback(fallbackValue: -1);
 
       expect(await func(5), 10);
       expect(attempts, 3);
@@ -32,27 +33,31 @@ void main() {
         timeout: const Duration(milliseconds: 50),
       );
       var count = 0;
-      final func = funx.Func1<int, int>((n) async {
-        count++;
-        if (count <= 2) throw Exception('fail');
-        return n;
-      }).throttle(const Duration(milliseconds: 10)).retry(maxAttempts: 3)
-          .circuitBreaker(cb);
+      final func =
+          funx.Func1<int, int>((n) async {
+                count++;
+                if (count <= 2) throw Exception('fail');
+                return n;
+              })
+              .throttle(const Duration(milliseconds: 10))
+              .retry(maxAttempts: 3)
+              .circuitBreaker(cb);
 
       expect(await func(1), 1);
     });
 
     test('delay + timeout + retry', () async {
       var count = 0;
-      final func = funx.Func<String>(() async {
-        count++;
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-        if (count == 1) throw Exception('fail');
-        return 'ok';
-      })
-          .delay(const Duration(milliseconds: 5))
-          .timeout(const Duration(milliseconds: 100))
-          .retry(maxAttempts: 3);
+      final func =
+          funx.Func<String>(() async {
+                count++;
+                await Future<void>.delayed(const Duration(milliseconds: 5));
+                if (count == 1) throw Exception('fail');
+                return 'ok';
+              })
+              .delay(const Duration(milliseconds: 5))
+              .timeout(const Duration(milliseconds: 100))
+              .retry(maxAttempts: 3);
 
       expect(await func(), 'ok');
     });
@@ -109,12 +114,15 @@ void main() {
         timeout: const Duration(milliseconds: 100),
       );
       var count = 0;
-      final func = funx.Func<int>(() async {
-        count++;
-        if (count <= 2) throw Exception('fail');
-        return count;
-      }).retry(maxAttempts: 3).bulkhead(poolSize: 1, queueSize: 2)
-          .circuitBreaker(cb);
+      final func =
+          funx.Func<int>(() async {
+                count++;
+                if (count <= 2) throw Exception('fail');
+                return count;
+              })
+              .retry(maxAttempts: 3)
+              .bulkhead(poolSize: 1, queueSize: 2)
+              .circuitBreaker(cb);
 
       expect(await func(), 3);
     });
@@ -130,17 +138,17 @@ void main() {
 
       expect(await func(), 2);
 
-      final writer = funx.Func<int>(() async => 100)
-          .retry(maxAttempts: 2)
-          .writeLock(rwLock);
+      final writer = funx.Func<int>(
+        () async => 100,
+      ).retry(maxAttempts: 2).writeLock(rwLock);
       expect(await writer(), 100);
     });
 
     test('barrier + fallback', () async {
       final barrier = Barrier(parties: 2);
-      final func = funx.Func<int>(() async => throw Exception('fail'))
-          .barrier(barrier)
-          .fallback(fallbackValue: 0);
+      final func = funx.Func<int>(
+        () async => throw Exception('fail'),
+      ).barrier(barrier).fallback(fallbackValue: 0);
 
       final results = await Future.wait<int>([func(), func()]);
       expect(results, everyElement(0));
@@ -148,9 +156,9 @@ void main() {
 
     test('countdownLatch + fallback counts down on success', () async {
       final latch = CountdownLatch(count: 1);
-      final func = funx.Func<int>(() async => 42)
-          .countdownLatch(latch)
-          .fallback(fallbackValue: -1);
+      final func = funx.Func<int>(
+        () async => 42,
+      ).countdownLatch(latch).fallback(fallbackValue: -1);
 
       expect(await func(), 42);
       expect(latch.isComplete, isTrue);
@@ -172,15 +180,16 @@ void main() {
   group('Validation + Error Handling + Reliability', () {
     test('guard + validate + retry + defaultValue', () async {
       var count = 0;
-      final func = funx.Func1<int, int>((n) async {
-        count++;
-        if (count < 3) throw Exception('fail');
-        return n * 2;
-      })
-          .validate(validators: [(n) => n > 0 ? null : 'positive'])
-          .guard(preCondition: (n) => n < 100)
-          .retry(maxAttempts: 3)
-          .defaultValue(defaultValue: 0);
+      final func =
+          funx.Func1<int, int>((n) async {
+                count++;
+                if (count < 3) throw Exception('fail');
+                return n * 2;
+              })
+              .validate(validators: [(n) => n > 0 ? null : 'positive'])
+              .guard(preCondition: (n) => n < 100)
+              .retry(maxAttempts: 3)
+              .defaultValue(defaultValue: 0);
 
       expect(await func(5), 10);
       expect(await func(-1), 0);
@@ -190,9 +199,11 @@ void main() {
     test('validate + catchError + fallback', () async {
       final func = funx.Func1<int, int>((n) async => n * 2)
           .validate(validators: [(n) => n >= 0 ? null : 'non-negative'])
-          .catchError(handlers: {
-            ValidationException: (e) async => -100,
-          })
+          .catchError(
+            handlers: {
+              ValidationException: (e) async => -100,
+            },
+          )
           .fallback(fallbackValue: -1);
 
       expect(await func(3), 6);
@@ -200,12 +211,17 @@ void main() {
     });
 
     test('guard + catchError', () async {
-      final func = funx.Func1<int, int>((n) async {
-        if (n == 0) throw Exception('zero');
-        return n;
-      }).guard(preCondition: (n) => n != 0).catchError(handlers: {
-        GuardException: (e) async => -1,
-      });
+      final func =
+          funx.Func1<int, int>((n) async {
+                if (n == 0) throw Exception('zero');
+                return n;
+              })
+              .guard(preCondition: (n) => n != 0)
+              .catchError(
+                handlers: {
+                  GuardException: (e) async => -1,
+                },
+              );
 
       expect(await func(5), 5);
       expect(await func(0), -1);
@@ -286,14 +302,15 @@ void main() {
     test('tap + retry + memoize', () async {
       var calls = 0;
       var taps = 0;
-      final func = funx.Func1<int, int>((n) async {
-        calls++;
-        if (calls == 1) throw Exception('fail');
-        return n * 2;
-      })
-          .tap(onValue: (result) => taps += result)
-          .retry(maxAttempts: 2)
-          .memoize();
+      final func =
+          funx.Func1<int, int>((n) async {
+                calls++;
+                if (calls == 1) throw Exception('fail');
+                return n * 2;
+              })
+              .tap(onValue: (result) => taps += result)
+              .retry(maxAttempts: 2)
+              .memoize();
 
       expect(await func(3), 6);
       expect(taps, 6);
@@ -343,14 +360,15 @@ void main() {
     test('cancellable + retry + fallback', () async {
       final token = CancelToken();
       var count = 0;
-      final func = funx.Func<int>(() async {
-        count++;
-        if (count < 2) throw Exception('fail');
-        return 42;
-      })
-          .cancellable(token: token)
-          .retry(maxAttempts: 2)
-          .fallback(fallbackValue: -1);
+      final func =
+          funx.Func<int>(() async {
+                count++;
+                if (count < 2) throw Exception('fail');
+                return 42;
+              })
+              .cancellable(token: token)
+              .retry(maxAttempts: 2)
+              .fallback(fallbackValue: -1);
 
       expect(await func(), 42);
       token.cancel();
@@ -362,15 +380,16 @@ void main() {
     test('snapshot + retry + fallback', () async {
       var state = 0;
       var count = 0;
-      final func = funx.Func1<int, int>((n) async {
-        count++;
-        state += n;
-        if (count == 1) throw Exception('fail');
-        return state;
-      })
-          .snapshot(getState: () => state, setState: (s) => state = s)
-          .retry(maxAttempts: 2)
-          .fallback(fallbackValue: 0);
+      final func =
+          funx.Func1<int, int>((n) async {
+                count++;
+                state += n;
+                if (count == 1) throw Exception('fail');
+                return state;
+              })
+              .snapshot(getState: () => state, setState: (s) => state = s)
+              .retry(maxAttempts: 2)
+              .fallback(fallbackValue: 0);
 
       expect(await func(5), 10);
       expect(state, 10);
@@ -438,13 +457,16 @@ void main() {
     });
 
     test('backpressure sample + fallback', () async {
-      final func = funx.Func1<int, int>((n) async {
-        if (n == 0) throw Exception('fail');
-        return n;
-      }).backpressure(
-        strategy: BackpressureStrategy.sample,
-        sampleRate: 1,
-      ).fallback(fallbackValue: -1);
+      final func =
+          funx.Func1<int, int>((n) async {
+                if (n == 0) throw Exception('fail');
+                return n;
+              })
+              .backpressure(
+                strategy: BackpressureStrategy.sample,
+                sampleRate: 1,
+              )
+              .fallback(fallbackValue: -1);
 
       final results = await Future.wait<int>([
         func(1),
@@ -468,9 +490,9 @@ void main() {
     });
 
     test('transform + fallback', () async {
-      final func = funx.Func1<int, int>((n) async => n)
-          .transform<int>((n) => n * 2)
-          .fallback(fallbackValue: 0);
+      final func = funx.Func1<int, int>(
+        (n) async => n,
+      ).transform<int>((n) => n * 2).fallback(fallbackValue: 0);
 
       expect(await func(3), 6);
     });
@@ -514,16 +536,17 @@ void main() {
   group('Deep multi-layer stacks', () {
     test('validate + guard + retry + memoize + timeout', () async {
       var count = 0;
-      final func = funx.Func1<int, int>((n) async {
-        count++;
-        if (count == 1) throw Exception('fail');
-        return n * n;
-      })
-          .validate(validators: [(n) => n > 0 ? null : 'positive'])
-          .guard(preCondition: (n) => n < 100)
-          .retry(maxAttempts: 2)
-          .memoize()
-          .timeout(const Duration(seconds: 1));
+      final func =
+          funx.Func1<int, int>((n) async {
+                count++;
+                if (count == 1) throw Exception('fail');
+                return n * n;
+              })
+              .validate(validators: [(n) => n > 0 ? null : 'positive'])
+              .guard(preCondition: (n) => n < 100)
+              .retry(maxAttempts: 2)
+              .memoize()
+              .timeout(const Duration(seconds: 1));
 
       expect(await func(4), 16);
       expect(await func(4), 16);
@@ -533,16 +556,17 @@ void main() {
     test('debounce + throttle + retry + fallback + audit', () async {
       var count = 0;
       final logs = <AuditLog<int, int>>[];
-      final func = funx.Func1<int, int>((n) async {
-        count++;
-        if (count < 3) throw Exception('fail');
-        return n;
-      })
-          .debounce(const Duration(milliseconds: 10))
-          .throttle(const Duration(milliseconds: 10))
-          .retry(maxAttempts: 3)
-          .fallback(fallbackValue: -1)
-          .audit(onAudit: logs.add);
+      final func =
+          funx.Func1<int, int>((n) async {
+                count++;
+                if (count < 3) throw Exception('fail');
+                return n;
+              })
+              .debounce(const Duration(milliseconds: 10))
+              .throttle(const Duration(milliseconds: 10))
+              .retry(maxAttempts: 3)
+              .fallback(fallbackValue: -1)
+              .audit(onAudit: logs.add);
 
       expect(await func(5), 5);
       expect(logs.length, 1);
@@ -554,16 +578,17 @@ void main() {
         timeout: const Duration(milliseconds: 100),
       );
       var count = 0;
-      final func = funx.Func<int>(() async {
-        count++;
-        if (count == 1) throw Exception('fail');
-        return count;
-      })
-          .retry(maxAttempts: 2)
-          .lock()
-          .rateLimit(maxCalls: 5, window: const Duration(seconds: 1))
-          .circuitBreaker(cb)
-          .fallback(fallbackValue: 0);
+      final func =
+          funx.Func<int>(() async {
+                count++;
+                if (count == 1) throw Exception('fail');
+                return count;
+              })
+              .retry(maxAttempts: 2)
+              .lock()
+              .rateLimit(maxCalls: 5, window: const Duration(seconds: 1))
+              .circuitBreaker(cb)
+              .fallback(fallbackValue: 0);
 
       expect(await func(), 2);
     });
@@ -571,16 +596,17 @@ void main() {
     test('cancellable + lazy + share + retry + defaultValue', () async {
       final token = CancelToken();
       var count = 0;
-      final func = funx.Func<int>(() async {
-        count++;
-        if (count == 1) throw Exception('fail');
-        return 42;
-      })
-          .cancellable(token: token)
-          .lazy()
-          .share()
-          .retry(maxAttempts: 2)
-          .defaultValue(defaultValue: 0);
+      final func =
+          funx.Func<int>(() async {
+                count++;
+                if (count == 1) throw Exception('fail');
+                return 42;
+              })
+              .cancellable(token: token)
+              .lazy()
+              .share()
+              .retry(maxAttempts: 2)
+              .defaultValue(defaultValue: 0);
 
       final results = await Future.wait<int>([func(), func()]);
       expect(results, everyElement(42));

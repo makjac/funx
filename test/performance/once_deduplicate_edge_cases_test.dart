@@ -27,8 +27,8 @@ void main() {
 
     test('Once reset after success allows re-execution', () async {
       var count = 0;
-      final func = funx.Func<int>(() async => ++count).once()
-          as OnceExtension<int>;
+      final func =
+          funx.Func<int>(() async => ++count).once() as OnceExtension<int>;
 
       expect(await func(), 1);
       func.reset();
@@ -54,11 +54,12 @@ void main() {
 
     test('Deduplicate reset per argument', () async {
       var count = 0;
-      final func = funx.Func1<String, int>((key) async {
-        count++;
-        return key.length;
-      }).deduplicate(window: const Duration(seconds: 1))
-          as DeduplicateExtension1<String, int>;
+      final func =
+          funx.Func1<String, int>((key) async {
+                count++;
+                return key.length;
+              }).deduplicate(window: const Duration(seconds: 1))
+              as DeduplicateExtension1<String, int>;
 
       await func('a');
       func.resetArg('a');

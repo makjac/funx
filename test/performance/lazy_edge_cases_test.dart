@@ -47,18 +47,20 @@ void main() {
       expect(await func(), 2);
     });
 
-    test('Multiple concurrent callers before first init share single execution',
-        () async {
-      var count = 0;
-      final func = funx.Func<int>(() async {
-        count++;
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-        return 7;
-      }).lazy();
+    test(
+      'Multiple concurrent callers before first init share single execution',
+      () async {
+        var count = 0;
+        final func = funx.Func<int>(() async {
+          count++;
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          return 7;
+        }).lazy();
 
-      final results = await Future.wait<int>([func(), func(), func()]);
-      expect(results, everyElement(7));
-      expect(count, 3);
-    });
+        final results = await Future.wait<int>([func(), func(), func()]);
+        expect(results, everyElement(7));
+        expect(count, 3);
+      },
+    );
   });
 }

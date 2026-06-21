@@ -27,36 +27,48 @@ void main() {
     });
 
     test('MissedExecutionPolicy has expected values', () {
-      expect(MissedExecutionPolicy.values,
-          contains(MissedExecutionPolicy.executeImmediately));
-      expect(MissedExecutionPolicy.values,
-          contains(MissedExecutionPolicy.skip));
-      expect(MissedExecutionPolicy.values,
-          contains(MissedExecutionPolicy.catchUp));
-      expect(MissedExecutionPolicy.values,
-          contains(MissedExecutionPolicy.reschedule));
+      expect(
+        MissedExecutionPolicy.values,
+        contains(MissedExecutionPolicy.executeImmediately),
+      );
+      expect(
+        MissedExecutionPolicy.values,
+        contains(MissedExecutionPolicy.skip),
+      );
+      expect(
+        MissedExecutionPolicy.values,
+        contains(MissedExecutionPolicy.catchUp),
+      );
+      expect(
+        MissedExecutionPolicy.values,
+        contains(MissedExecutionPolicy.reschedule),
+      );
     });
 
     test('BackpressureStrategy has expected values', () {
-      expect(BackpressureStrategy.values,
-          contains(BackpressureStrategy.drop));
-      expect(BackpressureStrategy.values,
-          contains(BackpressureStrategy.dropOldest));
-      expect(BackpressureStrategy.values,
-          contains(BackpressureStrategy.buffer));
-      expect(BackpressureStrategy.values,
-          contains(BackpressureStrategy.sample));
-      expect(BackpressureStrategy.values,
-          contains(BackpressureStrategy.throttle));
-      expect(BackpressureStrategy.values,
-          contains(BackpressureStrategy.error));
+      expect(BackpressureStrategy.values, contains(BackpressureStrategy.drop));
+      expect(
+        BackpressureStrategy.values,
+        contains(BackpressureStrategy.dropOldest),
+      );
+      expect(
+        BackpressureStrategy.values,
+        contains(BackpressureStrategy.buffer),
+      );
+      expect(
+        BackpressureStrategy.values,
+        contains(BackpressureStrategy.sample),
+      );
+      expect(
+        BackpressureStrategy.values,
+        contains(BackpressureStrategy.throttle),
+      );
+      expect(BackpressureStrategy.values, contains(BackpressureStrategy.error));
     });
 
     test('CompressionAlgorithm has expected values', () {
-      expect(CompressionAlgorithm.values,
-          contains(CompressionAlgorithm.zlib));
-      expect(CompressionAlgorithm.values,
-          contains(CompressionAlgorithm.gzip));
+      expect(CompressionAlgorithm.values, contains(CompressionAlgorithm.zlib));
+      expect(CompressionAlgorithm.values, contains(CompressionAlgorithm.gzip));
     });
 
     test('EvictionPolicy has expected values', () {
@@ -66,14 +78,13 @@ void main() {
     });
 
     test('RateLimitStrategy has expected values', () {
-      expect(RateLimitStrategy.values,
-          contains(RateLimitStrategy.tokenBucket));
-      expect(RateLimitStrategy.values,
-          contains(RateLimitStrategy.leakyBucket));
-      expect(RateLimitStrategy.values,
-          contains(RateLimitStrategy.fixedWindow));
-      expect(RateLimitStrategy.values,
-          contains(RateLimitStrategy.slidingWindow));
+      expect(RateLimitStrategy.values, contains(RateLimitStrategy.tokenBucket));
+      expect(RateLimitStrategy.values, contains(RateLimitStrategy.leakyBucket));
+      expect(RateLimitStrategy.values, contains(RateLimitStrategy.fixedWindow));
+      expect(
+        RateLimitStrategy.values,
+        contains(RateLimitStrategy.slidingWindow),
+      );
     });
   });
 
