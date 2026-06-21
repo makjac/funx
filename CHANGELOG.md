@@ -1,4 +1,4 @@
-## 1.3.5
+## 1.4.0
 
 - **Advanced cache**: extend `memoize` and `cacheAside` with pluggable backends,
   weighted eviction, stampede protection, and cache warming.
