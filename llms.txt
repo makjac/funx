@@ -1,0 +1,106 @@
+# funx
+
+> A Dart package of composable function decorators.
+
+funx wraps ordinary functions in small, chainable, reusable building blocks for timing, concurrency, reliability, caching, observability, and more.
+
+## Author
+
+Maksymilian Jakcowski — https://github.com/makjac
+
+## Resources
+
+- Package: https://pub.dev/packages/funx
+- API reference: https://pub.dev/documentation/funx/latest/
+- Library docs: https://pub.dev/documentation/funx/latest/funx/
+- Repository: https://github.com/makjac/funx
+- Author: https://github.com/makjac
+- Website: https://makjac.github.io/funx
+
+## Documentation sections (AI-friendly plain text)
+
+- Overview: https://makjac.github.io/funx/raw/
+- Core: https://makjac.github.io/funx/raw/core/
+- Concurrency: https://makjac.github.io/funx/raw/concurrency/
+- Control Flow: https://makjac.github.io/funx/raw/control_flow/
+- Error Handling: https://makjac.github.io/funx/raw/error_handling/
+- Observability: https://makjac.github.io/funx/raw/observability/
+- Orchestration: https://makjac.github.io/funx/raw/orchestration/
+- Performance: https://makjac.github.io/funx/raw/performance/
+- Reliability: https://makjac.github.io/funx/raw/reliability/
+- Scheduling: https://makjac.github.io/funx/raw/scheduling/
+- State: https://makjac.github.io/funx/raw/state/
+- Timing: https://makjac.github.io/funx/raw/timing/
+- Transformation: https://makjac.github.io/funx/raw/transformation/
+- Validation: https://makjac.github.io/funx/raw/validation/
+
+## Per-topic raw pages
+
+- Cancellation: https://makjac.github.io/funx/raw/cancellation/
+- Cancellation / Cancellable: https://makjac.github.io/funx/raw/cancellation/cancellable/
+- Concurrency: https://makjac.github.io/funx/raw/concurrency/
+- Concurrency / Barrier: https://makjac.github.io/funx/raw/concurrency/barrier/
+- Concurrency / Bulkhead: https://makjac.github.io/funx/raw/concurrency/bulkhead/
+- Concurrency / Countdown latch: https://makjac.github.io/funx/raw/concurrency/countdown_latch/
+- Concurrency / Function queue: https://makjac.github.io/funx/raw/concurrency/function_queue/
+- Concurrency / Lock: https://makjac.github.io/funx/raw/concurrency/lock/
+- Concurrency / Monitor: https://makjac.github.io/funx/raw/concurrency/monitor/
+- Concurrency / Rwlock: https://makjac.github.io/funx/raw/concurrency/rwlock/
+- Concurrency / Semaphore: https://makjac.github.io/funx/raw/concurrency/semaphore/
+- Control flow: https://makjac.github.io/funx/raw/control_flow/
+- Control flow / Repeat: https://makjac.github.io/funx/raw/control_flow/repeat/
+- Control flow / Switch: https://makjac.github.io/funx/raw/control_flow/switch/
+- Control flow / When: https://makjac.github.io/funx/raw/control_flow/when/
+- Core: https://makjac.github.io/funx/raw/core/
+- Error handling: https://makjac.github.io/funx/raw/error_handling/
+- Error handling / Catch error: https://makjac.github.io/funx/raw/error_handling/catch_error/
+- Error handling / Default value: https://makjac.github.io/funx/raw/error_handling/default_value/
+- Observability: https://makjac.github.io/funx/raw/observability/
+- Observability / Audit: https://makjac.github.io/funx/raw/observability/audit/
+- Observability / Monitor observability: https://makjac.github.io/funx/raw/observability/monitor_observability/
+- Observability / Tap: https://makjac.github.io/funx/raw/observability/tap/
+- Orchestration: https://makjac.github.io/funx/raw/orchestration/
+- Orchestration / All: https://makjac.github.io/funx/raw/orchestration/all/
+- Orchestration / Race: https://makjac.github.io/funx/raw/orchestration/race/
+- Orchestration / Saga: https://makjac.github.io/funx/raw/orchestration/saga/
+- Performance: https://makjac.github.io/funx/raw/performance/
+- Performance / Advanced cache: https://makjac.github.io/funx/raw/performance/advanced_cache/
+- Performance / Batch: https://makjac.github.io/funx/raw/performance/batch/
+- Performance / Cache aside: https://makjac.github.io/funx/raw/performance/cache_aside/
+- Performance / Compress: https://makjac.github.io/funx/raw/performance/compress/
+- Performance / Deduplicate: https://makjac.github.io/funx/raw/performance/deduplicate/
+- Performance / Lazy loading: https://makjac.github.io/funx/raw/performance/lazy_loading/
+- Performance / Memoize: https://makjac.github.io/funx/raw/performance/memoize/
+- Performance / Once: https://makjac.github.io/funx/raw/performance/once/
+- Performance / Priority queue: https://makjac.github.io/funx/raw/performance/priority_queue/
+- Performance / Rate limit: https://makjac.github.io/funx/raw/performance/rate_limit/
+- Performance / Share: https://makjac.github.io/funx/raw/performance/share/
+- Performance / Warm up: https://makjac.github.io/funx/raw/performance/warm_up/
+- Reliability: https://makjac.github.io/funx/raw/reliability/
+- Reliability / Backoff: https://makjac.github.io/funx/raw/reliability/backoff/
+- Reliability / Circuit breaker: https://makjac.github.io/funx/raw/reliability/circuit_breaker/
+- Reliability / Fallback: https://makjac.github.io/funx/raw/reliability/fallback/
+- Reliability / Recovery: https://makjac.github.io/funx/raw/reliability/recovery/
+- Reliability / Resilience policy: https://makjac.github.io/funx/raw/reliability/resilience_policy/
+- Reliability / Retry: https://makjac.github.io/funx/raw/reliability/retry/
+- Scheduling: https://makjac.github.io/funx/raw/scheduling/
+- Scheduling / Backpressure: https://makjac.github.io/funx/raw/scheduling/backpressure/
+- Scheduling / Schedule: https://makjac.github.io/funx/raw/scheduling/schedule/
+- Scheduling / Schedule custom: https://makjac.github.io/funx/raw/scheduling/schedule_custom/
+- Scheduling / Schedule recurring: https://makjac.github.io/funx/raw/scheduling/schedule_recurring/
+- State: https://makjac.github.io/funx/raw/state/
+- State / Snapshot: https://makjac.github.io/funx/raw/state/snapshot/
+- Timing: https://makjac.github.io/funx/raw/timing/
+- Timing / Debounce: https://makjac.github.io/funx/raw/timing/debounce/
+- Timing / Defer: https://makjac.github.io/funx/raw/timing/defer/
+- Timing / Delay: https://makjac.github.io/funx/raw/timing/delay/
+- Timing / Idle callback: https://makjac.github.io/funx/raw/timing/idle_callback/
+- Timing / Throttle: https://makjac.github.io/funx/raw/timing/throttle/
+- Timing / Timeout: https://makjac.github.io/funx/raw/timing/timeout/
+- Transformation: https://makjac.github.io/funx/raw/transformation/
+- Transformation / Merge: https://makjac.github.io/funx/raw/transformation/merge/
+- Transformation / Proxy: https://makjac.github.io/funx/raw/transformation/proxy/
+- Transformation / Transform: https://makjac.github.io/funx/raw/transformation/transform/
+- Validation: https://makjac.github.io/funx/raw/validation/
+- Validation / Guard: https://makjac.github.io/funx/raw/validation/guard/
+- Validation / Validate: https://makjac.github.io/funx/raw/validation/validate/

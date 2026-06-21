@@ -1,6 +1,18 @@
 ![header][header_image_url]
 
+<div align="center">
+
 [![CI][ci_badge]][ci_url] [![codecov][codecov_badge]][codecov_url] [![pub package][pub_package_badge]][pub_package_url] [![pub likes][pub_likes_badge]][pub_likes_link] [![style: very good analysis][very_good_analysis_badge]][very_good_analysis_url] [![License: MIT][license_badge]][license_badge_link]
+
+</div>
+
+<div align="center">
+
+  [Homepage](https://makjac.github.io/funx/) ·
+  [Documentation](https://makjac.github.io/funx/docs/) ·
+  [llms](https://makjac.github.io/funx/llms.txt)
+
+</div>
 
 # Funx
 
@@ -25,7 +37,7 @@ Add `funx` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  funx: ^1.3.0
+  funx: ^1.4.1
 ```
 
 Or install it from the command line:
@@ -1078,6 +1090,12 @@ test('composed mechanisms', () async {
   expect(executions, 1); // memoized, executed once
 });
 ```
+
+## AI Documentation
+
+For coding agents and AI assistants:
+
+- llms.txt: makjac.github.io/funx/llms.txt
 
 ## License
 

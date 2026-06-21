@@ -1,7 +1,8 @@
 name: funx
 description: Composable function decorators for advanced execution control and reliability.
-version: 1.4.0
+version: 1.4.1
 repository: https://github.com/makjac/funx
+homepage: https://makjac.github.io/funx/
 
 environment:
   sdk: ^3.9.2
@@ -11,3 +12,10 @@ dev_dependencies:
   path: ^1.9.1
   test: ^1.25.6
   very_good_analysis: ^10.0.0
+
+topics:
+  - functional-programming
+  - decorators
+  - async
+  - concurrency
+  - utilities
