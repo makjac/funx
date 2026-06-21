@@ -7,7 +7,7 @@ contentDir = 'content'
 
 [params]
 description = 'A Dart package of composable function decorators'
-version = '1.4.0'
+version = '1.4.2'
 author = 'Maksymilian Jakcowski'
 keywords = [
     'funx',
@@ -72,3 +72,5 @@ disable = false
 [[module.imports]]
 path = "github.com/gohugoio/hugo-mod-bootstrap-scss/v5"
 disable = false
+
+
